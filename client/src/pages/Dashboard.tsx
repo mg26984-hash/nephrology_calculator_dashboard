@@ -1289,6 +1289,10 @@ export default function Dashboard() {
                         setSelectedCategory(category);
                         setSelectedCalculatorId(null);
                         setResult(null);
+                        // Open mobile menu on small screens so users can see filtered calculators
+                        if (window.innerWidth < 1024) {
+                          setMobileMenuOpen(true);
+                        }
                       }}
                       className="p-4 rounded-xl border border-border bg-card hover:bg-accent hover:border-primary/50 transition-all text-left group cursor-pointer"
                     >
