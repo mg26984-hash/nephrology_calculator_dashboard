@@ -1279,7 +1279,7 @@ export default function Dashboard() {
                         <div className="p-2 rounded-lg bg-primary/10 text-primary group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
                           {categoryIcons[category] || <Calculator className="w-4 h-4" />}
                         </div>
-                        <ChevronRight className="w-4 h-4 text-muted-foreground group-hover:text-primary ml-auto opacity-0 group-hover:opacity-100 transition-opacity" />
+                        <ChevronRight className="w-4 h-4 text-muted-foreground group-hover:text-primary ml-auto opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity" />
                       </div>
                       <h3 className="font-medium text-sm">{category.split(" & ")[0]}</h3>
                       <p className="text-xs text-muted-foreground mt-1">
