@@ -106,6 +106,7 @@ export default function Dashboard() {
   const [resultInterpretation, setResultInterpretation] = useState<string>("");
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [viewingCategoryList, setViewingCategoryList] = useState<string | null>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [focusedIndex, setFocusedIndex] = useState<number>(-1);
   const [copied, setCopied] = useState(false);
@@ -1261,7 +1262,90 @@ export default function Dashboard() {
 
         {/* Main Content */}
         <main className="flex-1 p-4 lg:p-6">
-          {!selectedCalculator ? (
+          {viewingCategoryList ? (
+            // Category List View
+            <div className="max-w-4xl mx-auto">
+              {/* Breadcrumb Navigation */}
+              <nav className="flex items-center gap-2 text-sm mb-6">
+                <button
+                  onClick={() => {
+                    setViewingCategoryList(null);
+                    setSelectedCategory(null);
+                  }}
+                  className="text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1 group"
+                >
+                  <ArrowLeft className="w-3 h-3 group-hover:-translate-x-0.5 transition-transform" />
+                  Dashboard
+                </button>
+                <ChevronRight className="w-4 h-4 text-muted-foreground/50" />
+                <span className="text-foreground font-medium">
+                  {viewingCategoryList}
+                </span>
+              </nav>
+
+              {/* Category Header */}
+              <div className="mb-6">
+                <div className="flex items-center gap-3 mb-2">
+                  <div className="p-3 rounded-xl bg-primary/10 text-primary">
+                    {categoryIcons[viewingCategoryList] || <Calculator className="w-6 h-6" />}
+                  </div>
+                  <div>
+                    <h2 className="text-2xl font-bold">{viewingCategoryList}</h2>
+                    <p className="text-muted-foreground">
+                      {calculators.filter(c => c.category === viewingCategoryList).length} calculators available
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Calculator List */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {calculators
+                  .filter(c => c.category === viewingCategoryList)
+                  .map((calc) => (
+                    <button
+                      key={calc.id}
+                      onClick={() => {
+                        setSelectedCalculatorId(calc.id);
+                        setViewingCategoryList(null);
+                        setSelectedCategory(viewingCategoryList);
+                        addToRecent(calc.id);
+                        setResult(null);
+                        setCalculatorState({});
+                      }}
+                      className="p-4 rounded-xl border border-border bg-card hover:bg-accent hover:border-primary/50 transition-all text-left group"
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex-1">
+                          <h3 className="font-medium text-base mb-1 group-hover:text-primary transition-colors">
+                            {calc.name}
+                          </h3>
+                          <p className="text-sm text-muted-foreground line-clamp-2">
+                            {calc.description}
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={(e) => toggleFavorite(calc.id, e)}
+                            className="p-1 rounded hover:bg-background/50 transition-colors"
+                          >
+                            <Star
+                              className={cn(
+                                "w-4 h-4 transition-colors",
+                                favorites.includes(calc.id)
+                                  ? "fill-yellow-500 text-yellow-500"
+                                  : "text-muted-foreground hover:text-yellow-500"
+                              )}
+                            />
+                          </button>
+                          <ChevronRight className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors" />
+                        </div>
+                      </div>
+                    </button>
+                  ))}
+              </div>
+            </div>
+          ) : !selectedCalculator ? (
             // Welcome Screen
             <div className="max-w-4xl mx-auto">
               <div className="text-center py-12">
@@ -1286,13 +1370,8 @@ export default function Dashboard() {
                     <button
                       key={category}
                       onClick={() => {
+                        setViewingCategoryList(category);
                         setSelectedCategory(category);
-                        setSelectedCalculatorId(null);
-                        setResult(null);
-                        // Open mobile menu on small screens so users can see filtered calculators
-                        if (window.innerWidth < 1024) {
-                          setMobileMenuOpen(true);
-                        }
                       }}
                       className="p-4 rounded-xl border border-border bg-card hover:bg-accent hover:border-primary/50 transition-all text-left group cursor-pointer"
                     >
@@ -1326,6 +1405,7 @@ export default function Dashboard() {
                 <ChevronRight className="w-4 h-4 text-muted-foreground/50" />
                 <button
                   onClick={() => {
+                    setViewingCategoryList(selectedCalculator.category);
                     setSelectedCategory(selectedCalculator.category);
                     setSelectedCalculatorId(null);
                   }}
