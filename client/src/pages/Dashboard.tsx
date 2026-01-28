@@ -33,7 +33,8 @@ import {
   Brain,
   AlertTriangle,
   Info,
-  X
+  X,
+  Star
 } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { calculators, getCategories, getCalculatorById } from "@/lib/calculatorData";
@@ -104,6 +105,35 @@ export default function Dashboard() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [focusedIndex, setFocusedIndex] = useState<number>(-1);
   const searchInputRef = useRef<HTMLInputElement>(null);
+  
+  // Favorites state with localStorage persistence
+  const [favorites, setFavorites] = useState<string[]>(() => {
+    const saved = localStorage.getItem('nephrology-calculator-favorites');
+    return saved ? JSON.parse(saved) : [];
+  });
+
+  // Save favorites to localStorage when they change
+  useEffect(() => {
+    localStorage.setItem('nephrology-calculator-favorites', JSON.stringify(favorites));
+  }, [favorites]);
+
+  // Toggle favorite status for a calculator
+  const toggleFavorite = useCallback((calcId: string, e?: React.MouseEvent) => {
+    if (e) {
+      e.stopPropagation(); // Prevent selecting the calculator when clicking the star
+    }
+    setFavorites(prev => 
+      prev.includes(calcId) 
+        ? prev.filter(id => id !== calcId)
+        : [...prev, calcId]
+    );
+  }, []);
+
+  // Get favorite calculators
+  const favoriteCalculators = useMemo(() => 
+    calculators.filter(c => favorites.includes(c.id)),
+    [favorites]
+  );
 
   const categories = useMemo(() => getCategories(), []);
   const selectedCalculator = useMemo(
@@ -893,6 +923,52 @@ export default function Dashboard() {
       {/* Calculator List */}
       <ScrollArea className="flex-1 min-h-0">
         <div className="p-2">
+          {/* Favorites Section */}
+          {favoriteCalculators.length > 0 && !searchQuery && !selectedCategory && (
+            <div className="mb-4">
+              <div className="flex items-center gap-2 px-2 py-2 text-xs font-semibold text-amber-500 uppercase tracking-wider">
+                <Star className="w-4 h-4 fill-amber-500" />
+                <span>Favorites</span>
+                <span className="ml-auto text-[10px] bg-amber-500/20 text-amber-600 dark:text-amber-400 px-1.5 py-0.5 rounded">{favoriteCalculators.length}</span>
+              </div>
+              <div className="space-y-1">
+                {favoriteCalculators.map((calc) => (
+                  <button
+                    key={`fav-${calc.id}`}
+                    data-calculator-id={calc.id}
+                    onClick={() => handleSelectCalculator(calc.id)}
+                    className={cn(
+                      "w-full text-left px-3 py-2 rounded-md text-sm transition-colors group",
+                      "hover:bg-accent hover:text-accent-foreground",
+                      selectedCalculatorId === calc.id
+                        ? "bg-primary text-primary-foreground"
+                        : "text-foreground"
+                    )}
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="truncate pr-2">{calc.name}</span>
+                      <div className="flex items-center gap-1">
+                        <button
+                          onClick={(e) => toggleFavorite(calc.id, e)}
+                          className={cn(
+                            "p-0.5 rounded hover:bg-background/50 transition-colors",
+                            selectedCalculatorId === calc.id ? "text-primary-foreground" : "text-amber-500"
+                          )}
+                          title="Remove from favorites"
+                        >
+                          <Star className="w-3 h-3 fill-current" />
+                        </button>
+                        <ChevronRight className="w-3 h-3 flex-shrink-0 opacity-50" />
+                      </div>
+                    </div>
+                  </button>
+                ))}
+              </div>
+              <Separator className="my-3" />
+            </div>
+          )}
+
+          {/* Regular Calculator List */}
           {(() => {
             let globalIndex = 0;
             return Object.entries(groupedCalculators).map(([category, calcs]) => (
@@ -906,6 +982,7 @@ export default function Dashboard() {
                   {calcs.map((calc) => {
                     const currentIndex = globalIndex++;
                     const isFocused = focusedIndex === currentIndex;
+                    const isFavorite = favorites.includes(calc.id);
                     return (
                       <button
                         key={calc.id}
@@ -913,7 +990,7 @@ export default function Dashboard() {
                         data-calculator-index={currentIndex}
                         onClick={() => handleSelectCalculator(calc.id)}
                         className={cn(
-                          "w-full text-left px-3 py-2 rounded-md text-sm transition-colors",
+                          "w-full text-left px-3 py-2 rounded-md text-sm transition-colors group",
                           "hover:bg-accent hover:text-accent-foreground",
                           selectedCalculatorId === calc.id
                             ? "bg-primary text-primary-foreground"
@@ -924,7 +1001,21 @@ export default function Dashboard() {
                       >
                         <div className="flex items-center justify-between">
                           <span className="truncate pr-2">{calc.name}</span>
-                          <ChevronRight className="w-3 h-3 flex-shrink-0 opacity-50" />
+                          <div className="flex items-center gap-1">
+                            <button
+                              onClick={(e) => toggleFavorite(calc.id, e)}
+                              className={cn(
+                                "p-0.5 rounded transition-colors",
+                                isFavorite 
+                                  ? "text-amber-500" 
+                                  : "text-muted-foreground/30 hover:text-amber-500 opacity-0 group-hover:opacity-100"
+                              )}
+                              title={isFavorite ? "Remove from favorites" : "Add to favorites"}
+                            >
+                              <Star className={cn("w-3 h-3", isFavorite && "fill-current")} />
+                            </button>
+                            <ChevronRight className="w-3 h-3 flex-shrink-0 opacity-50" />
+                          </div>
                         </div>
                       </button>
                     );
