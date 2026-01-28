@@ -35,7 +35,8 @@ import {
   Info,
   X,
   Star,
-  Clock
+  Clock,
+  ArrowLeft
 } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { calculators, getCategories, getCalculatorById, CalculatorInput } from "@/lib/calculatorData";
@@ -1293,6 +1294,15 @@ export default function Dashboard() {
           ) : (
             // Calculator View
             <div className="max-w-2xl mx-auto space-y-6">
+              {/* Back to Dashboard Button */}
+              <button
+                onClick={() => setSelectedCalculatorId(null)}
+                className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors group"
+              >
+                <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
+                Back to Dashboard
+              </button>
+
               {/* Calculator Header */}
               <div>
                 <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
