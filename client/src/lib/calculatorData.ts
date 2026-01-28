@@ -1129,8 +1129,8 @@ export const calculators: Calculator[] = [
     resultLabel: "Dose-to-Trough Ratio",
     resultUnit: "ratio",
     interpretation: (value) => {
-      if (value < 1.5) return "Rapid metabolizer (CYP3A5 expresser) - may need higher doses or BID dosing";
-      if (value <= 3) return "Normal metabolism";
+      if (value > 2.5) return "Fast metabolizer (CYP3A5 expresser) - may need higher doses or BID dosing";
+      if (value >= 1.0) return "Normal metabolism - typical dose-to-trough ratio";
       return "Slow metabolizer - risk of toxicity, consider dose reduction";
     },
     clinicalPearls: [

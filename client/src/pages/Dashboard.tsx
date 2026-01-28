@@ -1000,7 +1000,7 @@ export default function Dashboard() {
                     )}
                   >
                     <div className="flex items-center justify-between">
-                      <span className="truncate pr-2">{calc.name}</span>
+                      <span className="break-words hyphens-auto pr-2" style={{ wordBreak: 'break-word' }}>{calc.name}</span>
                       <div className="flex items-center gap-1">
                         <button
                           onClick={(e) => toggleFavorite(calc.id, e)}
@@ -1045,7 +1045,7 @@ export default function Dashboard() {
                     )}
                   >
                     <div className="flex items-center justify-between">
-                      <span className="truncate pr-2">{calc.name}</span>
+                      <span className="break-words hyphens-auto pr-2" style={{ wordBreak: 'break-word' }}>{calc.name}</span>
                       <div className="flex items-center gap-1">
                         <button
                           onClick={(e) => toggleFavorite(calc.id, e)}
@@ -1101,7 +1101,7 @@ export default function Dashboard() {
                         )}
                       >
                         <div className="flex items-center justify-between">
-                          <span className="truncate pr-2">{calc.name}</span>
+                          <span className="break-words hyphens-auto pr-2" style={{ wordBreak: 'break-word' }}>{calc.name}</span>
                           <div className="flex items-center gap-1">
                             <button
                               onClick={(e) => toggleFavorite(calc.id, e)}
