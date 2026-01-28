@@ -70,6 +70,21 @@ const categoryIcons: { [key: string]: React.ReactNode } = {
   "Bone & Fracture Risk": <Bone className="w-4 h-4" />,
 };
 
+// Category descriptions for clinical context
+const categoryDescriptions: { [key: string]: string } = {
+  "Kidney Function & CKD Risk": "Equations for estimating glomerular filtration rate (eGFR), creatinine clearance, and predicting progression to kidney failure. Essential for CKD staging and drug dosing.",
+  "Acute Kidney Injury (AKI) Workup": "Diagnostic tools for evaluating acute kidney injury, including fractional excretion calculations and anion gap analysis to differentiate prerenal, intrinsic, and postrenal causes.",
+  "Electrolytes & Acid-Base": "Calculators for sodium, potassium, and calcium disorders. Includes correction formulas for hyperglycemia, hypoalbuminemia, and tools for managing dysnatremias.",
+  "Proteinuria & Glomerular Disease": "Tools for quantifying proteinuria, converting between uACR and uPCR, and risk stratification in glomerular diseases including IgA nephropathy.",
+  "Dialysis Adequacy": "Comprehensive dialysis dosing calculators including Kt/V for hemodialysis and peritoneal dialysis, URR, and session duration planning.",
+  "Transplantation": "Pre- and post-transplant assessment tools including KDPI, EPTS, Banff classification, and immunosuppressant monitoring.",
+  "Cardiovascular Risk": "Cardiovascular risk assessment adapted for CKD patients, including ASCVD risk calculation and statin therapy guidance.",
+  "Anthropometric & Body Composition": "Body composition calculators including BMI, BSA, ideal body weight, and adjusted body weight for medication dosing in obesity.",
+  "CKD-Mineral Bone Disease": "Tools for managing mineral bone disorder in CKD, including calcium-phosphate product calculation.",
+  "Systemic Diseases & Scores": "Disease activity scores and classification criteria for systemic conditions affecting the kidney, including lupus nephritis and frailty assessment.",
+  "Bone & Fracture Risk": "Fracture risk assessment tools including FRAX for osteoporosis screening in CKD patients.",
+};
+
 // Define which inputs support unit conversion and their options
 const unitOptions: { [inputId: string]: { conventional: string; si: string; conversionFactor: number } } = {
   creatinine: { conventional: "mg/dL", si: "μmol/L", conversionFactor: 88.4 },
@@ -107,6 +122,7 @@ export default function Dashboard() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [viewingCategoryList, setViewingCategoryList] = useState<string | null>(null);
+  const [showAllCategories, setShowAllCategories] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [focusedIndex, setFocusedIndex] = useState<number>(-1);
   const [copied, setCopied] = useState(false);
@@ -1285,15 +1301,20 @@ export default function Dashboard() {
 
               {/* Category Header */}
               <div className="mb-6">
-                <div className="flex items-center gap-3 mb-2">
-                  <div className="p-3 rounded-xl bg-primary/10 text-primary">
+                <div className="flex items-start gap-4">
+                  <div className="p-3 rounded-xl bg-primary/10 text-primary shrink-0">
                     {categoryIcons[viewingCategoryList] || <Calculator className="w-6 h-6" />}
                   </div>
                   <div>
                     <h2 className="text-2xl font-bold">{viewingCategoryList}</h2>
-                    <p className="text-muted-foreground">
+                    <p className="text-sm text-muted-foreground mt-1">
                       {calculators.filter(c => c.category === viewingCategoryList).length} calculators available
                     </p>
+                    {categoryDescriptions[viewingCategoryList] && (
+                      <p className="text-sm text-muted-foreground mt-3 leading-relaxed">
+                        {categoryDescriptions[viewingCategoryList]}
+                      </p>
+                    )}
                   </div>
                 </div>
               </div>
@@ -1362,9 +1383,25 @@ export default function Dashboard() {
                 </p>
               </div>
 
-              {/* Category Quick Access */}
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                {categories.slice(0, 9).map((category) => {
+              {/* Category Quick Access Header */}
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold">
+                  {showAllCategories ? "All Categories" : "Browse by Category"}
+                </h3>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setShowAllCategories(!showAllCategories)}
+                  className="text-primary hover:text-primary/80"
+                >
+                  {showAllCategories ? "Show Less" : `View All ${categories.length} Categories`}
+                  <ChevronRight className={cn("w-4 h-4 ml-1 transition-transform", showAllCategories && "rotate-90")} />
+                </Button>
+              </div>
+
+              {/* Category Grid */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                {(showAllCategories ? categories : categories.slice(0, 9)).map((category) => {
                   const categoryCalculators = calculators.filter((c) => c.category === category);
                   return (
                     <button
@@ -1385,6 +1422,11 @@ export default function Dashboard() {
                       <p className="text-xs text-muted-foreground mt-1">
                         {categoryCalculators.length} calculators
                       </p>
+                      {showAllCategories && categoryDescriptions[category] && (
+                        <p className="text-xs text-muted-foreground mt-2 line-clamp-2">
+                          {categoryDescriptions[category]}
+                        </p>
+                      )}
                     </button>
                   );
                 })}
