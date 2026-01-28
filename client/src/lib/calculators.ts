@@ -1103,23 +1103,28 @@ export interface BanffResult {
 export function banffClassification(scores: BanffScores): BanffResult {
   const { i, t, v, g, ptc, ci, ct, cv, cg, c4d, dsaPositive } = scores;
   
-  // Calculate molecular/histological evidence for ABMR
+  // Banff 2022 Classification Criteria
+  // Reference: https://banfffoundation.org/central-repository-for-banff-classification-resources-3/
+  
+  // Calculate microvascular inflammation (MVI)
   const microvascularInflammation = g + ptc;
   const hasC4dPositive = c4d >= 2;
   const hasDSA = dsaPositive;
   
-  // Check for ABMR criteria (Banff 2019)
-  // Requires: 1) Histologic evidence of acute tissue injury
-  //           2) Evidence of current/recent antibody interaction with vascular endothelium
-  //           3) Serologic evidence of DSA
+  // Check for ABMR criteria (Banff 2022)
+  // Active AMR: MVI (g≥1 and/or ptc≥1) + C4d≥2 + DSA positive
+  // Chronic Active AMR: Chronic lesions (cg≥1, cv≥1, ci≥1, ct≥1) + C4d≥2 + DSA positive
   
-  const hasABMRHistology = microvascularInflammation >= 2 || v > 0 || 
-                          (cg > 0 && (g > 0 || ptc > 0));
-  const hasABMREvidence = hasC4dPositive || (hasDSA && microvascularInflammation >= 1);
+  const hasMVI = g >= 1 || ptc >= 1;
+  const hasABMRHistology = hasMVI || (cg > 0 && (g > 0 || ptc > 0));
+  const hasABMREvidence = hasC4dPositive || (hasDSA && hasMVI);
   
-  // Check for TCMR criteria
-  const hasTCMR = (i >= 2 && t >= 2) || v > 0;
-  const hasBorderline = (i >= 1 && t >= 1) && !hasTCMR;
+  // Check for TCMR criteria (Banff 2022)
+  // Acute TCMR: i≥1, t≥1, v=0 (IA/IB) OR v≥1 (IIA/IIB/III)
+  // Borderline: i≥1, t=0 OR i=0, t≥1 (without v)
+  
+  const hasTCMR = (i >= 1 && t >= 1) || v > 0;
+  const hasBorderline = ((i >= 1 && t === 0) || (i === 0 && t >= 1)) && v === 0;
   
   // Check for chronic changes
   const hasChronicChanges = ci >= 1 || ct >= 1;
@@ -1163,26 +1168,26 @@ export function banffClassification(scores: BanffScores): BanffResult {
       ],
     };
   }
-  // Category 4: T-Cell Mediated Rejection
+  // Category 2/4: T-Cell Mediated Rejection (Banff 2022)
   else if (hasTCMR) {
     let tcmrGrade = "";
     let severity = "";
     
     if (v >= 3) {
       tcmrGrade = "Grade III";
-      severity = "Severe (transmural arteritis)";
+      severity = "Severe - Transmural arteritis and/or fibrinoid necrosis";
     } else if (v >= 2) {
       tcmrGrade = "Grade IIB";
-      severity = "Moderate-Severe (v ≥2)";
+      severity = "Moderate-Severe - Moderate to severe intimal arteritis";
     } else if (v === 1) {
       tcmrGrade = "Grade IIA";
-      severity = "Moderate (v = 1)";
-    } else if (i >= 3 && t >= 3) {
+      severity = "Moderate - Mild to moderate intimal arteritis";
+    } else if (i >= 2 && t >= 2) {
       tcmrGrade = "Grade IB";
-      severity = "Moderate (i3, t3)";
-    } else {
+      severity = "Moderate - Extensive interstitial inflammation and tubulitis";
+    } else if (i >= 1 && t >= 1) {
       tcmrGrade = "Grade IA";
-      severity = "Mild (i2-3, t2)";
+      severity = "Mild - Minimal interstitial inflammation and tubulitis";
     }
     
     result = {

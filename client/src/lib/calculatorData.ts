@@ -1000,7 +1000,7 @@ export const calculators: Calculator[] = [
   {
     id: "banff-classification",
     name: "Banff Classification for Kidney Transplant Rejection",
-    description: "Comprehensive histological scoring for kidney transplant biopsy interpretation (Banff 2019)",
+    description: "Comprehensive histological scoring for kidney transplant biopsy interpretation (Banff 2022)",
     category: "Transplantation",
     inputs: [
       // Acute lesion scores
@@ -1088,12 +1088,15 @@ export const calculators: Calculator[] = [
       return "See detailed classification below";
     },
     clinicalPearls: [
-      "International gold standard for transplant biopsy interpretation",
-      "TCMR: Requires i≥2 AND t≥2, OR v>0",
-      "ABMR: Requires microvascular inflammation (g+ptc≥2) + DSA or C4d+",
-      "Borderline: i≥1 and t≥1 but not meeting TCMR criteria",
-      "Chronic active ABMR: cg>0 with evidence of active antibody interaction",
-      "Updated annually at Banff meetings",
+      "•Banff 2022 classification from the Banff Foundation",
+      "•Acute TCMR Grade IA: i≥1, t≥1, v=0 (minimal inflammation)",
+      "•Acute TCMR Grade IB: i≥1, t≥1, v=0 (more extensive involvement)",
+      "•Acute TCMR Grade IIA: v=1 (mild-moderate intimal arteritis)",
+      "•Acute TCMR Grade IIB: v≥2 (moderate-severe intimal arteritis)",
+      "•Acute TCMR Grade III: Transmural arteritis and/or fibrinoid necrosis",
+      "•Active ABMR: MVI (g≥1 or ptc≥1) + C4d≥2 + DSA positive",
+      "•Chronic Active ABMR: Chronic lesions (cg≥1, cv≥1, ci≥1, ct≥1) + C4d≥2 + DSA positive",
+      "•Borderline: i≥1, t=0 OR i=0, t≥1 (without v involvement)",
     ],
     references: ["Loupy A et al. Am J Transplant. 2020;20(9):2305-2331", "Haas M et al. Am J Transplant. 2018;18(2):293-307"],
   },
