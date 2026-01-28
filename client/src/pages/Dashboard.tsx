@@ -1220,9 +1220,11 @@ export default function Dashboard() {
             </Sheet>
 
             <div className="flex items-center gap-2">
-              <div className="p-2 rounded-lg bg-primary">
-                <Stethoscope className="w-5 h-5 text-primary-foreground" />
-              </div>
+              <img 
+                src="/images/asnrt-logo.webp" 
+                alt="ASNRT Logo" 
+                className="w-10 h-10 object-contain"
+              />
               <div>
                 <h1 className="text-lg font-bold text-foreground">ASNRT Calculator</h1>
                 <p className="text-xs text-muted-foreground hidden sm:block">Nephrology Clinical Tools</p>
@@ -1260,8 +1262,12 @@ export default function Dashboard() {
             // Welcome Screen
             <div className="max-w-4xl mx-auto">
               <div className="text-center py-12">
-                <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-primary/10 mb-6">
-                  <Calculator className="w-8 h-8 text-primary" />
+                <div className="inline-flex items-center justify-center w-20 h-20 rounded-2xl bg-primary/10 mb-6">
+                  <img 
+                    src="/images/asnrt-logo.webp" 
+                    alt="ASNRT Logo" 
+                    className="w-14 h-14 object-contain"
+                  />
                 </div>
                 <h2 className="text-2xl font-bold mb-3">Welcome to ASNRT Calculator</h2>
                 <p className="text-muted-foreground max-w-md mx-auto mb-8">
