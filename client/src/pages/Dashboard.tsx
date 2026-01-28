@@ -5,7 +5,7 @@
  * Features: Light/Dark theme, inline unit conversion per input, mobile-friendly
  */
 
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -102,6 +102,8 @@ export default function Dashboard() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [focusedIndex, setFocusedIndex] = useState<number>(-1);
+  const searchInputRef = useRef<HTMLInputElement>(null);
 
   const categories = useMemo(() => getCategories(), []);
   const selectedCalculator = useMemo(
@@ -764,7 +766,71 @@ export default function Dashboard() {
   const clearSearch = useCallback(() => {
     setSearchQuery("");
     setSelectedCategory(null);
+    setFocusedIndex(-1);
   }, []);
+
+  // Keyboard navigation handler
+  const handleKeyboardNavigation = useCallback((e: KeyboardEvent) => {
+    // Only handle navigation when sidebar is focused or search input is focused
+    const activeElement = document.activeElement;
+    const isSearchFocused = activeElement === searchInputRef.current;
+    const isSidebarFocused = activeElement?.closest('aside') || activeElement?.closest('[data-radix-dialog-content]');
+    
+    if (!isSearchFocused && !isSidebarFocused) return;
+    
+    const totalCalculators = filteredCalculators.length;
+    if (totalCalculators === 0) return;
+
+    switch (e.key) {
+      case 'ArrowDown':
+        e.preventDefault();
+        setFocusedIndex(prev => {
+          const newIndex = prev < totalCalculators - 1 ? prev + 1 : 0;
+          // Scroll the focused item into view
+          setTimeout(() => {
+            const button = document.querySelector(`[data-calculator-index="${newIndex}"]`) as HTMLElement;
+            button?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+          }, 0);
+          return newIndex;
+        });
+        break;
+      case 'ArrowUp':
+        e.preventDefault();
+        setFocusedIndex(prev => {
+          const newIndex = prev > 0 ? prev - 1 : totalCalculators - 1;
+          // Scroll the focused item into view
+          setTimeout(() => {
+            const button = document.querySelector(`[data-calculator-index="${newIndex}"]`) as HTMLElement;
+            button?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+          }, 0);
+          return newIndex;
+        });
+        break;
+      case 'Enter':
+        if (focusedIndex >= 0 && focusedIndex < totalCalculators) {
+          e.preventDefault();
+          handleSelectCalculator(filteredCalculators[focusedIndex].id);
+        }
+        break;
+      case 'Escape':
+        if (searchQuery) {
+          e.preventDefault();
+          clearSearch();
+        }
+        break;
+    }
+  }, [filteredCalculators, focusedIndex, searchQuery, handleSelectCalculator, clearSearch]);
+
+  // Add keyboard event listener
+  useEffect(() => {
+    document.addEventListener('keydown', handleKeyboardNavigation);
+    return () => document.removeEventListener('keydown', handleKeyboardNavigation);
+  }, [handleKeyboardNavigation]);
+
+  // Reset focused index when filtered calculators change
+  useEffect(() => {
+    setFocusedIndex(-1);
+  }, [searchQuery, selectedCategory]);
 
   // Check if input supports unit toggle
   const hasUnitToggle = (inputId: string): boolean => {
@@ -789,7 +855,8 @@ export default function Dashboard() {
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <Input
-            placeholder="Search calculators..."
+            ref={searchInputRef}
+            placeholder="Search calculators... (↑↓ to navigate)"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="pl-9 pr-8 bg-secondary border-border"
@@ -826,36 +893,46 @@ export default function Dashboard() {
       {/* Calculator List */}
       <ScrollArea className="flex-1 min-h-0">
         <div className="p-2">
-          {Object.entries(groupedCalculators).map(([category, calcs]) => (
-            <div key={category} className="mb-4">
-              <div className="flex items-center gap-2 px-2 py-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                {categoryIcons[category] || <Calculator className="w-4 h-4" />}
-                <span className="truncate">{category.split(" & ")[0]}</span>
-                <span className="ml-auto text-[10px] bg-secondary px-1.5 py-0.5 rounded">{calcs.length}</span>
+          {(() => {
+            let globalIndex = 0;
+            return Object.entries(groupedCalculators).map(([category, calcs]) => (
+              <div key={category} className="mb-4">
+                <div className="flex items-center gap-2 px-2 py-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                  {categoryIcons[category] || <Calculator className="w-4 h-4" />}
+                  <span className="truncate">{category.split(" & ")[0]}</span>
+                  <span className="ml-auto text-[10px] bg-secondary px-1.5 py-0.5 rounded">{calcs.length}</span>
+                </div>
+                <div className="space-y-1">
+                  {calcs.map((calc) => {
+                    const currentIndex = globalIndex++;
+                    const isFocused = focusedIndex === currentIndex;
+                    return (
+                      <button
+                        key={calc.id}
+                        data-calculator-id={calc.id}
+                        data-calculator-index={currentIndex}
+                        onClick={() => handleSelectCalculator(calc.id)}
+                        className={cn(
+                          "w-full text-left px-3 py-2 rounded-md text-sm transition-colors",
+                          "hover:bg-accent hover:text-accent-foreground",
+                          selectedCalculatorId === calc.id
+                            ? "bg-primary text-primary-foreground"
+                            : isFocused
+                            ? "bg-accent text-accent-foreground ring-2 ring-primary ring-offset-1"
+                            : "text-foreground"
+                        )}
+                      >
+                        <div className="flex items-center justify-between">
+                          <span className="truncate pr-2">{calc.name}</span>
+                          <ChevronRight className="w-3 h-3 flex-shrink-0 opacity-50" />
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
-              <div className="space-y-1">
-                {calcs.map((calc) => (
-                  <button
-                    key={calc.id}
-                    data-calculator-id={calc.id}
-                    onClick={() => handleSelectCalculator(calc.id)}
-                    className={cn(
-                      "w-full text-left px-3 py-2 rounded-md text-sm transition-colors",
-                      "hover:bg-accent hover:text-accent-foreground",
-                      selectedCalculatorId === calc.id
-                        ? "bg-primary text-primary-foreground"
-                        : "text-foreground"
-                    )}
-                  >
-                    <div className="flex items-center justify-between">
-                      <span className="truncate pr-2">{calc.name}</span>
-                      <ChevronRight className="w-3 h-3 flex-shrink-0 opacity-50" />
-                    </div>
-                  </button>
-                ))}
-              </div>
-            </div>
-          ))}
+            ));
+          })()}
           
           {filteredCalculators.length === 0 && (
             <div className="text-center py-8 text-muted-foreground">
@@ -873,6 +950,9 @@ export default function Dashboard() {
       <div className="p-4 border-t border-border text-center">
         <p className="text-xs text-muted-foreground">
           {filteredCalculators.length} of {calculators.length} calculators
+        </p>
+        <p className="text-[10px] text-muted-foreground/70 mt-1">
+          ↑↓ Navigate · Enter Select · Esc Clear
         </p>
       </div>
     </div>
