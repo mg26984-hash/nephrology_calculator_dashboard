@@ -898,13 +898,22 @@ export default function Dashboard() {
         }
         break;
       case 'Escape':
+        e.preventDefault();
         if (searchQuery) {
-          e.preventDefault();
           clearSearch();
+        } else if (selectedCalculatorId) {
+          setSelectedCalculatorId(null);
+        }
+        break;
+      case 'Backspace':
+        // Only trigger if not in an input field
+        if (selectedCalculatorId && !(e.target instanceof HTMLInputElement) && !(e.target instanceof HTMLTextAreaElement)) {
+          e.preventDefault();
+          setSelectedCalculatorId(null);
         }
         break;
     }
-  }, [filteredCalculators, focusedIndex, searchQuery, handleSelectCalculator, clearSearch]);
+  }, [filteredCalculators, focusedIndex, searchQuery, selectedCalculatorId, handleSelectCalculator, clearSearch]);
 
   // Add keyboard event listener
   useEffect(() => {
@@ -1294,20 +1303,33 @@ export default function Dashboard() {
           ) : (
             // Calculator View
             <div className="max-w-2xl mx-auto space-y-6">
-              {/* Back to Dashboard Button */}
-              <button
-                onClick={() => setSelectedCalculatorId(null)}
-                className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors group"
-              >
-                <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
-                Back to Dashboard
-              </button>
+              {/* Breadcrumb Navigation */}
+              <nav className="flex items-center gap-2 text-sm">
+                <button
+                  onClick={() => setSelectedCalculatorId(null)}
+                  className="text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1 group"
+                >
+                  <ArrowLeft className="w-3 h-3 group-hover:-translate-x-0.5 transition-transform" />
+                  Dashboard
+                </button>
+                <ChevronRight className="w-4 h-4 text-muted-foreground/50" />
+                <button
+                  onClick={() => {
+                    setSelectedCategory(selectedCalculator.category);
+                    setSelectedCalculatorId(null);
+                  }}
+                  className="text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  {selectedCalculator.category}
+                </button>
+                <ChevronRight className="w-4 h-4 text-muted-foreground/50" />
+                <span className="text-foreground font-medium truncate max-w-[200px] sm:max-w-none">
+                  {selectedCalculator.name}
+                </span>
+              </nav>
 
               {/* Calculator Header */}
               <div>
-                <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
-                  <span>{selectedCalculator.category}</span>
-                </div>
                 <h2 className="text-2xl font-bold">{selectedCalculator.name}</h2>
                 <p className="text-muted-foreground mt-1">{selectedCalculator.description}</p>
               </div>
