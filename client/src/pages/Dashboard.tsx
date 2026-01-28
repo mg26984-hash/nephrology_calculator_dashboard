@@ -262,7 +262,8 @@ export default function Dashboard() {
             calculatorState.sex as "M" | "F",
             calculatorState.eGFR as number,
             calculatorState.acr as number,
-            calculatorState.years as 2 | 5
+            (calculatorState.acrUnit as "mg/g" | "mg/mmol") || "mg/g",
+            (calculatorState.years as 2 | 5) || 5
           );
           break;
 
@@ -684,6 +685,34 @@ export default function Dashboard() {
           );
           calculationResult = fraxResult.majorFracture;
           break;
+
+        case "banff-classification":
+          const banffScores: calc.BanffScores = {
+            i: parseInt(calculatorState.i as string) || 0,
+            t: parseInt(calculatorState.t as string) || 0,
+            v: parseInt(calculatorState.v as string) || 0,
+            g: parseInt(calculatorState.g as string) || 0,
+            ptc: parseInt(calculatorState.ptc as string) || 0,
+            ci: parseInt(calculatorState.ci as string) || 0,
+            ct: parseInt(calculatorState.ct as string) || 0,
+            cv: parseInt(calculatorState.cv as string) || 0,
+            cg: parseInt(calculatorState.cg as string) || 0,
+            mm: parseInt(calculatorState.mm as string) || 0,
+            ah: parseInt(calculatorState.ah as string) || 0,
+            c4d: parseInt(calculatorState.c4d as string) || 0,
+            dsaPositive: Boolean(calculatorState.dsaPositive),
+          };
+          const banffResult = calc.banffClassification(banffScores);
+          calculationResult = banffResult.category;
+          // Set a more detailed interpretation
+          setResultInterpretation(
+            `**Category ${banffResult.category}: ${banffResult.diagnosis}**\n\n` +
+            `**Subtype:** ${banffResult.subtype}\n` +
+            `**Severity:** ${banffResult.severity}\n\n` +
+            `**Recommendations:**\n${banffResult.recommendations.map(r => "• " + r).join("\n")}`
+          );
+          setResult(banffResult.category);
+          return; // Skip the default interpretation handling
 
         default:
           calculationResult = undefined;
