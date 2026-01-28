@@ -46,20 +46,26 @@ export function ckdEpiCreatinine(
   race: "Black" | "Other" = "Other",
   creatinineUnit: "mg/dL" | "μmol/L" = "mg/dL"
 ): number {
+  // CKD-EPI 2021 Race-Free Equation
+  // Reference: https://www.kidney.org/professionals/gfr_calculator
+  
   // Convert to mg/dL if needed
-  let creatMgDl = creatinineUnit === "μmol/L" ? creatinine / 88.4 : creatinine;
+  let scr = creatinineUnit === "μmol/L" ? creatinine / 88.4 : creatinine;
 
-  const κ = sex === "F" ? 0.7 : 0.9;
-  const α = sex === "F" ? -0.219 : -0.144;
-  const sexFactor = sex === "F" ? 0.963 : 1;
-  const raceFactor = race === "Black" ? 1.159 : 1;
+  // Define sex-specific constants
+  const kappa = sex === "F" ? 0.7 : 0.9;
+  const alpha = sex === "F" ? -0.241 : -0.302;
+  const sexMultiplier = sex === "F" ? 1.012 : 1.0;
 
-  const eGFR =
-    142 *
-    Math.pow(creatMgDl / κ, α) *
-    Math.pow(0.9961, age) *
-    sexFactor *
-    raceFactor;
+  let eGFR: number;
+  
+  if (scr <= kappa) {
+    // When creatinine is at or below kappa
+    eGFR = 142 * Math.pow(scr / kappa, alpha) * Math.pow(0.9938, age) * sexMultiplier;
+  } else {
+    // When creatinine is above kappa
+    eGFR = 142 * Math.pow(scr / kappa, -1.200) * Math.pow(0.9938, age) * sexMultiplier;
+  }
 
   return Math.round(eGFR);
 }
@@ -71,13 +77,14 @@ export function cockcrofGault(
   sex: "M" | "F",
   creatinineUnit: "mg/dL" | "μmol/L" = "mg/dL"
 ): number {
+  // Cockcroft-Gault Creatinine Clearance Formula
+  // CrCl = [(140 - age) × weight] / (72 × SCr) [× 0.85 if female]
+  
   let creatMgDl = creatinineUnit === "μmol/L" ? creatinine / 88.4 : creatinine;
 
-  const factor = sex === "M" ? 140 : 130;
-  const sexMultiplier = sex === "M" ? 1 : 0.85;
+  const sexMultiplier = sex === "F" ? 0.85 : 1.0;
 
-  const clearance =
-    ((factor - age) * weight * sexMultiplier) / (72 * creatMgDl);
+  const clearance = ((140 - age) * weight * sexMultiplier) / (72 * creatMgDl);
 
   return Math.round(clearance);
 }
@@ -122,20 +129,39 @@ export function ckdEpiCystatinC(
   sex: "M" | "F",
   creatinineUnit: "mg/dL" | "μmol/L" = "mg/dL"
 ): number {
-  let creatMgDl = creatinineUnit === "μmol/L" ? creatinine / 88.4 : creatinine;
+  // CKD-EPI Creatinine-Cystatin C Combined Equation (2021)
+  // Reference: https://www.kidney.org/professionals/gfr_calculator
+  
+  let scr = creatinineUnit === "μmol/L" ? creatinine / 88.4 : creatinine;
+  let scys = cystatinC; // Cystatin C in mg/L
 
-  const κ = sex === "F" ? 0.7 : 0.9;
-  const α = sex === "F" ? -0.219 : -0.144;
-  const sexFactor = sex === "F" ? 0.963 : 1;
+  // Sex-specific constants for creatinine
+  const kappaCr = sex === "F" ? 0.7 : 0.9;
+  const alphaCr = sex === "F" ? -0.219 : -0.144;
+  
+  // Cystatin C constants (same for both sexes)
+  const kappaCys = 0.8;
+  const alphaCys = -0.323;
+  
+  // Sex multiplier
+  const sexMultiplier = sex === "F" ? 0.963 : 1.0;
+
+  // Calculate creatinine component
+  const crMin = Math.min(scr / kappaCr, 1);
+  const crMax = Math.max(scr / kappaCr, 1);
+  
+  // Calculate cystatin C component
+  const cysMin = Math.min(scys / kappaCys, 1);
+  const cysMax = Math.max(scys / kappaCys, 1);
 
   const eGFR =
     135 *
-    Math.pow(Math.min(creatMgDl / κ, 1), α) *
-    Math.pow(Math.max(creatMgDl / κ, 1), -0.544) *
-    Math.pow(Math.min(cystatinC / 0.8, 1), -0.323) *
-    Math.pow(Math.max(cystatinC / 0.8, 1), -0.778) *
+    Math.pow(crMin, alphaCr) *
+    Math.pow(crMax, -0.544) *
+    Math.pow(cysMin, alphaCys) *
+    Math.pow(cysMax, -0.778) *
     Math.pow(0.9961, age) *
-    sexFactor;
+    sexMultiplier;
 
   return Math.round(eGFR);
 }
@@ -419,28 +445,39 @@ export function ktv(
   postBUN: number,
   weight: number,
   sessionTime: number,
+  ultrafiltration: number = 0,
   bunUnit: "mg/dL" | "mmol/L" = "mg/dL"
 ): number {
+  // Daugirdas Second Generation Kt/V Formula
+  // Kt/V = -ln(R - 0.008 * t) + (4 - 3.5 * R) * UF/W
   let preBUNMgDl = bunUnit === "mmol/L" ? preBUN * 2.8 : preBUN;
   let postBUNMgDl = bunUnit === "mmol/L" ? postBUN * 2.8 : postBUN;
 
   const R = postBUNMgDl / preBUNMgDl;
-  const Kt_V = -Math.log(R - 0.008 * (sessionTime / 60)) + (4 - 3.5 * R) * (sessionTime / 60);
+  const t = sessionTime / 60; // Convert minutes to hours
+  const logArg = R - 0.008 * t;
+  if (logArg <= 0) return 0;
+  
+  const Kt_V = -Math.log(logArg) + (4 - 3.5 * R) * (ultrafiltration / weight);
 
   return Math.round(Kt_V * 100) / 100;
 }
 
 export function totalBodyWaterWatson(
   weight: number,
+  height: number,
   age: number,
   sex: "M" | "F"
 ): number {
+  // Watson Formula for Total Body Water
+  // Male: TBW = 2.447 - 0.09156 * age + 0.1074 * height + 0.3362 * weight
+  // Female: TBW = -2.097 + 0.1069 * height + 0.2466 * weight
   let tbw;
 
   if (sex === "M") {
-    tbw = 2.447 - 0.09156 * age + 0.1074 * weight;
+    tbw = 2.447 - 0.09156 * age + 0.1074 * height + 0.3362 * weight;
   } else {
-    tbw = -2.097 + 0.1069 * weight;
+    tbw = -2.097 + 0.1069 * height + 0.2466 * weight;
   }
 
   return Math.round(tbw * 100) / 100;

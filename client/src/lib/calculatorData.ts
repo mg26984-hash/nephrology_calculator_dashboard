@@ -702,8 +702,9 @@ export const calculators: Calculator[] = [
     inputs: [
       { id: "preBUN", label: "Pre-Dialysis BUN", type: "number", unit: "mg/dL or mmol/L", placeholder: "60", required: true },
       { id: "postBUN", label: "Post-Dialysis BUN", type: "number", unit: "mg/dL or mmol/L", placeholder: "20", required: true },
-      { id: "weight", label: "Body Weight", type: "number", unit: "kg", placeholder: "70", required: true },
-      { id: "sessionTime", label: "Session Duration", type: "number", unit: "hours", placeholder: "4", required: true },
+      { id: "postWeight", label: "Post-Dialysis Weight", type: "number", unit: "kg", placeholder: "70", required: true },
+      { id: "sessionTime", label: "Session Duration", type: "number", unit: "minutes", placeholder: "240", required: true },
+      { id: "ultrafiltration", label: "Ultrafiltration Volume", type: "number", unit: "L", placeholder: "3", required: true },
       { id: "bunUnit", label: "BUN Unit", type: "select", options: [{ value: "mg/dL", label: "mg/dL" }, { value: "mmol/L", label: "mmol/L" }], required: true },
     ],
     resultLabel: "Kt/V",
@@ -729,6 +730,7 @@ export const calculators: Calculator[] = [
     category: "Dialysis Adequacy",
     inputs: [
       { id: "weight", label: "Body Weight", type: "number", unit: "kg", placeholder: "70", required: true },
+      { id: "height", label: "Height", type: "number", unit: "cm", placeholder: "170", required: true },
       { id: "age", label: "Age", type: "number", unit: "years", placeholder: "55", required: true },
       { id: "sex", label: "Sex", type: "select", options: [{ value: "M", label: "Male" }, { value: "F", label: "Female" }], required: true },
     ],

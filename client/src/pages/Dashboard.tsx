@@ -2,7 +2,7 @@
  * ASNRT Nephrology Calculator Dashboard
  * Professional open-access calculator for nephrologists
  * 53 calculators organized by clinical category
- * Features: Light/Dark theme, seamless unit conversion, mobile-friendly
+ * Features: Light/Dark theme, inline unit conversion per input, mobile-friendly
  */
 
 import { useState, useMemo, useCallback } from "react";
@@ -45,6 +45,11 @@ interface CalculatorState {
   [key: string]: string | number | boolean;
 }
 
+// Unit state for each input field
+interface UnitState {
+  [inputId: string]: string;
+}
+
 // Category icons mapping
 const categoryIcons: { [key: string]: React.ReactNode } = {
   "Kidney Function & CKD Risk": <Activity className="w-4 h-4" />,
@@ -60,16 +65,40 @@ const categoryIcons: { [key: string]: React.ReactNode } = {
   "Bone & Fracture Risk": <Bone className="w-4 h-4" />,
 };
 
-// Global unit system state
-type UnitSystem = "conventional" | "SI";
+// Define which inputs support unit conversion and their options
+const unitOptions: { [inputId: string]: { conventional: string; si: string; conversionFactor: number } } = {
+  creatinine: { conventional: "mg/dL", si: "μmol/L", conversionFactor: 88.4 },
+  preCreatinine: { conventional: "mg/dL", si: "μmol/L", conversionFactor: 88.4 },
+  postCreatinine: { conventional: "mg/dL", si: "μmol/L", conversionFactor: 88.4 },
+  plasmaCr: { conventional: "mg/dL", si: "μmol/L", conversionFactor: 88.4 },
+  urineCr: { conventional: "mg/dL", si: "μmol/L", conversionFactor: 88.4 },
+  donorCreatinine: { conventional: "mg/dL", si: "μmol/L", conversionFactor: 88.4 },
+  bun: { conventional: "mg/dL", si: "mmol/L", conversionFactor: 0.357 },
+  preBUN: { conventional: "mg/dL", si: "mmol/L", conversionFactor: 0.357 },
+  postBUN: { conventional: "mg/dL", si: "mmol/L", conversionFactor: 0.357 },
+  plasmaUrea: { conventional: "mg/dL", si: "mmol/L", conversionFactor: 0.357 },
+  urineUrea: { conventional: "mg/dL", si: "mmol/L", conversionFactor: 0.357 },
+  urineaNitrogen: { conventional: "mg/dL", si: "mmol/L", conversionFactor: 0.357 },
+  glucose: { conventional: "mg/dL", si: "mmol/L", conversionFactor: 0.0555 },
+  albumin: { conventional: "g/dL", si: "g/L", conversionFactor: 10 },
+  urineAlbumin: { conventional: "mg", si: "μg", conversionFactor: 1000 },
+  calcium: { conventional: "mg/dL", si: "mmol/L", conversionFactor: 0.25 },
+  measuredCa: { conventional: "mg/dL", si: "mmol/L", conversionFactor: 0.25 },
+  phosphate: { conventional: "mg/dL", si: "mmol/L", conversionFactor: 0.323 },
+  totalCholesterol: { conventional: "mg/dL", si: "mmol/L", conversionFactor: 0.0259 },
+  hdl: { conventional: "mg/dL", si: "mmol/L", conversionFactor: 0.0259 },
+  hemoglobin: { conventional: "g/dL", si: "g/L", conversionFactor: 10 },
+  targetHemoglobin: { conventional: "g/dL", si: "g/L", conversionFactor: 10 },
+  currentHemoglobin: { conventional: "g/dL", si: "g/L", conversionFactor: 10 },
+};
 
 export default function Dashboard() {
   const { theme, toggleTheme } = useTheme();
   const [selectedCalculatorId, setSelectedCalculatorId] = useState<string | null>(null);
   const [calculatorState, setCalculatorState] = useState<CalculatorState>({});
+  const [unitState, setUnitState] = useState<UnitState>({});
   const [result, setResult] = useState<number | null>(null);
   const [resultInterpretation, setResultInterpretation] = useState<string>("");
-  const [unitSystem, setUnitSystem] = useState<UnitSystem>("conventional");
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -120,90 +149,40 @@ export default function Dashboard() {
     }));
   }, []);
 
-  // Get the appropriate unit label based on unit system
-  const getUnitLabel = useCallback((input: { id: string; unit?: string }) => {
-    if (!input.unit) return "";
-    
-    // Map input IDs to their unit conversions
-    const unitMappings: { [key: string]: { conv: string; si: string } } = {
-      creatinine: { conv: "mg/dL", si: "μmol/L" },
-      preCreatinine: { conv: "mg/dL", si: "μmol/L" },
-      postCreatinine: { conv: "mg/dL", si: "μmol/L" },
-      plasmaCr: { conv: "mg/dL", si: "μmol/L" },
-      urineCr: { conv: "mg/dL", si: "μmol/L" },
-      donorCreatinine: { conv: "mg/dL", si: "μmol/L" },
-      urineCreatinine: { conv: "g", si: "mg" },
-      bun: { conv: "mg/dL", si: "mmol/L" },
-      preBUN: { conv: "mg/dL", si: "mmol/L" },
-      postBUN: { conv: "mg/dL", si: "mmol/L" },
-      plasmaUrea: { conv: "mg/dL", si: "mmol/L" },
-      urineUrea: { conv: "mg/dL", si: "mmol/L" },
-      urineaNitrogen: { conv: "mg/dL", si: "mmol/L" },
-      glucose: { conv: "mg/dL", si: "mmol/L" },
-      albumin: { conv: "g/dL", si: "g/L" },
-      calcium: { conv: "mg/dL", si: "mmol/L" },
-      measuredCa: { conv: "mg/dL", si: "mmol/L" },
-      phosphate: { conv: "mg/dL", si: "mmol/L" },
-      totalCholesterol: { conv: "mg/dL", si: "mmol/L" },
-      hdl: { conv: "mg/dL", si: "mmol/L" },
-      height: { conv: "in", si: "cm" },
-      donorHeight: { conv: "in", si: "cm" },
-      weight: { conv: "lbs", si: "kg" },
-      donorWeight: { conv: "lbs", si: "kg" },
-      actualWeight: { conv: "lbs", si: "kg" },
-      idealWeight: { conv: "lbs", si: "kg" },
-      hemoglobin: { conv: "g/dL", si: "g/L" },
-      targetHemoglobin: { conv: "g/dL", si: "g/L" },
-      currentHemoglobin: { conv: "g/dL", si: "g/L" },
-    };
+  const handleUnitChange = useCallback((inputId: string, unit: string) => {
+    setUnitState((prev) => ({
+      ...prev,
+      [inputId]: unit,
+    }));
+  }, []);
 
-    const mapping = unitMappings[input.id];
-    if (mapping) {
-      return unitSystem === "SI" ? mapping.si : mapping.conv;
+  // Get the current unit for an input (default to conventional)
+  const getInputUnit = useCallback((inputId: string): string => {
+    if (unitOptions[inputId]) {
+      return unitState[inputId] || "conventional";
     }
-    
-    return input.unit;
-  }, [unitSystem]);
+    return "conventional";
+  }, [unitState]);
 
-  // Convert input value based on unit system for calculation
+  // Get the display unit label for an input
+  const getUnitLabel = useCallback((input: { id: string; unit?: string }): string => {
+    const options = unitOptions[input.id];
+    if (options) {
+      const currentUnit = getInputUnit(input.id);
+      return currentUnit === "si" ? options.si : options.conventional;
+    }
+    return input.unit || "";
+  }, [getInputUnit]);
+
+  // Convert input value to conventional units for calculation
   const normalizeValue = useCallback((inputId: string, value: number): number => {
-    if (unitSystem === "conventional") return value;
-    
-    // SI to conventional conversions for calculation
-    const conversions: { [key: string]: number } = {
-      creatinine: 1 / 88.4,
-      preCreatinine: 1 / 88.4,
-      postCreatinine: 1 / 88.4,
-      plasmaCr: 1 / 88.4,
-      urineCr: 1 / 88.4,
-      donorCreatinine: 1 / 88.4,
-      bun: 1 / 0.357,
-      preBUN: 1 / 0.357,
-      postBUN: 1 / 0.357,
-      plasmaUrea: 1 / 0.357,
-      urineUrea: 1 / 0.357,
-      urineaNitrogen: 1 / 0.357,
-      glucose: 1 / 0.0555,
-      albumin: 1 / 10,
-      calcium: 4,
-      measuredCa: 4,
-      phosphate: 1 / 0.323,
-      totalCholesterol: 1 / 0.0259,
-      hdl: 1 / 0.0259,
-      height: 1, // Already in cm for SI
-      donorHeight: 1,
-      weight: 1, // Already in kg for SI
-      donorWeight: 1,
-      actualWeight: 1,
-      idealWeight: 1,
-      hemoglobin: 1 / 10,
-      targetHemoglobin: 1 / 10,
-      currentHemoglobin: 1 / 10,
-    };
-    
-    const factor = conversions[inputId];
-    return factor ? value * factor : value;
-  }, [unitSystem]);
+    const options = unitOptions[inputId];
+    if (options && getInputUnit(inputId) === "si") {
+      // Convert from SI to conventional
+      return value / options.conversionFactor;
+    }
+    return value;
+  }, [getInputUnit]);
 
   const handleCalculate = useCallback(() => {
     if (!selectedCalculator) return;
@@ -211,7 +190,7 @@ export default function Dashboard() {
     try {
       let calculationResult: number | { [key: string]: number } | undefined;
 
-      // Helper to get normalized value
+      // Helper to get normalized value (always in conventional units)
       const getValue = (id: string) => {
         const raw = calculatorState[id] as number;
         return normalizeValue(id, raw);
@@ -225,7 +204,7 @@ export default function Dashboard() {
             calculatorState.age as number,
             calculatorState.sex as "M" | "F",
             calculatorState.race as "Black" | "Other",
-            "mg/dL" // Always pass conventional after normalization
+            "mg/dL"
           );
           break;
 
@@ -233,7 +212,7 @@ export default function Dashboard() {
           calculationResult = calc.cockcrofGault(
             getValue("creatinine"),
             calculatorState.age as number,
-            getValue("weight"),
+            calculatorState.weight as number,
             calculatorState.sex as "M" | "F",
             "mg/dL"
           );
@@ -242,7 +221,7 @@ export default function Dashboard() {
         case "schwartz-pediatric":
           calculationResult = calc.schwartzPediatric(
             getValue("creatinine"),
-            getValue("height"),
+            calculatorState.height as number,
             "mg/dL"
           );
           break;
@@ -253,7 +232,7 @@ export default function Dashboard() {
             getValue("postBUN"),
             getValue("preCreatinine"),
             getValue("postCreatinine"),
-            getValue("weight"),
+            calculatorState.weight as number,
             calculatorState.sessionTime as number,
             "mg/dL"
           );
@@ -405,92 +384,71 @@ export default function Dashboard() {
 
         case "uacr":
           calculationResult = calc.uacr(
-            calculatorState.urineAlbumin as number,
+            getValue("urineAlbumin"),
             calculatorState.urineCreatinine as number,
-            calculatorState.albuminUnit as "mg" | "μg",
-            calculatorState.creatinineUnit as "g" | "mg"
+            "mg",
+            "g"
           );
           break;
 
         case "upcr":
           calculationResult = calc.upcr(
             calculatorState.urineProtein as number,
-            calculatorState.urineCreatinine as number,
-            calculatorState.proteinUnit as "mg" | "g",
-            calculatorState.creatinineUnit as "mg" | "g"
+            calculatorState.urineCreatinine as number
           );
           break;
 
-        case "acr-from-pcr":
-          calculationResult = calc.acrFromPcr(calculatorState.pcr as number);
+        case "selectivity-index":
+          // Selectivity Index = (Urine IgG / Plasma IgG) / (Urine Albumin / Plasma Albumin)
+          const urineIgG = calculatorState.urineIgG as number;
+          const plasmaIgG = calculatorState.plasmaIgG as number;
+          const urineAlb = getValue("urineAlbumin");
+          const plasmaAlb = getValue("plasmaAlbumin");
+          calculationResult = Math.round(((urineIgG / plasmaIgG) / (urineAlb / plasmaAlb)) * 100) / 100;
           break;
 
-        case "igan-prediction":
-          calculationResult = calc.iganPredictionTool(
-            calculatorState.age as number,
-            calculatorState.eGFR as number,
-            calculatorState.map as number,
-            calculatorState.proteinuria as number,
-            calculatorState.years as 2 | 5 | 7
+        case "24h-protein":
+          calculationResult = calc.upcr(
+            calculatorState.spotProtein as number,
+            calculatorState.spotCreatinine as number
           );
           break;
 
-        case "ktv-hemodialysis":
+        case "kt-v-daugirdas":
           calculationResult = calc.ktv(
             getValue("preBUN"),
             getValue("postBUN"),
-            getValue("weight"),
+            calculatorState.postWeight as number,
             calculatorState.sessionTime as number,
+            calculatorState.ultrafiltration as number || 0,
             "mg/dL"
           );
+          break;
+
+        case "kt-v-peritoneal":
+          calculationResult = calc.pdWeeklyKtv(
+            calculatorState.dialysateUrea as number,
+            getValue("plasmaUrea"),
+            calculatorState.dialysateVolume as number,
+            calculatorState.bodyWeight as number
+          );
+          break;
+
+        case "creatinine-clearance-pd":
+          // Simplified PD creatinine clearance calculation
+          const dialysateCr = getValue("dialysateCreatinine");
+          const plasmaCr = getValue("plasmaCreatinine");
+          const dialVol = calculatorState.dialysateVolume as number;
+          const bodyWt = calculatorState.bodyWeight as number;
+          calculationResult = Math.round((dialysateCr / plasmaCr) * (dialVol / bodyWt) * 100) / 100;
           break;
 
         case "total-body-water":
           calculationResult = calc.totalBodyWaterWatson(
-            getValue("weight"),
+            calculatorState.weight as number,
+            calculatorState.height as number,
             calculatorState.age as number,
             calculatorState.sex as "M" | "F"
-          );
-          break;
-
-        case "hd-session-duration":
-          calculationResult = calc.hemodialysisSessionDuration(
-            calculatorState.targetKtV as number,
-            getValue("preBUN"),
-            getValue("postBUN"),
-            getValue("weight"),
-            "mg/dL"
-          );
-          break;
-
-        case "pd-weekly-ktv":
-          calculationResult = calc.pdWeeklyKtv(
-            calculatorState.dailyDialysateUrea as number,
-            calculatorState.plasmaUrea as number,
-            calculatorState.dialysateVolume as number,
-            calculatorState.totalBodyWater as number,
-            calculatorState.residualKtv as number
-          );
-          break;
-
-        case "residual-rkf-ktv":
-          calculationResult = calc.residualKfKtv(
-            calculatorState.ureaUrineClearance as number,
-            calculatorState.totalBodyWater as number
-          );
-          break;
-
-        case "equilibrated-ktv":
-          calculationResult = calc.equilibratedKtv(
-            calculatorState.spKtv as number,
-            calculatorState.sessionTime as number
-          );
-          break;
-
-        case "standard-ktv":
-          calculationResult = calc.standardKtv(
-            calculatorState.spKtv as number,
-            calculatorState.residualKtv as number
           );
           break;
 
@@ -506,7 +464,7 @@ export default function Dashboard() {
           calculationResult = calc.ironDeficitGanzoni(
             getValue("targetHemoglobin"),
             getValue("currentHemoglobin"),
-            getValue("weight"),
+            calculatorState.weight as number,
             calculatorState.sex as "M" | "F"
           );
           break;
@@ -514,15 +472,15 @@ export default function Dashboard() {
         case "kdpi":
           calculationResult = calc.kdpi(
             calculatorState.donorAge as number,
-            getValue("donorHeight"),
-            getValue("donorWeight"),
+            calculatorState.donorHeight as number,
+            calculatorState.donorWeight as number,
             getValue("donorCreatinine"),
-            calculatorState.donorHypertension as boolean,
-            calculatorState.donorDiabetes as boolean,
-            calculatorState.donorAfricanAmerican as boolean,
-            calculatorState.donorHepCPositive as boolean,
-            calculatorState.causeOfDeathStroke as boolean,
-            calculatorState.donorAfterCirculatoryDeath as boolean,
+            Boolean(calculatorState.donorHypertension),
+            Boolean(calculatorState.donorDiabetes),
+            Boolean(calculatorState.donorAfricanAmerican),
+            Boolean(calculatorState.donorHepCPositive),
+            Boolean(calculatorState.causeOfDeathStroke),
+            Boolean(calculatorState.donorAfterCirculatoryDeath),
             "mg/dL"
           );
           break;
@@ -530,8 +488,8 @@ export default function Dashboard() {
         case "epts":
           calculationResult = calc.epts(
             calculatorState.recipientAge as number,
-            calculatorState.recipientDiabetes as boolean,
-            calculatorState.priorTransplant as boolean,
+            Boolean(calculatorState.recipientDiabetes),
+            Boolean(calculatorState.priorTransplant),
             calculatorState.yearsOnDialysis as number
           );
           break;
@@ -550,40 +508,40 @@ export default function Dashboard() {
             getValue("totalCholesterol"),
             getValue("hdl"),
             calculatorState.systolicBP as number,
-            calculatorState.treated as boolean,
-            calculatorState.diabetes as boolean,
-            calculatorState.smoker as boolean,
+            Boolean(calculatorState.treated),
+            Boolean(calculatorState.diabetes),
+            Boolean(calculatorState.smoker),
             calculatorState.race as "Black" | "White"
           );
           break;
 
         case "bmi":
           calculationResult = calc.bmi(
-            getValue("weight"),
-            getValue("height"),
+            calculatorState.weight as number,
+            calculatorState.height as number,
             "cm"
           );
           break;
 
         case "bsa-dubois":
           calculationResult = calc.bsaDuBois(
-            getValue("weight"),
-            getValue("height"),
+            calculatorState.weight as number,
+            calculatorState.height as number,
             "cm"
           );
           break;
 
         case "bsa-mosteller":
           calculationResult = calc.bsaMosteller(
-            getValue("weight"),
-            getValue("height"),
+            calculatorState.weight as number,
+            calculatorState.height as number,
             "cm"
           );
           break;
 
-        case "devine-ibw":
+        case "ideal-body-weight":
           calculationResult = calc.devineIdealBodyWeight(
-            getValue("height"),
+            calculatorState.height as number,
             calculatorState.sex as "M" | "F",
             "cm"
           );
@@ -591,8 +549,8 @@ export default function Dashboard() {
 
         case "lean-body-weight":
           calculationResult = calc.leanBodyWeight(
-            getValue("weight"),
-            getValue("height"),
+            calculatorState.weight as number,
+            calculatorState.height as number,
             calculatorState.sex as "M" | "F",
             "cm"
           );
@@ -600,8 +558,8 @@ export default function Dashboard() {
 
         case "adjusted-body-weight":
           calculationResult = calc.adjustedBodyWeight(
-            getValue("actualWeight"),
-            getValue("idealWeight")
+            calculatorState.actualWeight as number,
+            calculatorState.idealWeight as number
           );
           break;
 
@@ -616,55 +574,55 @@ export default function Dashboard() {
 
         case "sledai-2k":
           calculationResult = calc.sledai2k(
-            calculatorState.seizures as boolean,
-            calculatorState.psychosis as boolean,
-            calculatorState.organicBrainSyndrome as boolean,
-            calculatorState.visualDisorder as boolean,
-            calculatorState.cranialNerveDisorder as boolean,
-            calculatorState.lupusHeadache as boolean,
-            calculatorState.cerebrovasitisAccident as boolean,
-            calculatorState.vasculitis as boolean,
-            calculatorState.arthritis as boolean,
-            calculatorState.myositis as boolean,
-            calculatorState.urinaryCasts as boolean,
-            calculatorState.proteinuria as boolean,
-            calculatorState.hematuria as boolean,
-            calculatorState.pyuria as boolean,
-            calculatorState.rash as boolean,
-            calculatorState.alopecia as boolean,
-            calculatorState.mucousalUlcers as boolean,
-            calculatorState.pleuritis as boolean,
-            calculatorState.pericarditis as boolean,
-            calculatorState.lowComplement as boolean,
-            calculatorState.elevatedDNA as boolean
+            Boolean(calculatorState.seizures),
+            Boolean(calculatorState.psychosis),
+            Boolean(calculatorState.organicBrainSyndrome),
+            Boolean(calculatorState.visualDisorder),
+            Boolean(calculatorState.cranialNerveDisorder),
+            Boolean(calculatorState.lupusHeadache),
+            Boolean(calculatorState.cerebrovasitisAccident),
+            Boolean(calculatorState.vasculitis),
+            Boolean(calculatorState.arthritis),
+            Boolean(calculatorState.myositis),
+            Boolean(calculatorState.urinaryCasts),
+            Boolean(calculatorState.proteinuria),
+            Boolean(calculatorState.hematuria),
+            Boolean(calculatorState.pyuria),
+            Boolean(calculatorState.rash),
+            Boolean(calculatorState.alopecia),
+            Boolean(calculatorState.mucousalUlcers),
+            Boolean(calculatorState.pleuritis),
+            Boolean(calculatorState.pericarditis),
+            Boolean(calculatorState.lowComplement),
+            Boolean(calculatorState.elevatedDNA)
           );
           break;
 
         case "frail-scale":
           calculationResult = calc.frailScale(
-            calculatorState.fatigue as boolean,
-            calculatorState.resistance as boolean,
-            calculatorState.ambulation as boolean,
-            calculatorState.illness as boolean,
-            calculatorState.lossOfWeight as boolean
+            Boolean(calculatorState.fatigue),
+            Boolean(calculatorState.resistance),
+            Boolean(calculatorState.ambulation),
+            Boolean(calculatorState.illness),
+            Boolean(calculatorState.lossOfWeight)
           );
           break;
 
         case "prisma-7":
           calculationResult = calc.prisma7(
-            calculatorState.age as boolean,
-            calculatorState.female as boolean,
-            calculatorState.generalHealth as boolean,
-            calculatorState.limitation as boolean,
-            calculatorState.falls as boolean,
-            calculatorState.memory as boolean,
-            calculatorState.helpNeeded as boolean
+            Boolean(calculatorState.age85),
+            Boolean(calculatorState.female),
+            Boolean(calculatorState.generalHealth),
+            Boolean(calculatorState.limitation),
+            Boolean(calculatorState.falls),
+            Boolean(calculatorState.memory),
+            Boolean(calculatorState.helpNeeded)
           );
           break;
 
         case "curb-65":
           calculationResult = calc.curb65(
-            calculatorState.confusion as boolean,
+            Boolean(calculatorState.confusion),
             getValue("urineaNitrogen"),
             calculatorState.respiratoryRate as number,
             calculatorState.bloodPressureSystolic as number,
@@ -678,76 +636,63 @@ export default function Dashboard() {
           calculationResult = calc.roks(
             calculatorState.age as number,
             calculatorState.bmi as number,
-            calculatorState.maleGender as boolean,
-            calculatorState.previousStone as boolean,
-            calculatorState.familyHistory as boolean
+            Boolean(calculatorState.maleGender),
+            Boolean(calculatorState.previousStone),
+            Boolean(calculatorState.familyHistory)
           );
           break;
 
         case "slicc-2012":
           calculationResult = calc.slicc2012(
-            calculatorState.acuteRash as boolean,
-            calculatorState.chronicRash as boolean,
-            calculatorState.oralUlcers as boolean,
-            calculatorState.alopecia as boolean,
-            calculatorState.photosensitivity as boolean,
-            calculatorState.arthritis as boolean,
-            calculatorState.serositis as boolean,
-            calculatorState.renal as boolean,
-            calculatorState.psychosis as boolean,
-            calculatorState.seizures as boolean,
-            calculatorState.hemolytic as boolean,
-            calculatorState.leukopenia as boolean,
-            calculatorState.thrombocytopenia as boolean,
-            calculatorState.ana as boolean,
-            calculatorState.antiDsDna as boolean,
-            calculatorState.antiSmRnp as boolean,
-            calculatorState.antiRoSsa as boolean,
-            calculatorState.antiLaSSb as boolean,
-            calculatorState.antiC1q as boolean,
-            calculatorState.directCoombs as boolean
+            Boolean(calculatorState.acuteRash),
+            Boolean(calculatorState.chronicRash),
+            Boolean(calculatorState.oralUlcers),
+            Boolean(calculatorState.alopecia),
+            Boolean(calculatorState.photosensitivity),
+            Boolean(calculatorState.arthritis),
+            Boolean(calculatorState.serositis),
+            Boolean(calculatorState.renal),
+            Boolean(calculatorState.psychosis),
+            Boolean(calculatorState.seizures),
+            Boolean(calculatorState.hemolytic),
+            Boolean(calculatorState.leukopenia),
+            Boolean(calculatorState.thrombocytopenia),
+            Boolean(calculatorState.ana),
+            Boolean(calculatorState.antiDsDna),
+            Boolean(calculatorState.antiSmRnp),
+            Boolean(calculatorState.antiRoSsa),
+            Boolean(calculatorState.antiLaSSb),
+            Boolean(calculatorState.antiC1q),
+            Boolean(calculatorState.directCoombs)
           );
           break;
 
-        case "banff-classification":
-          setResultInterpretation(selectedCalculator.interpretation(0));
-          setResult(0);
-          return;
-
-        case "statin-intensity":
-          setResultInterpretation(selectedCalculator.interpretation(0));
-          setResult(0);
-          return;
-
-        case "frax-simplified":
+        case "frax":
           const fraxResult = calc.fraxSimplified(
             calculatorState.age as number,
             calculatorState.sex as "M" | "F",
-            getValue("weight"),
-            getValue("height"),
-            calculatorState.previousFracture as boolean,
-            calculatorState.parentHipFracture as boolean,
-            calculatorState.currentSmoking as boolean,
-            calculatorState.glucocorticoids as boolean,
-            calculatorState.rheumatoidArthritis as boolean,
-            calculatorState.secondaryOsteoporosis as boolean,
-            calculatorState.alcoholIntake as boolean,
+            calculatorState.weight as number,
+            calculatorState.height as number,
+            Boolean(calculatorState.previousFracture),
+            Boolean(calculatorState.parentHipFracture),
+            Boolean(calculatorState.currentSmoking),
+            Boolean(calculatorState.glucocorticoids),
+            Boolean(calculatorState.rheumatoidArthritis),
+            Boolean(calculatorState.secondaryOsteoporosis),
+            Boolean(calculatorState.alcoholIntake),
             calculatorState.bmdTScore as number | undefined
           );
           calculationResult = fraxResult.majorFracture;
-          setResultInterpretation(
-            `Major Osteoporotic Fracture: ${fraxResult.majorFracture}% | Hip Fracture: ${fraxResult.hipFracture}% - ` +
-            selectedCalculator.interpretation(fraxResult.majorFracture)
-          );
           break;
 
         default:
-          calculationResult = 0;
+          calculationResult = undefined;
       }
 
-      if (typeof calculationResult === "number") {
-        setResult(calculationResult);
-        setResultInterpretation(selectedCalculator.interpretation(calculationResult));
+      if (calculationResult !== undefined) {
+        const numResult = typeof calculationResult === "number" ? calculationResult : 0;
+        setResult(numResult);
+        setResultInterpretation(selectedCalculator.interpretation(numResult));
       }
     } catch (error) {
       console.error("Calculation error:", error);
@@ -759,6 +704,7 @@ export default function Dashboard() {
   const handleSelectCalculator = useCallback((calcId: string) => {
     setSelectedCalculatorId(calcId);
     setCalculatorState({});
+    setUnitState({});
     setResult(null);
     setResultInterpretation("");
     setMobileMenuOpen(false);
@@ -769,10 +715,19 @@ export default function Dashboard() {
     setSelectedCategory(null);
   }, []);
 
+  // Check if input supports unit toggle
+  const hasUnitToggle = (inputId: string): boolean => {
+    return inputId in unitOptions;
+  };
+
   const allRequiredFilled = selectedCalculator
     ? selectedCalculator.inputs
         .filter((input) => input.required)
-        .every((input) => calculatorState[input.id] !== undefined && calculatorState[input.id] !== "")
+        .every((input) => {
+          // Skip unit selector inputs
+          if (input.id.endsWith("Unit")) return true;
+          return calculatorState[input.id] !== undefined && calculatorState[input.id] !== "";
+        })
     : false;
 
   // Sidebar content (shared between desktop and mobile)
@@ -871,6 +826,43 @@ export default function Dashboard() {
     </div>
   );
 
+  // Inline Unit Toggle Component
+  const InlineUnitToggle = ({ inputId }: { inputId: string }) => {
+    const options = unitOptions[inputId];
+    if (!options) return null;
+
+    const currentUnit = getInputUnit(inputId);
+
+    return (
+      <div className="flex items-center gap-0.5 bg-muted rounded p-0.5">
+        <button
+          type="button"
+          onClick={() => handleUnitChange(inputId, "conventional")}
+          className={cn(
+            "px-2 py-0.5 text-xs font-medium rounded transition-colors",
+            currentUnit === "conventional"
+              ? "bg-primary text-primary-foreground"
+              : "text-muted-foreground hover:text-foreground"
+          )}
+        >
+          {options.conventional}
+        </button>
+        <button
+          type="button"
+          onClick={() => handleUnitChange(inputId, "si")}
+          className={cn(
+            "px-2 py-0.5 text-xs font-medium rounded transition-colors",
+            currentUnit === "si"
+              ? "bg-primary text-primary-foreground"
+              : "text-muted-foreground hover:text-foreground"
+          )}
+        >
+          {options.si}
+        </button>
+      </div>
+    );
+  };
+
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
@@ -905,32 +897,6 @@ export default function Dashboard() {
           </div>
 
           <div className="flex items-center gap-2">
-            {/* Unit System Toggle */}
-            <div className="hidden sm:flex items-center gap-1 bg-secondary rounded-lg p-1">
-              <button
-                onClick={() => setUnitSystem("conventional")}
-                className={cn(
-                  "px-3 py-1.5 text-xs font-medium rounded-md transition-colors",
-                  unitSystem === "conventional"
-                    ? "bg-primary text-primary-foreground"
-                    : "text-muted-foreground hover:text-foreground"
-                )}
-              >
-                Conventional
-              </button>
-              <button
-                onClick={() => setUnitSystem("SI")}
-                className={cn(
-                  "px-3 py-1.5 text-xs font-medium rounded-md transition-colors",
-                  unitSystem === "SI"
-                    ? "bg-primary text-primary-foreground"
-                    : "text-muted-foreground hover:text-foreground"
-                )}
-              >
-                SI Units
-              </button>
-            </div>
-
             {/* Theme Toggle */}
             <Button
               variant="ghost"
@@ -948,240 +914,222 @@ export default function Dashboard() {
         </div>
       </header>
 
-      {/* Mobile Unit Toggle */}
-      <div className="sm:hidden border-b border-border bg-background p-2">
-        <div className="flex items-center justify-center gap-1 bg-secondary rounded-lg p-1">
-          <button
-            onClick={() => setUnitSystem("conventional")}
-            className={cn(
-              "flex-1 px-3 py-2 text-xs font-medium rounded-md transition-colors",
-              unitSystem === "conventional"
-                ? "bg-primary text-primary-foreground"
-                : "text-muted-foreground"
-            )}
-          >
-            Conventional Units
-          </button>
-          <button
-            onClick={() => setUnitSystem("SI")}
-            className={cn(
-              "flex-1 px-3 py-2 text-xs font-medium rounded-md transition-colors",
-              unitSystem === "SI"
-                ? "bg-primary text-primary-foreground"
-                : "text-muted-foreground"
-            )}
-          >
-            SI Units
-          </button>
-        </div>
-      </div>
-
       <div className="flex">
         {/* Desktop Sidebar */}
-        <aside className="hidden lg:block w-80 border-r border-border bg-card h-[calc(100vh-4rem)] sticky top-16">
+        <aside className="hidden lg:block w-72 xl:w-80 border-r border-border h-[calc(100vh-4rem)] sticky top-16">
           <SidebarContent />
         </aside>
 
         {/* Main Content */}
-        <main className="flex-1 min-h-[calc(100vh-4rem)]">
-          <div className="container py-6 max-w-4xl">
-            {selectedCalculator ? (
-              <div className="space-y-6">
-                {/* Calculator Header */}
-                <div>
-                  <div className="flex items-start justify-between gap-4">
-                    <div>
-                      <div className="flex items-center gap-2 text-xs text-muted-foreground mb-1">
-                        {categoryIcons[selectedCalculator.category]}
-                        <span>{selectedCalculator.category}</span>
-                      </div>
-                      <h2 className="text-2xl font-bold text-foreground">{selectedCalculator.name}</h2>
-                      <p className="text-muted-foreground mt-1">{selectedCalculator.description}</p>
-                    </div>
-                  </div>
+        <main className="flex-1 p-4 lg:p-6">
+          {!selectedCalculator ? (
+            // Welcome Screen
+            <div className="max-w-4xl mx-auto">
+              <div className="text-center py-12">
+                <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-primary/10 mb-6">
+                  <Calculator className="w-8 h-8 text-primary" />
                 </div>
+                <h2 className="text-2xl font-bold mb-3">Welcome to ASNRT Calculator</h2>
+                <p className="text-muted-foreground max-w-md mx-auto mb-8">
+                  Select a calculator from the sidebar to begin. This dashboard includes {calculators.length} clinical calculators organized by category for nephrology practice.
+                </p>
+              </div>
 
-                {/* Input Card */}
-                <Card className="border-border">
-                  <CardHeader className="pb-4">
-                    <CardTitle className="text-base flex items-center gap-2">
-                      <FlaskConical className="w-4 h-4" />
-                      Input Values
-                    </CardTitle>
-                    <CardDescription>
-                      Enter patient data. Units: {unitSystem === "SI" ? "SI (International)" : "Conventional (US)"}
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      {selectedCalculator.inputs.map((input) => (
-                        <div key={input.id} className="space-y-2">
+              {/* Category Quick Access */}
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                {categories.slice(0, 9).map((category) => (
+                  <button
+                    key={category}
+                    onClick={() => setSelectedCategory(category)}
+                    className="p-4 rounded-xl border border-border bg-card hover:bg-accent hover:border-primary/50 transition-all text-left group"
+                  >
+                    <div className="flex items-center gap-3 mb-2">
+                      <div className="p-2 rounded-lg bg-primary/10 text-primary group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
+                        {categoryIcons[category] || <Calculator className="w-4 h-4" />}
+                      </div>
+                    </div>
+                    <h3 className="font-medium text-sm">{category.split(" & ")[0]}</h3>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {calculators.filter((c) => c.category === category).length} calculators
+                    </p>
+                  </button>
+                ))}
+              </div>
+            </div>
+          ) : (
+            // Calculator View
+            <div className="max-w-2xl mx-auto space-y-6">
+              {/* Calculator Header */}
+              <div>
+                <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
+                  <span>{selectedCalculator.category}</span>
+                </div>
+                <h2 className="text-2xl font-bold">{selectedCalculator.name}</h2>
+                <p className="text-muted-foreground mt-1">{selectedCalculator.description}</p>
+              </div>
+
+              {/* Input Card */}
+              <Card className="border-border">
+                <CardHeader className="pb-4">
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <FlaskConical className="w-4 h-4" />
+                    Input Values
+                  </CardTitle>
+                  <CardDescription>
+                    Enter patient data. Toggle units inline for each input field.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    {selectedCalculator.inputs
+                      .filter((input) => !input.id.endsWith("Unit")) // Skip unit selector inputs
+                      .map((input) => (
+                      <div key={input.id} className="space-y-2">
+                        <div className="flex items-center justify-between gap-2">
                           <Label className="text-sm font-medium flex items-center gap-1">
                             {input.label}
                             {input.required && <span className="text-destructive">*</span>}
                           </Label>
-                          
-                          {input.type === "number" && (
-                            <div className="relative">
-                              <Input
-                                type="number"
-                                placeholder={input.placeholder}
-                                value={String(calculatorState[input.id] ?? "")}
-                                onChange={(e) => handleInputChange(input.id, parseFloat(e.target.value) || "")}
-                                min={input.min}
-                                max={input.max}
-                                step={input.step}
-                                className="pr-16"
-                              />
-                              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">
-                                {getUnitLabel(input)}
-                              </span>
-                            </div>
-                          )}
-
-                          {input.type === "select" && (
-                            <Select
-                              value={String(calculatorState[input.id] ?? "")}
-                              onValueChange={(value) => handleInputChange(input.id, value)}
-                            >
-                              <SelectTrigger>
-                                <SelectValue placeholder="Select..." />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {input.options?.map((opt) => (
-                                  <SelectItem key={opt.value} value={opt.value}>
-                                    {opt.label}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          )}
-
-                          {input.type === "checkbox" && (
-                            <div className="flex items-center space-x-2 pt-1">
-                              <Checkbox
-                                id={input.id}
-                                checked={Boolean(calculatorState[input.id])}
-                                onCheckedChange={(checked) => handleInputChange(input.id, checked === true)}
-                              />
-                              <Label htmlFor={input.id} className="text-sm font-normal cursor-pointer">
-                                Yes
-                              </Label>
-                            </div>
+                          {hasUnitToggle(input.id) && (
+                            <InlineUnitToggle inputId={input.id} />
                           )}
                         </div>
-                      ))}
-                    </div>
+                        
+                        {input.type === "number" && (
+                          <div className="relative">
+                            <Input
+                              type="number"
+                              placeholder={input.placeholder}
+                              value={String(calculatorState[input.id] ?? "")}
+                              onChange={(e) => handleInputChange(input.id, parseFloat(e.target.value) || "")}
+                              min={input.min}
+                              max={input.max}
+                              step={input.step}
+                              className={hasUnitToggle(input.id) ? "" : "pr-16"}
+                            />
+                            {!hasUnitToggle(input.id) && input.unit && (
+                              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">
+                                {input.unit}
+                              </span>
+                            )}
+                          </div>
+                        )}
 
-                    <Separator className="my-6" />
+                        {input.type === "select" && (
+                          <Select
+                            value={String(calculatorState[input.id] ?? "")}
+                            onValueChange={(value) => handleInputChange(input.id, value)}
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select..." />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {input.options?.map((opt) => (
+                                <SelectItem key={opt.value} value={opt.value}>
+                                  {opt.label}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        )}
 
-                    <Button
-                      onClick={handleCalculate}
-                      disabled={!allRequiredFilled}
-                      className="w-full"
-                      size="lg"
-                    >
-                      <Calculator className="w-4 h-4 mr-2" />
-                      Calculate
-                    </Button>
-                  </CardContent>
-                </Card>
-
-                {/* Result Card */}
-                {result !== null && (
-                  <Card className="border-primary/50 bg-primary/5">
-                    <CardHeader className="pb-2">
-                      <CardTitle className="text-base">Result</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="text-center py-4">
-                        <p className="text-4xl font-bold text-primary">
-                          {typeof result === "number" ? result.toFixed(2) : result}
-                        </p>
-                        {selectedCalculator.resultUnit && (
-                          <p className="text-sm text-muted-foreground mt-1">{selectedCalculator.resultUnit}</p>
+                        {input.type === "checkbox" && (
+                          <div className="flex items-center space-x-2 pt-1">
+                            <Checkbox
+                              id={input.id}
+                              checked={Boolean(calculatorState[input.id])}
+                              onCheckedChange={(checked) => handleInputChange(input.id, checked === true)}
+                            />
+                            <Label htmlFor={input.id} className="text-sm font-normal cursor-pointer">
+                              Yes
+                            </Label>
+                          </div>
                         )}
                       </div>
+                    ))}
+                  </div>
 
-                      {resultInterpretation && (
-                        <Alert className="mt-4">
-                          <Info className="h-4 w-4" />
-                          <AlertDescription>{resultInterpretation}</AlertDescription>
-                        </Alert>
+                  <Separator className="my-6" />
+
+                  <Button
+                    onClick={handleCalculate}
+                    disabled={!allRequiredFilled}
+                    className="w-full"
+                    size="lg"
+                  >
+                    <Calculator className="w-4 h-4 mr-2" />
+                    Calculate
+                  </Button>
+                </CardContent>
+              </Card>
+
+              {/* Result Card */}
+              {result !== null && (
+                <Card className="border-primary/50 bg-primary/5">
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-base">Result</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-center py-4">
+                      <p className="text-4xl font-bold text-primary">
+                        {typeof result === "number" ? result.toFixed(2) : result}
+                      </p>
+                      {selectedCalculator.resultUnit && (
+                        <p className="text-sm text-muted-foreground mt-1">{selectedCalculator.resultUnit}</p>
                       )}
-                    </CardContent>
-                  </Card>
-                )}
+                    </div>
 
-                {/* Clinical Pearls */}
-                {selectedCalculator.clinicalPearls.length > 0 && (
-                  <Card>
-                    <CardHeader className="pb-2">
-                      <CardTitle className="text-base flex items-center gap-2">
-                        <Pill className="w-4 h-4" />
-                        Clinical Pearls
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <ul className="space-y-2">
-                        {selectedCalculator.clinicalPearls.map((pearl, idx) => (
-                          <li key={idx} className="flex gap-2 text-sm text-muted-foreground">
-                            <span className="text-primary flex-shrink-0">•</span>
-                            <span>{pearl}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    </CardContent>
-                  </Card>
-                )}
+                    {resultInterpretation && (
+                      <Alert className="mt-4">
+                        <Info className="h-4 w-4" />
+                        <AlertDescription>{resultInterpretation}</AlertDescription>
+                      </Alert>
+                    )}
+                  </CardContent>
+                </Card>
+              )}
 
-                {/* References */}
-                {selectedCalculator.references.length > 0 && (
-                  <Card>
-                    <CardHeader className="pb-2">
-                      <CardTitle className="text-base">References</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <ul className="space-y-1">
-                        {selectedCalculator.references.map((ref, idx) => (
-                          <li key={idx} className="text-xs text-muted-foreground">
-                            {idx + 1}. {ref}
-                          </li>
-                        ))}
-                      </ul>
-                    </CardContent>
-                  </Card>
-                )}
-              </div>
-            ) : (
-              /* Welcome Screen */
-              <div className="flex flex-col items-center justify-center min-h-[60vh] text-center px-4">
-                <div className="p-4 rounded-full bg-primary/10 mb-6">
-                  <Calculator className="w-12 h-12 text-primary" />
-                </div>
-                <h2 className="text-2xl font-bold text-foreground mb-2">Welcome to ASNRT Calculator</h2>
-                <p className="text-muted-foreground max-w-md mb-6">
-                  Select a calculator from the sidebar to begin. This dashboard includes 53 clinical calculators 
-                  organized by category for nephrology practice.
-                </p>
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 max-w-lg">
-                  {categories.slice(0, 6).map((cat) => (
-                    <button
-                      key={cat}
-                      onClick={() => {
-                        setSelectedCategory(cat);
-                        setMobileMenuOpen(true);
-                      }}
-                      className="flex flex-col items-center gap-2 p-4 rounded-lg bg-card border border-border hover:border-primary/50 hover:bg-accent transition-colors"
-                    >
-                      {categoryIcons[cat]}
-                      <span className="text-xs text-center">{cat.split(" & ")[0]}</span>
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
+              {/* Clinical Pearls */}
+              {selectedCalculator.clinicalPearls.length > 0 && (
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-base flex items-center gap-2">
+                      <Pill className="w-4 h-4" />
+                      Clinical Pearls
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <ul className="space-y-2">
+                      {selectedCalculator.clinicalPearls.map((pearl, idx) => (
+                        <li key={idx} className="flex gap-2 text-sm text-muted-foreground">
+                          <span className="text-primary flex-shrink-0">•</span>
+                          <span>{pearl}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* References */}
+              {selectedCalculator.references.length > 0 && (
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-base">References</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <ul className="space-y-1">
+                      {selectedCalculator.references.map((ref, idx) => (
+                        <li key={idx} className="text-xs text-muted-foreground">
+                          {idx + 1}. {ref}
+                        </li>
+                      ))}
+                    </ul>
+                  </CardContent>
+                </Card>
+              )}
+            </div>
+          )}
         </main>
       </div>
     </div>
