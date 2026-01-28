@@ -1261,23 +1261,33 @@ export default function Dashboard() {
 
               {/* Category Quick Access */}
               <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                {categories.slice(0, 9).map((category) => (
-                  <button
-                    key={category}
-                    onClick={() => setSelectedCategory(category)}
-                    className="p-4 rounded-xl border border-border bg-card hover:bg-accent hover:border-primary/50 transition-all text-left group"
-                  >
-                    <div className="flex items-center gap-3 mb-2">
-                      <div className="p-2 rounded-lg bg-primary/10 text-primary group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
-                        {categoryIcons[category] || <Calculator className="w-4 h-4" />}
+                {categories.slice(0, 9).map((category) => {
+                  const categoryCalculators = calculators.filter((c) => c.category === category);
+                  const firstCalc = categoryCalculators[0];
+                  return (
+                    <button
+                      key={category}
+                      onClick={() => {
+                        setSelectedCategory(category);
+                        if (firstCalc) {
+                          handleSelectCalculator(firstCalc.id);
+                        }
+                      }}
+                      className="p-4 rounded-xl border border-border bg-card hover:bg-accent hover:border-primary/50 transition-all text-left group cursor-pointer"
+                    >
+                      <div className="flex items-center gap-3 mb-2">
+                        <div className="p-2 rounded-lg bg-primary/10 text-primary group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
+                          {categoryIcons[category] || <Calculator className="w-4 h-4" />}
+                        </div>
+                        <ChevronRight className="w-4 h-4 text-muted-foreground group-hover:text-primary ml-auto opacity-0 group-hover:opacity-100 transition-opacity" />
                       </div>
-                    </div>
-                    <h3 className="font-medium text-sm">{category.split(" & ")[0]}</h3>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      {calculators.filter((c) => c.category === category).length} calculators
-                    </p>
-                  </button>
-                ))}
+                      <h3 className="font-medium text-sm">{category.split(" & ")[0]}</h3>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        {categoryCalculators.length} calculators
+                      </p>
+                    </button>
+                  );
+                })}
               </div>
             </div>
           ) : (
