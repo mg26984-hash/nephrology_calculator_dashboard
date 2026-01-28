@@ -34,7 +34,8 @@ import {
   AlertTriangle,
   Info,
   X,
-  Star
+  Star,
+  Clock
 } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { calculators, getCategories, getCalculatorById } from "@/lib/calculatorData";
@@ -133,6 +134,33 @@ export default function Dashboard() {
   const favoriteCalculators = useMemo(() => 
     calculators.filter(c => favorites.includes(c.id)),
     [favorites]
+  );
+
+  // Recent calculators state with localStorage persistence (max 5)
+  const [recentCalculatorIds, setRecentCalculatorIds] = useState<string[]>(() => {
+    const saved = localStorage.getItem('nephrology-calculator-recent');
+    return saved ? JSON.parse(saved) : [];
+  });
+
+  // Save recent calculators to localStorage when they change
+  useEffect(() => {
+    localStorage.setItem('nephrology-calculator-recent', JSON.stringify(recentCalculatorIds));
+  }, [recentCalculatorIds]);
+
+  // Add calculator to recent list (called when selecting a calculator)
+  const addToRecent = useCallback((calcId: string) => {
+    setRecentCalculatorIds(prev => {
+      // Remove if already exists, then add to front
+      const filtered = prev.filter(id => id !== calcId);
+      // Keep only last 5
+      return [calcId, ...filtered].slice(0, 5);
+    });
+  }, []);
+
+  // Get recent calculators (excluding favorites to avoid duplication)
+  const recentCalculators = useMemo(() => 
+    calculators.filter(c => recentCalculatorIds.includes(c.id) && !favorites.includes(c.id)),
+    [recentCalculatorIds, favorites]
   );
 
   const categories = useMemo(() => getCategories(), []);
@@ -768,6 +796,8 @@ export default function Dashboard() {
     setResult(null);
     setResultInterpretation("");
     setMobileMenuOpen(false);
+    // Track recent calculator usage
+    addToRecent(calcId);
     // Auto-scroll to top of calculator content area and scroll sidebar to show selected item
     setTimeout(() => {
       window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -791,7 +821,7 @@ export default function Dashboard() {
         }
       }
     }, 100);
-  }, []);
+  }, [addToRecent]);
 
   const clearSearch = useCallback(() => {
     setSearchQuery("");
@@ -957,6 +987,53 @@ export default function Dashboard() {
                           title="Remove from favorites"
                         >
                           <Star className="w-3 h-3 fill-current" />
+                        </button>
+                        <ChevronRight className="w-3 h-3 flex-shrink-0 opacity-50" />
+                      </div>
+                    </div>
+                  </button>
+                ))}
+              </div>
+              <Separator className="my-3" />
+            </div>
+          )}
+
+          {/* Recent Calculators Section */}
+          {recentCalculators.length > 0 && !searchQuery && !selectedCategory && (
+            <div className="mb-4">
+              <div className="flex items-center gap-2 px-2 py-2 text-xs font-semibold text-blue-500 uppercase tracking-wider">
+                <Clock className="w-4 h-4" />
+                <span>Recent</span>
+                <span className="ml-auto text-[10px] bg-blue-500/20 text-blue-600 dark:text-blue-400 px-1.5 py-0.5 rounded">{recentCalculators.length}</span>
+              </div>
+              <div className="space-y-1">
+                {recentCalculators.map((calc) => (
+                  <button
+                    key={`recent-${calc.id}`}
+                    data-calculator-id={calc.id}
+                    onClick={() => handleSelectCalculator(calc.id)}
+                    className={cn(
+                      "w-full text-left px-3 py-2 rounded-md text-sm transition-colors group",
+                      "hover:bg-accent hover:text-accent-foreground",
+                      selectedCalculatorId === calc.id
+                        ? "bg-primary text-primary-foreground"
+                        : "text-foreground"
+                    )}
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="truncate pr-2">{calc.name}</span>
+                      <div className="flex items-center gap-1">
+                        <button
+                          onClick={(e) => toggleFavorite(calc.id, e)}
+                          className={cn(
+                            "p-0.5 rounded transition-colors",
+                            favorites.includes(calc.id)
+                              ? "text-amber-500" 
+                              : "text-muted-foreground/30 hover:text-amber-500 opacity-0 group-hover:opacity-100"
+                          )}
+                          title={favorites.includes(calc.id) ? "Remove from favorites" : "Add to favorites"}
+                        >
+                          <Star className={cn("w-3 h-3", favorites.includes(calc.id) && "fill-current")} />
                         </button>
                         <ChevronRight className="w-3 h-3 flex-shrink-0 opacity-50" />
                       </div>
