@@ -1426,6 +1426,50 @@ export default function Dashboard() {
                         <AlertDescription>{resultInterpretation}</AlertDescription>
                       </Alert>
                     )}
+
+                    {/* Reference Ranges */}
+                    {selectedCalculator.referenceRanges && selectedCalculator.referenceRanges.length > 0 && (
+                      <div className="mt-4 pt-4 border-t">
+                        <p className="text-sm font-medium mb-2 flex items-center gap-2">
+                          <Activity className="w-4 h-4 text-primary" />
+                          Reference Ranges
+                        </p>
+                        <div className="space-y-1">
+                          {selectedCalculator.referenceRanges.map((range, idx) => {
+                            const isInRange = typeof result === 'number' && (
+                              (range.min !== undefined && range.max !== undefined && result >= range.min && result <= range.max) ||
+                              (range.min !== undefined && range.max === undefined && result >= range.min) ||
+                              (range.min === undefined && range.max !== undefined && result <= range.max)
+                            );
+                            return (
+                              <div
+                                key={idx}
+                                className={`flex items-center justify-between text-xs p-2 rounded ${
+                                  isInRange ? 'bg-primary/10 border border-primary/30' : 'bg-muted/50'
+                                }`}
+                              >
+                                <span className={`font-medium ${isInRange ? 'text-primary' : 'text-muted-foreground'}`}>
+                                  {range.label}
+                                  {isInRange && ' ✓'}
+                                </span>
+                                <span className="text-muted-foreground">
+                                  {range.min !== undefined && range.max !== undefined
+                                    ? `${range.min} - ${range.max} ${range.unit}`
+                                    : range.min !== undefined
+                                    ? `≥${range.min} ${range.unit}`
+                                    : `≤${range.max} ${range.unit}`}
+                                </span>
+                              </div>
+                            );
+                          })}
+                        </div>
+                        {selectedCalculator.referenceRanges.some(r => r.note) && (
+                          <p className="text-xs text-muted-foreground mt-2 italic">
+                            {selectedCalculator.referenceRanges.find(r => r.note)?.note}
+                          </p>
+                        )}
+                      </div>
+                    )}
                   </CardContent>
                 </Card>
               )}

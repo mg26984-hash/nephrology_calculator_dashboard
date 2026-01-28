@@ -16,6 +16,16 @@ export interface CalculatorInput {
   step?: number;
 }
 
+export interface ReferenceRange {
+  label: string;
+  min?: number;
+  max?: number;
+  unit: string;
+  ageRange?: string;
+  sex?: "M" | "F" | "all";
+  note?: string;
+}
+
 export interface Calculator {
   id: string;
   name: string;
@@ -25,6 +35,7 @@ export interface Calculator {
   resultLabel: string;
   resultUnit?: string;
   interpretation: (value: number) => string;
+  referenceRanges?: ReferenceRange[];
   clinicalPearls: string[];
   references: string[];
 }
@@ -56,6 +67,14 @@ export const calculators: Calculator[] = [
       if (value >= 15) return "Severe decrease in kidney function (CKD Stage 4)";
       return "Kidney failure (CKD Stage 5) - Consider dialysis/transplant planning";
     },
+    referenceRanges: [
+      { label: "Normal (Stage 1)", min: 90, unit: "mL/min/1.73m²", note: "Normal or high GFR" },
+      { label: "Mild decrease (Stage 2)", min: 60, max: 89, unit: "mL/min/1.73m²" },
+      { label: "Mild-moderate (Stage 3a)", min: 45, max: 59, unit: "mL/min/1.73m²" },
+      { label: "Moderate-severe (Stage 3b)", min: 30, max: 44, unit: "mL/min/1.73m²" },
+      { label: "Severe (Stage 4)", min: 15, max: 29, unit: "mL/min/1.73m²" },
+      { label: "Kidney failure (Stage 5)", max: 14, unit: "mL/min/1.73m²" },
+    ],
     clinicalPearls: [
       "Most accurate creatinine-based eGFR equation",
       "Accounts for sex, race, and age",
@@ -85,6 +104,12 @@ export const calculators: Calculator[] = [
       if (value >= 30) return "Moderate reduction";
       return "Severe reduction - adjust drug dosing";
     },
+    referenceRanges: [
+      { label: "Normal", min: 90, unit: "mL/min" },
+      { label: "Mild reduction", min: 60, max: 89, unit: "mL/min" },
+      { label: "Moderate reduction", min: 30, max: 59, unit: "mL/min" },
+      { label: "Severe reduction", max: 29, unit: "mL/min" },
+    ],
     clinicalPearls: [
       "Overestimates eGFR compared to CKD-EPI",
       "Still used for aminoglycoside and vancomycin dosing",
@@ -254,8 +279,12 @@ export const calculators: Calculator[] = [
       if (value <= 2) return "Indeterminate - consider clinical context";
       return "Intrinsic AKI (acute tubular necrosis most likely)";
     },
+    referenceRanges: [
+      { label: "Prerenal azotemia", max: 1, unit: "%", note: "Volume depletion, heart failure, cirrhosis" },
+      { label: "Intrinsic AKI", min: 1, unit: "%", note: "ATN, interstitial nephritis" },
+    ],
     clinicalPearls: [
-      "Classic tool for AKI differential diagnosis",
+      "FENa <1% suggests prerenal azotemia",
       "Unreliable in diuretic use, CKD, contrast nephropathy, pigment nephropathy",
       "Must interpret with clinical context (volume status, urine sediment)",
     ],
@@ -306,8 +335,13 @@ export const calculators: Calculator[] = [
       if (value <= 16) return "Borderline high";
       return "High anion gap (HAGMA) - think GOLDMARK";
     },
+    referenceRanges: [
+      { label: "Normal", min: 8, max: 12, unit: "mEq/L", note: "Varies by lab" },
+      { label: "Borderline high", min: 13, max: 16, unit: "mEq/L" },
+      { label: "High (HAGMA)", min: 17, unit: "mEq/L" },
+    ],
     clinicalPearls: [
-      "Modern analyzers: normal 8-12 mEq/L",
+      "Normal AG = 8-12 mEq/L (varies by lab)",
       "Correct for hypoalbuminemia: Expected AG = 2.5 × Albumin (g/dL)",
       "Essential in DKA, lactic acidosis, toxic ingestions",
     ],
@@ -714,8 +748,13 @@ export const calculators: Calculator[] = [
       if (value >= 1.2) return "Borderline adequate";
       return "Inadequate dialysis - increase session time or frequency";
     },
+    referenceRanges: [
+      { label: "Adequate", min: 65, unit: "%", note: "Target ≥65%" },
+      { label: "Borderline", min: 60, max: 64, unit: "%" },
+      { label: "Inadequate", max: 59, unit: "%" },
+    ],
     clinicalPearls: [
-      "Target: ≥1.4 for 3×/week HD",
+      "Target URR ≥65% (minimum 65%)",
       "Accounts for body size and session duration",
       "Does not account for residual kidney function",
       "Post-BUN must be drawn correctly (slow flow or stop pump 15 sec before)",
@@ -1236,8 +1275,16 @@ export const calculators: Calculator[] = [
       if (value < 40) return "Obese Class II";
       return "Obese Class III (Severe obesity)";
     },
+    referenceRanges: [
+      { label: "Underweight", max: 18.4, unit: "kg/m²" },
+      { label: "Normal weight", min: 18.5, max: 24.9, unit: "kg/m²" },
+      { label: "Overweight", min: 25, max: 29.9, unit: "kg/m²" },
+      { label: "Obese Class I", min: 30, max: 34.9, unit: "kg/m²" },
+      { label: "Obese Class II", min: 35, max: 39.9, unit: "kg/m²" },
+      { label: "Obese Class III", min: 40, unit: "kg/m²" },
+    ],
     clinicalPearls: [
-      "Simple screening tool for weight status",
+      "BMI is a screening tool, not a diagnostic tool",
       "Does not distinguish muscle from fat",
       "CKD patients: obesity increases CVD risk",
       "Use adjusted body weight for drug dosing in obesity",
