@@ -38,7 +38,7 @@ import {
   Clock
 } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { calculators, getCategories, getCalculatorById } from "@/lib/calculatorData";
+import { calculators, getCategories, getCalculatorById, CalculatorInput } from "@/lib/calculatorData";
 import * as calc from "@/lib/calculators";
 import { useTheme } from "@/contexts/ThemeContext";
 import { cn } from "@/lib/utils";
@@ -232,6 +232,20 @@ export default function Dashboard() {
       return currentUnit === "si" ? options.si : options.conventional;
     }
     return input.unit || "";
+  }, [getInputUnit]);
+
+  // Get dynamic placeholder based on unit selection
+  const getDynamicPlaceholder = useCallback((input: CalculatorInput): string => {
+    const options = unitOptions[input.id];
+    if (!options || !input.placeholder) return input.placeholder || "";
+    const currentUnit = getInputUnit(input.id);
+    const placeholderValue = parseFloat(input.placeholder);
+    if (isNaN(placeholderValue)) return input.placeholder;
+    if (currentUnit === "si") {
+      const siValue = placeholderValue * options.conversionFactor;
+      return siValue.toFixed(2);
+    }
+    return input.placeholder;
   }, [getInputUnit]);
 
   // Convert input value to conventional units for calculation
@@ -1299,7 +1313,7 @@ export default function Dashboard() {
                           <div className="relative">
                             <Input
                               type="number"
-                              placeholder={input.placeholder}
+                              placeholder={getDynamicPlaceholder(input)}
                               value={String(calculatorState[input.id] ?? "")}
                               onChange={(e) => handleInputChange(input.id, parseFloat(e.target.value) || "")}
                               min={input.min}
@@ -1336,13 +1350,30 @@ export default function Dashboard() {
                         {input.type === "checkbox" && (
                           <div className="flex items-center space-x-2 pt-1">
                             <Checkbox
-                              id={input.id}
                               checked={Boolean(calculatorState[input.id])}
-                              onCheckedChange={(checked) => handleInputChange(input.id, checked === true)}
+                              onCheckedChange={(checked) => handleInputChange(input.id, checked)}
                             />
                             <Label htmlFor={input.id} className="text-sm font-normal cursor-pointer">
                               Yes
                             </Label>
+                          </div>
+                        )}
+
+                        {input.type === "radio" && (
+                          <div className="flex gap-4">
+                            {input.options?.map((opt) => (
+                              <label key={opt.value} className="flex items-center gap-2 cursor-pointer">
+                                <input
+                                  type="radio"
+                                  name={input.id}
+                                  value={opt.value}
+                                  checked={calculatorState[input.id] === opt.value}
+                                  onChange={(e) => handleInputChange(input.id, e.target.value)}
+                                  className="w-4 h-4"
+                                />
+                                <span className="text-sm">{opt.label}</span>
+                              </label>
+                            ))}
                           </div>
                         )}
                       </div>
