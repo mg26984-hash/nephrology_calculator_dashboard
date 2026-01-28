@@ -36,7 +36,9 @@ import {
   X,
   Star,
   Clock,
-  ArrowLeft
+  ArrowLeft,
+  Copy,
+  Check
 } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { calculators, getCategories, getCalculatorById, CalculatorInput } from "@/lib/calculatorData";
@@ -106,6 +108,7 @@ export default function Dashboard() {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [focusedIndex, setFocusedIndex] = useState<number>(-1);
+  const [copied, setCopied] = useState(false);
   const searchInputRef = useRef<HTMLInputElement>(null);
   
   // Favorites state with localStorage persistence
@@ -1453,8 +1456,25 @@ export default function Dashboard() {
               {/* Result Card */}
               {result !== null && (
                 <Card className="border-primary/50 bg-primary/5">
-                  <CardHeader className="pb-2">
+                  <CardHeader className="pb-2 flex flex-row items-center justify-between">
                     <CardTitle className="text-base">Result</CardTitle>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-8 px-2 text-muted-foreground hover:text-foreground"
+                      onClick={() => {
+                        const resultText = `${selectedCalculator.name}\nResult: ${typeof result === "number" ? result.toFixed(2) : result}${selectedCalculator.resultUnit ? " " + selectedCalculator.resultUnit : ""}\nInterpretation: ${resultInterpretation}`;
+                        navigator.clipboard.writeText(resultText);
+                        setCopied(true);
+                        setTimeout(() => setCopied(false), 2000);
+                      }}
+                    >
+                      {copied ? (
+                        <><Check className="w-4 h-4 mr-1" /> Copied!</>
+                      ) : (
+                        <><Copy className="w-4 h-4 mr-1" /> Copy</>
+                      )}
+                    </Button>
                   </CardHeader>
                   <CardContent>
                     <div className="text-center py-4">
