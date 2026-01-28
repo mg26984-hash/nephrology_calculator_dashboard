@@ -1053,7 +1053,7 @@ export default function Dashboard() {
                             "p-0.5 rounded transition-colors",
                             favorites.includes(calc.id)
                               ? "text-amber-500" 
-                              : "text-muted-foreground/30 hover:text-amber-500 opacity-0 group-hover:opacity-100"
+                              : "text-muted-foreground/50 hover:text-amber-500 sm:opacity-0 sm:group-hover:opacity-100"
                           )}
                           title={favorites.includes(calc.id) ? "Remove from favorites" : "Add to favorites"}
                         >
@@ -1109,7 +1109,7 @@ export default function Dashboard() {
                                 "p-0.5 rounded transition-colors",
                                 isFavorite 
                                   ? "text-amber-500" 
-                                  : "text-muted-foreground/30 hover:text-amber-500 opacity-0 group-hover:opacity-100"
+                                  : "text-muted-foreground/50 hover:text-amber-500 sm:opacity-0 sm:group-hover:opacity-100"
                               )}
                               title={isFavorite ? "Remove from favorites" : "Add to favorites"}
                             >
