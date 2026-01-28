@@ -14,7 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Checkbox } from "@/components/ui/checkbox";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { Sheet, SheetContent, SheetTrigger, SheetTitle, SheetDescription, SheetHeader } from "@/components/ui/sheet";
 import { 
   Calculator, 
   Sun, 
@@ -885,6 +885,10 @@ export default function Dashboard() {
                 </Button>
               </SheetTrigger>
               <SheetContent side="left" className="w-80 p-0">
+                <SheetHeader className="sr-only">
+                  <SheetTitle>Calculator Navigation</SheetTitle>
+                  <SheetDescription>Browse and select nephrology calculators by category</SheetDescription>
+                </SheetHeader>
                 <SidebarContent />
               </SheetContent>
             </Sheet>
