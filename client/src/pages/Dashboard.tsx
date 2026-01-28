@@ -489,6 +489,16 @@ export default function Dashboard() {
           );
           break;
 
+        case "igan-prediction":
+          calculationResult = calc.iganPredictionTool(
+            calculatorState.age as number,
+            calculatorState.eGFR as number,
+            calculatorState.map as number,
+            calculatorState.proteinuria as number,
+            parseInt(calculatorState.years as string) as 2 | 5 | 7
+          );
+          break;
+
         case "kt-v-daugirdas":
           calculationResult = calc.ktv(
             getValue("preBUN"),
