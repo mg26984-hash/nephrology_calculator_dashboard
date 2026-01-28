@@ -824,7 +824,7 @@ export default function Dashboard() {
       </div>
 
       {/* Calculator List */}
-      <ScrollArea className="flex-1">
+      <ScrollArea className="flex-1 min-h-0">
         <div className="p-2">
           {Object.entries(groupedCalculators).map(([category, calcs]) => (
             <div key={category} className="mb-4">
