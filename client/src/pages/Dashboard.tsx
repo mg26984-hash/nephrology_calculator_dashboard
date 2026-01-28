@@ -471,19 +471,18 @@ export default function Dashboard() {
           break;
 
         case "kdpi":
-          calculationResult = calc.kdpi(
+          const kdpiResult = calc.kdpi(
             calculatorState.donorAge as number,
             calculatorState.donorHeight as number,
             calculatorState.donorWeight as number,
             getValue("donorCreatinine"),
-            Boolean(calculatorState.donorHypertension),
-            Boolean(calculatorState.donorDiabetes),
-            Boolean(calculatorState.donorAfricanAmerican),
-            Boolean(calculatorState.donorHepCPositive),
-            Boolean(calculatorState.causeOfDeathStroke),
-            Boolean(calculatorState.donorAfterCirculatoryDeath),
-            "mg/dL"
+            (calculatorState.hypertensionDuration as "NO" | "0-5" | "6-10" | ">10") || "NO",
+            (calculatorState.diabetesDuration as "NO" | "0-5" | "6-10" | ">10") || "NO",
+            (calculatorState.causeOfDeath as "ANOXIA" | "CVA" | "HEAD_TRAUMA" | "CNS_TUMOR" | "OTHER") || "ANOXIA",
+            calculatorState.isDCD === "YES",
+            getInputUnit("donorCreatinine") === "SI" ? "μmol/L" : "mg/dL"
           );
+          calculationResult = kdpiResult.kdpi;
           break;
 
         case "epts":
@@ -737,6 +736,29 @@ export default function Dashboard() {
     setResult(null);
     setResultInterpretation("");
     setMobileMenuOpen(false);
+    // Auto-scroll to top of calculator content area and scroll sidebar to show selected item
+    setTimeout(() => {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      // Also scroll the main content area if it exists
+      const mainContent = document.getElementById('calculator-content');
+      if (mainContent) {
+        mainContent.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+      // Scroll sidebar to show the selected calculator button within the sidebar scroll area
+      const selectedButton = document.querySelector(`[data-calculator-id="${calcId}"]`) as HTMLElement;
+      if (selectedButton) {
+        // Find the scrollable sidebar container
+        const sidebarScroll = selectedButton.closest('[data-radix-scroll-area-viewport]') || 
+                              selectedButton.closest('.overflow-y-auto');
+        if (sidebarScroll) {
+          const buttonRect = selectedButton.getBoundingClientRect();
+          const containerRect = sidebarScroll.getBoundingClientRect();
+          const scrollTop = (sidebarScroll as HTMLElement).scrollTop;
+          const targetScrollTop = scrollTop + buttonRect.top - containerRect.top - (containerRect.height / 2) + (buttonRect.height / 2);
+          sidebarScroll.scrollTo({ top: Math.max(0, targetScrollTop), behavior: 'smooth' });
+        }
+      }
+    }, 100);
   }, []);
 
   const clearSearch = useCallback(() => {
@@ -815,6 +837,7 @@ export default function Dashboard() {
                 {calcs.map((calc) => (
                   <button
                     key={calc.id}
+                    data-calculator-id={calc.id}
                     onClick={() => handleSelectCalculator(calc.id)}
                     className={cn(
                       "w-full text-left px-3 py-2 rounded-md text-sm transition-colors",

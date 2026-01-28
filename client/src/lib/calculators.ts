@@ -593,39 +593,193 @@ export function ironDeficitGanzoni(
 
 export function kdpi(
   donorAge: number,
-  donorHeight: number,
-  donorWeight: number,
+  donorHeightCm: number,
+  donorWeightKg: number,
   donorCreatinine: number,
-  donorHypertension: boolean,
-  donorDiabetes: boolean,
-  donorAfricanAmerican: boolean,
-  donorHepCPositive: boolean,
-  causeOfDeathStroke: boolean,
-  donorAfterCirculatoryDeath: boolean,
+  hypertensionDuration: "NO" | "0-5" | "6-10" | ">10",
+  diabetesDuration: "NO" | "0-5" | "6-10" | ">10",
+  causeOfDeath: "ANOXIA" | "CVA" | "HEAD_TRAUMA" | "CNS_TUMOR" | "OTHER",
+  isDCD: boolean,
   creatinineUnit: "mg/dL" | "μmol/L" = "mg/dL"
-): number {
-  // Simplified KDPI calculation
-  // Full implementation requires specific coefficients from OPTN
-  let creatMgDl =
-    creatinineUnit === "μmol/L" ? donorCreatinine / 88.4 : donorCreatinine;
-
-  let kdpiScore = 0;
-
-  kdpiScore += donorAge * 0.02;
-  kdpiScore += (donorHeight - 170) * 0.01;
-  kdpiScore += (donorWeight - 80) * 0.001;
-  kdpiScore += (creatMgDl - 1) * 0.3;
-  kdpiScore += donorHypertension ? 0.15 : 0;
-  kdpiScore += donorDiabetes ? 0.2 : 0;
-  kdpiScore += donorAfricanAmerican ? 0.1 : 0;
-  kdpiScore += donorHepCPositive ? 0.25 : 0;
-  kdpiScore += causeOfDeathStroke ? -0.1 : 0;
-  kdpiScore += donorAfterCirculatoryDeath ? 0.3 : 0;
-
-  // Convert to percentile (0-100)
-  const kdpi = Math.min(100, Math.max(0, kdpiScore * 10));
-
-  return Math.round(kdpi);
+): { kdri: number; kdpi: number } {
+  // OPTN KDPI Calculator - October 2024 Refit Formula
+  // Reference: https://www.hrsa.gov/sites/default/files/hrsa/optn/kdpi_guide.pdf
+  // Note: Race and HCV status removed October 31, 2024
+  
+  let creatMgDl = creatinineUnit === "μmol/L" ? donorCreatinine / 88.4 : donorCreatinine;
+  
+  // Calculate Xβ (sum of KDRI score components)
+  let xBeta = 0;
+  
+  // Age component: 0.0092*(Age-40)
+  xBeta += 0.0092 * (donorAge - 40);
+  
+  // Age < 18: additional 0.0113*(Age-18)
+  if (donorAge < 18) {
+    xBeta += 0.0113 * (donorAge - 18);
+  }
+  
+  // Age > 50: additional 0.0067*(Age-50)
+  if (donorAge > 50) {
+    xBeta += 0.0067 * (donorAge - 50);
+  }
+  
+  // Height component: -0.0557*(Height-170)/10
+  xBeta += -0.0557 * (donorHeightCm - 170) / 10;
+  
+  // Weight component (only if < 80 kg): -0.0333*(Weight-80)/5
+  if (donorWeightKg < 80) {
+    xBeta += -0.0333 * (donorWeightKg - 80) / 5;
+  }
+  
+  // History of Hypertension: 0.1106 if hypertensive
+  if (hypertensionDuration !== "NO") {
+    xBeta += 0.1106;
+  }
+  
+  // History of Diabetes: 0.2577 if diabetic
+  if (diabetesDuration !== "NO") {
+    xBeta += 0.2577;
+  }
+  
+  // Cause of Death CVA/Stroke: 0.0743
+  if (causeOfDeath === "CVA") {
+    xBeta += 0.0743;
+  }
+  
+  // Serum Creatinine: 0.2128*(Creat-1)
+  xBeta += 0.2128 * (creatMgDl - 1);
+  
+  // Creatinine > 1.5: additional -0.2199*(Creat-1.5)
+  if (creatMgDl > 1.5) {
+    xBeta += -0.2199 * (creatMgDl - 1.5);
+  }
+  
+  // DCD Status: 0.1966
+  if (isDCD) {
+    xBeta += 0.1966;
+  }
+  
+  // Calculate KDRI_RAO = e^(Xβ)
+  const kdriRao = Math.exp(xBeta);
+  
+  // Scaling factor for 2024 (from OPTN KDPI mapping table April 2025)
+  const scalingFactor = 1.40436817065005;
+  
+  // Calculate KDRI_SCALED
+  const kdriScaled = kdriRao / scalingFactor;
+  
+  // Convert KDRI to KDPI using official OPTN mapping table (April 2025)
+  // Reference: https://www.hrsa.gov/sites/default/files/hrsa/optn/kdpi_mapping_table.pdf
+  // KDPI is the percentile rank of KDRI_SCALED based on 2024 reference population
+  let kdpi: number;
+  
+  // Mapping table from OPTN (key thresholds)
+  if (kdriScaled <= 0.4376) kdpi = 0;
+  else if (kdriScaled <= 0.5414) kdpi = 1;
+  else if (kdriScaled <= 0.5646) kdpi = 2;
+  else if (kdriScaled <= 0.5823) kdpi = 3;
+  else if (kdriScaled <= 0.5966) kdpi = 4;
+  else if (kdriScaled <= 0.6083) kdpi = 5;
+  else if (kdriScaled <= 0.6207) kdpi = 6;
+  else if (kdriScaled <= 0.6321) kdpi = 7;
+  else if (kdriScaled <= 0.6435) kdpi = 8;
+  else if (kdriScaled <= 0.6532) kdpi = 9;
+  else if (kdriScaled <= 0.6630) kdpi = 10;
+  else if (kdriScaled <= 0.6715) kdpi = 11;
+  else if (kdriScaled <= 0.6909) kdpi = 12;
+  else if (kdriScaled <= 0.6975) kdpi = 14;
+  else if (kdriScaled <= 0.7069) kdpi = 15;
+  else if (kdriScaled <= 0.7147) kdpi = 16;
+  else if (kdriScaled <= 0.7236) kdpi = 17;
+  else if (kdriScaled <= 0.7317) kdpi = 18;
+  else if (kdriScaled <= 0.7400) kdpi = 19;
+  else if (kdriScaled <= 0.7479) kdpi = 20;
+  else if (kdriScaled <= 0.7560) kdpi = 21;
+  else if (kdriScaled <= 0.7638) kdpi = 22;
+  else if (kdriScaled <= 0.7716) kdpi = 23;
+  else if (kdriScaled <= 0.7802) kdpi = 24;
+  else if (kdriScaled <= 0.7885) kdpi = 25;
+  else if (kdriScaled <= 0.7966) kdpi = 26;
+  else if (kdriScaled <= 0.8039) kdpi = 27;
+  else if (kdriScaled <= 0.8107) kdpi = 28;
+  else if (kdriScaled <= 0.8186) kdpi = 29;
+  else if (kdriScaled <= 0.8263) kdpi = 30;
+  else if (kdriScaled <= 0.8332) kdpi = 31;
+  else if (kdriScaled <= 0.8412) kdpi = 32;
+  else if (kdriScaled <= 0.8494) kdpi = 33;
+  else if (kdriScaled <= 0.8565) kdpi = 34;
+  else if (kdriScaled <= 0.8646) kdpi = 35;
+  else if (kdriScaled <= 0.8743) kdpi = 36;
+  else if (kdriScaled <= 0.8837) kdpi = 37;
+  else if (kdriScaled <= 0.8927) kdpi = 38;
+  else if (kdriScaled <= 0.9008) kdpi = 39;
+  else if (kdriScaled <= 0.9093) kdpi = 40;
+  else if (kdriScaled <= 0.9174) kdpi = 41;
+  else if (kdriScaled <= 0.9257) kdpi = 42;
+  else if (kdriScaled <= 0.9340) kdpi = 43;
+  else if (kdriScaled <= 0.9440) kdpi = 44;
+  else if (kdriScaled <= 0.9536) kdpi = 45;
+  else if (kdriScaled <= 0.9615) kdpi = 46;
+  else if (kdriScaled <= 0.9714) kdpi = 47;
+  else if (kdriScaled <= 0.9797) kdpi = 48;
+  else if (kdriScaled <= 0.9891) kdpi = 49;
+  else if (kdriScaled <= 1.0000) kdpi = 50;
+  else if (kdriScaled <= 1.0090) kdpi = 51;
+  else if (kdriScaled <= 1.0196) kdpi = 52;
+  else if (kdriScaled <= 1.0288) kdpi = 53;
+  else if (kdriScaled <= 1.0373) kdpi = 54;
+  else if (kdriScaled <= 1.0475) kdpi = 55;
+  else if (kdriScaled <= 1.0570) kdpi = 56;
+  else if (kdriScaled <= 1.0668) kdpi = 57;
+  else if (kdriScaled <= 1.0757) kdpi = 58;
+  else if (kdriScaled <= 1.0857) kdpi = 59;
+  else if (kdriScaled <= 1.0953) kdpi = 60;
+  else if (kdriScaled <= 1.1053) kdpi = 61;
+  else if (kdriScaled <= 1.1156) kdpi = 62;
+  else if (kdriScaled <= 1.1258) kdpi = 63;
+  else if (kdriScaled <= 1.1360) kdpi = 64;
+  else if (kdriScaled <= 1.1461) kdpi = 65;
+  else if (kdriScaled <= 1.1561) kdpi = 66;
+  else if (kdriScaled <= 1.1660) kdpi = 67;
+  else if (kdriScaled <= 1.1760) kdpi = 68;
+  else if (kdriScaled <= 1.1880) kdpi = 69;
+  else if (kdriScaled <= 1.1996) kdpi = 70;
+  else if (kdriScaled <= 1.2109) kdpi = 71;
+  else if (kdriScaled <= 1.2214) kdpi = 72;
+  else if (kdriScaled <= 1.2340) kdpi = 73;
+  else if (kdriScaled <= 1.2467) kdpi = 74;
+  else if (kdriScaled <= 1.2591) kdpi = 75;
+  else if (kdriScaled <= 1.2715) kdpi = 76;
+  else if (kdriScaled <= 1.2845) kdpi = 77;
+  else if (kdriScaled <= 1.2975) kdpi = 78;
+  else if (kdriScaled <= 1.3137) kdpi = 79;
+  else if (kdriScaled <= 1.3291) kdpi = 80;
+  else if (kdriScaled <= 1.3443) kdpi = 81;
+  else if (kdriScaled <= 1.3600) kdpi = 82;
+  else if (kdriScaled <= 1.3765) kdpi = 83;
+  else if (kdriScaled <= 1.3927) kdpi = 84;
+  else if (kdriScaled <= 1.4109) kdpi = 85;
+  else if (kdriScaled <= 1.4288) kdpi = 86;
+  else if (kdriScaled <= 1.4469) kdpi = 87;
+  else if (kdriScaled <= 1.4700) kdpi = 88;
+  else if (kdriScaled <= 1.4912) kdpi = 89;
+  else if (kdriScaled <= 1.5157) kdpi = 90;
+  else if (kdriScaled <= 1.5416) kdpi = 91;
+  else if (kdriScaled <= 1.5691) kdpi = 92;
+  else if (kdriScaled <= 1.6024) kdpi = 93;
+  else if (kdriScaled <= 1.6367) kdpi = 94;
+  else if (kdriScaled <= 1.6808) kdpi = 95;
+  else if (kdriScaled <= 1.7237) kdpi = 96;
+  else if (kdriScaled <= 1.7800) kdpi = 97;
+  else if (kdriScaled <= 1.8162) kdpi = 98;
+  else if (kdriScaled <= 1.9868) kdpi = 99;
+  else kdpi = 100;
+  
+  return {
+    kdri: Math.round(kdriScaled * 100) / 100,
+    kdpi: Math.round(kdpi)
+  };
 }
 
 export function epts(
@@ -671,25 +825,78 @@ export function ascvdRisk(
   treated: boolean,
   diabetes: boolean,
   smoker: boolean,
-  race: "Black" | "White" = "White"
+  race: "Black" | "White" | "Other" = "White"
 ): number {
-  // Simplified ASCVD risk calculation
-  // Full implementation uses pooled cohort equations
-  let risk = 0;
-
-  risk += age * 0.02;
-  risk += (totalCholesterol - 200) * 0.001;
-  risk += (hdl - 50) * -0.01;
-  risk += (systolicBP - 120) * 0.005;
-  risk += treated ? 0.1 : 0;
-  risk += diabetes ? 0.3 : 0;
-  risk += smoker ? 0.2 : 0;
-  risk += race === "Black" ? 0.05 : 0;
-  risk += sex === "F" ? -0.1 : 0;
-
-  const tenYearRisk = Math.min(30, Math.max(0, risk * 100));
-
-  return Math.round(tenYearRisk * 10) / 10;
+  // ACC/AHA Pooled Cohort Equations (2013)
+  // Reference: https://tools.acc.org/ascvd-risk-estimator-plus/
+  
+  const lnAge = Math.log(age);
+  const lnTC = Math.log(totalCholesterol);
+  const lnHDL = Math.log(hdl);
+  const lnSBP = Math.log(systolicBP);
+  
+  let sumCoef: number;
+  let baseline: number;
+  let meanCoef: number;
+  
+  // Use "Other" race as White for calculation purposes
+  const effectiveRace = race === "Black" ? "Black" : "White";
+  
+  if (sex === "M") {
+    if (effectiveRace === "White") {
+      // White Male coefficients
+      sumCoef = 12.344 * lnAge
+        + 11.853 * lnTC
+        - 2.664 * lnAge * lnTC
+        - 7.990 * lnHDL
+        + 1.769 * lnAge * lnHDL
+        + (treated ? 1.797 * lnSBP : 1.764 * lnSBP)
+        + (smoker ? 7.837 - 1.795 * lnAge : 0)
+        + (diabetes ? 0.658 : 0);
+      baseline = 0.9144;
+      meanCoef = 61.18;
+    } else {
+      // Black Male coefficients
+      sumCoef = 2.469 * lnAge
+        + 0.302 * lnTC
+        - 0.307 * lnHDL
+        + (treated ? 1.916 * lnSBP : 1.809 * lnSBP)
+        + (smoker ? 0.549 : 0)
+        + (diabetes ? 0.645 : 0);
+      baseline = 0.8954;
+      meanCoef = 19.54;
+    }
+  } else {
+    if (effectiveRace === "White") {
+      // White Female coefficients
+      sumCoef = -29.799 * lnAge
+        + 4.884 * lnAge * lnAge
+        + 13.540 * lnTC
+        - 3.114 * lnAge * lnTC
+        - 13.578 * lnHDL
+        + 3.149 * lnAge * lnHDL
+        + (treated ? 2.019 * lnSBP : 1.957 * lnSBP)
+        + (smoker ? 7.574 - 1.665 * lnAge : 0)
+        + (diabetes ? 0.661 : 0);
+      baseline = 0.9665;
+      meanCoef = -29.18;
+    } else {
+      // Black Female coefficients
+      sumCoef = 17.114 * lnAge
+        + 0.940 * lnTC
+        - 18.920 * lnHDL
+        + 4.475 * lnAge * lnHDL
+        + (treated ? 29.291 * lnSBP - 6.432 * lnAge * lnSBP : 27.820 * lnSBP - 6.087 * lnAge * lnSBP)
+        + (smoker ? 0.691 : 0)
+        + (diabetes ? 0.874 : 0);
+      baseline = 0.9533;
+      meanCoef = 86.61;
+    }
+  }
+  
+  const tenYearRisk = (1 - Math.pow(baseline, Math.exp(sumCoef - meanCoef))) * 100;
+  
+  return Math.round(Math.min(100, Math.max(0, tenYearRisk)) * 10) / 10;
 }
 
 // ============================================================================

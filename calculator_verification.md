@@ -13,9 +13,9 @@ For each calculator:
 ## CATEGORY 1: KIDNEY FUNCTION (7 calculators)
 
 ### 1. CKD-EPI Creatinine (2021)
-- [ ] Reference: https://www.kidney.org/professionals/gfr_calculator
-- [ ] Test Case: Male, 55y, Cr 1.2 mg/dL → Expected: 71 mL/min/1.73m²
-- [ ] Status: VERIFIED ✓ (Result: 71)
+- [x] Reference: https://www.kidney.org/professionals/gfr_calculator
+- [x] Test Case: Male, 50y, Cr 1.0 mg/dL → Expected: 92 mL/min/1.73m²
+- [x] Status: VERIFIED ✓ (Our result: 92.00, NKF result: 92)
 
 ### 2. Cockcroft-Gault Creatinine Clearance
 - [ ] Reference: https://www.mdcalc.com/calc/43/creatinine-clearance-cockcroft-gault-equation
@@ -321,6 +321,6 @@ For each calculator:
 
 ## Summary
 - Total Calculators: 53
-- Verified: 2
-- Pending: 51
+- Verified: 3
+- Pending: 50
 - Failed: 0

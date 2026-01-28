@@ -940,20 +940,36 @@ export const calculators: Calculator[] = [
   {
     id: "kdpi",
     name: "Kidney Donor Profile Index (KDPI)",
-    description: "Predicts donor kidney quality and graft survival",
+    description: "OPTN 2024 formula - predicts donor kidney quality and graft survival",
     category: "Transplantation",
     inputs: [
       { id: "donorAge", label: "Donor Age", type: "number", unit: "years", placeholder: "45", required: true },
       { id: "donorHeight", label: "Donor Height", type: "number", unit: "cm", placeholder: "170", required: true },
       { id: "donorWeight", label: "Donor Weight", type: "number", unit: "kg", placeholder: "80", required: true },
-      { id: "donorCreatinine", label: "Donor Serum Creatinine", type: "number", unit: "mg/dL or μmol/L", placeholder: "1.0", required: true },
-      { id: "donorHypertension", label: "Donor History of Hypertension", type: "checkbox" },
-      { id: "donorDiabetes", label: "Donor History of Diabetes", type: "checkbox" },
-      { id: "donorAfricanAmerican", label: "Donor African American", type: "checkbox" },
-      { id: "donorHepCPositive", label: "Donor Hepatitis C Positive", type: "checkbox" },
-      { id: "causeOfDeathStroke", label: "Cause of Death: Stroke", type: "checkbox" },
-      { id: "donorAfterCirculatoryDeath", label: "Donation After Circulatory Death (DCD)", type: "checkbox" },
-      { id: "creatinineUnit", label: "Creatinine Unit", type: "select", options: [{ value: "mg/dL", label: "mg/dL" }, { value: "μmol/L", label: "μmol/L" }], required: true },
+      { id: "donorCreatinine", label: "Serum Creatinine", type: "number", unit: "mg/dL or μmol/L", placeholder: "1.0", required: true },
+      { id: "hypertensionDuration", label: "History of Hypertension", type: "select", options: [
+        { value: "NO", label: "No" },
+        { value: "0-5", label: "Yes, 0-5 years" },
+        { value: "6-10", label: "Yes, 6-10 years" },
+        { value: ">10", label: "Yes, >10 years" }
+      ], required: true },
+      { id: "diabetesDuration", label: "History of Diabetes", type: "select", options: [
+        { value: "NO", label: "No" },
+        { value: "0-5", label: "Yes, 0-5 years" },
+        { value: "6-10", label: "Yes, 6-10 years" },
+        { value: ">10", label: "Yes, >10 years" }
+      ], required: true },
+      { id: "causeOfDeath", label: "Cause of Death", type: "select", options: [
+        { value: "ANOXIA", label: "Anoxia" },
+        { value: "CVA", label: "Cerebrovascular/Stroke" },
+        { value: "HEAD_TRAUMA", label: "Head Trauma" },
+        { value: "CNS_TUMOR", label: "CNS Tumor" },
+        { value: "OTHER", label: "Other" }
+      ], required: true },
+      { id: "isDCD", label: "Donation after Circulatory Death (DCD)", type: "select", options: [
+        { value: "NO", label: "No" },
+        { value: "YES", label: "Yes" }
+      ], required: true },
     ],
     resultLabel: "KDPI",
     resultUnit: "%",
