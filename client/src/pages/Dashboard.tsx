@@ -1279,15 +1279,13 @@ export default function Dashboard() {
               <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                 {categories.slice(0, 9).map((category) => {
                   const categoryCalculators = calculators.filter((c) => c.category === category);
-                  const firstCalc = categoryCalculators[0];
                   return (
                     <button
                       key={category}
                       onClick={() => {
                         setSelectedCategory(category);
-                        if (firstCalc) {
-                          handleSelectCalculator(firstCalc.id);
-                        }
+                        setSelectedCalculatorId(null);
+                        setResult(null);
                       }}
                       className="p-4 rounded-xl border border-border bg-card hover:bg-accent hover:border-primary/50 transition-all text-left group cursor-pointer"
                     >
