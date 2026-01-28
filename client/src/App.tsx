@@ -18,12 +18,13 @@ function Router() {
   );
 }
 
-// Dark medical theme for nephrology calculator dashboard
+// Medical theme for nephrology calculator dashboard - switchable light/dark
 function App() {
   return (
     <ErrorBoundary>
       <ThemeProvider
         defaultTheme="dark"
+        switchable
       >
         <TooltipProvider>
           <Toaster />

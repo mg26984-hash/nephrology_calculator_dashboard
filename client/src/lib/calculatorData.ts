@@ -1527,6 +1527,51 @@ export const calculators: Calculator[] = [
     ],
     references: ["Siener R, Hesse A. Urol Res. 2003;31(3):169-173"],
   },
+
+  // ============================================================================
+  // BONE & FRACTURE RISK
+  // ============================================================================
+
+  {
+    id: "frax-simplified",
+    name: "FRAX Fracture Risk Assessment",
+    description: "Estimates 10-year probability of major osteoporotic and hip fractures",
+    category: "Bone & Fracture Risk",
+    inputs: [
+      { id: "age", label: "Age", type: "number", unit: "years", placeholder: "65", required: true, min: 40, max: 90 },
+      { id: "sex", label: "Sex", type: "select", options: [{ value: "M", label: "Male" }, { value: "F", label: "Female" }], required: true },
+      { id: "weight", label: "Weight", type: "number", unit: "kg", placeholder: "70", required: true },
+      { id: "height", label: "Height", type: "number", unit: "cm", placeholder: "170", required: true },
+      { id: "previousFracture", label: "Previous Fragility Fracture", type: "checkbox" },
+      { id: "parentHipFracture", label: "Parent with Hip Fracture", type: "checkbox" },
+      { id: "currentSmoking", label: "Current Smoking", type: "checkbox" },
+      { id: "glucocorticoids", label: "Glucocorticoids (>=5mg/day prednisone >=3 months)", type: "checkbox" },
+      { id: "rheumatoidArthritis", label: "Rheumatoid Arthritis", type: "checkbox" },
+      { id: "secondaryOsteoporosis", label: "Secondary Osteoporosis (CKD, diabetes, etc.)", type: "checkbox" },
+      { id: "alcoholIntake", label: "Alcohol >=3 units/day", type: "checkbox" },
+      { id: "bmdTScore", label: "Femoral Neck BMD T-score (if available)", type: "number", placeholder: "-2.5" },
+    ],
+    resultLabel: "10-Year Major Osteoporotic Fracture Risk",
+    resultUnit: "%",
+    interpretation: (value) => {
+      if (value < 10) return "Low fracture risk - lifestyle measures recommended";
+      if (value < 20) return "Moderate fracture risk - consider pharmacotherapy";
+      return "High fracture risk - pharmacotherapy strongly recommended";
+    },
+    clinicalPearls: [
+      "CKD patients have 2-4x increased fracture risk",
+      "FRAX may underestimate risk in CKD (does not account for CKD-MBD)",
+      "Consider bone biopsy in CKD 4-5 before bisphosphonates",
+      "Glucocorticoid use common in GN patients - increases risk significantly",
+      "Post-transplant patients on steroids need fracture risk assessment",
+      "For full FRAX calculation, visit: frax.shef.ac.uk",
+    ],
+    references: [
+      "Kanis JA et al. Osteoporos Int. 2008;19(4):385-397",
+      "KDIGO 2017 Clinical Practice Guideline Update for CKD-MBD",
+      "Naylor KL et al. Am J Kidney Dis. 2014;63(4):612-622",
+    ],
+  },
 ];
 
 export function getCalculatorsByCategory(category: string): Calculator[] {

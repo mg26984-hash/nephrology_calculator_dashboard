@@ -924,3 +924,90 @@ export function slicc2012(
 
   return score;
 }
+
+
+// ============================================================================
+// FRAX FRACTURE RISK ASSESSMENT (Simplified)
+// ============================================================================
+
+export function fraxSimplified(
+  age: number,
+  sex: "M" | "F",
+  weight: number,
+  height: number,
+  previousFracture: boolean = false,
+  parentHipFracture: boolean = false,
+  currentSmoking: boolean = false,
+  glucocorticoids: boolean = false,
+  rheumatoidArthritis: boolean = false,
+  secondaryOsteoporosis: boolean = false,
+  alcoholIntake: boolean = false,
+  bmdTScore?: number
+): { majorFracture: number; hipFracture: number } {
+  // Calculate BMI
+  const heightM = height / 100;
+  const bmi = weight / (heightM * heightM);
+
+  // Base risk calculation (simplified FRAX algorithm)
+  // Based on age and sex baseline risks
+  let baseRiskMajor = 0;
+  let baseRiskHip = 0;
+
+  // Age-based baseline risk (approximate values from FRAX tables)
+  if (sex === "F") {
+    if (age < 50) { baseRiskMajor = 3.2; baseRiskHip = 0.3; }
+    else if (age < 55) { baseRiskMajor = 4.5; baseRiskHip = 0.5; }
+    else if (age < 60) { baseRiskMajor = 6.5; baseRiskHip = 0.9; }
+    else if (age < 65) { baseRiskMajor = 8.5; baseRiskHip = 1.5; }
+    else if (age < 70) { baseRiskMajor = 11.0; baseRiskHip = 2.5; }
+    else if (age < 75) { baseRiskMajor = 14.0; baseRiskHip = 4.5; }
+    else if (age < 80) { baseRiskMajor = 18.0; baseRiskHip = 7.5; }
+    else if (age < 85) { baseRiskMajor = 22.0; baseRiskHip = 11.0; }
+    else { baseRiskMajor = 25.0; baseRiskHip = 14.0; }
+  } else {
+    if (age < 50) { baseRiskMajor = 2.5; baseRiskHip = 0.2; }
+    else if (age < 55) { baseRiskMajor = 3.5; baseRiskHip = 0.4; }
+    else if (age < 60) { baseRiskMajor = 4.5; baseRiskHip = 0.7; }
+    else if (age < 65) { baseRiskMajor = 5.5; baseRiskHip = 1.1; }
+    else if (age < 70) { baseRiskMajor = 7.0; baseRiskHip = 1.8; }
+    else if (age < 75) { baseRiskMajor = 9.0; baseRiskHip = 3.0; }
+    else if (age < 80) { baseRiskMajor = 12.0; baseRiskHip = 5.0; }
+    else if (age < 85) { baseRiskMajor = 15.0; baseRiskHip = 8.0; }
+    else { baseRiskMajor = 18.0; baseRiskHip = 11.0; }
+  }
+
+  // Risk multipliers for clinical risk factors
+  let riskMultiplier = 1.0;
+
+  if (previousFracture) riskMultiplier *= 1.85;
+  if (parentHipFracture) riskMultiplier *= 1.55;
+  if (currentSmoking) riskMultiplier *= 1.25;
+  if (glucocorticoids) riskMultiplier *= 1.65;
+  if (rheumatoidArthritis) riskMultiplier *= 1.35;
+  if (secondaryOsteoporosis) riskMultiplier *= 1.40;
+  if (alcoholIntake) riskMultiplier *= 1.35;
+
+  // BMI adjustment (low BMI increases risk)
+  if (bmi < 20) riskMultiplier *= 1.25;
+  else if (bmi > 30) riskMultiplier *= 0.95;
+
+  // BMD T-score adjustment if provided
+  if (bmdTScore !== undefined && !isNaN(bmdTScore)) {
+    // Each SD decrease in BMD approximately doubles fracture risk
+    const bmdMultiplier = Math.pow(1.5, Math.abs(bmdTScore + 2.5));
+    if (bmdTScore < -2.5) {
+      riskMultiplier *= bmdMultiplier;
+    } else if (bmdTScore > -1.0) {
+      riskMultiplier *= 0.7;
+    }
+  }
+
+  // Calculate final risks
+  const majorFracture = Math.min(baseRiskMajor * riskMultiplier, 80);
+  const hipFracture = Math.min(baseRiskHip * riskMultiplier, 50);
+
+  return {
+    majorFracture: Math.round(majorFracture * 10) / 10,
+    hipFracture: Math.round(hipFracture * 10) / 10,
+  };
+}
