@@ -1267,39 +1267,6 @@ export const calculators: Calculator[] = [
     references: ["Goff DC Jr et al. Circulation. 2014;129(25 Suppl 2):S49-73"],
   },
 
-  {
-    id: "statin-intensity",
-    name: "Statin Intensity Guide for CKD & Transplant",
-    description: "Guides statin selection and dosing in CKD/transplant",
-    category: "Cardiovascular Risk",
-    inputs: [
-      { id: "indication", label: "Clinical Indication", type: "select", options: [
-        { value: "primary", label: "Primary prevention (CKD stage 3-4)" },
-        { value: "secondary", label: "Secondary prevention (prior ASCVD)" },
-        { value: "transplant", label: "Post-transplant" },
-        { value: "dialysis", label: "Dialysis patient (secondary prevention only)" },
-      ], required: true },
-    ],
-    resultLabel: "Recommended Statin Intensity",
-    resultUnit: "recommendation",
-    interpretation: (value) => {
-      const recommendations: Record<string, string> = {
-        "primary": "Moderate-intensity statin (e.g., atorvastatin 10-20 mg, rosuvastatin 5-10 mg)",
-        "secondary": "High-intensity statin (e.g., atorvastatin 40-80 mg, rosuvastatin 20-40 mg)",
-        "transplant": "Moderate-intensity statin (atorvastatin 10-20 mg preferred; avoid simvastatin/lovastatin with calcineurin inhibitors)",
-        "dialysis": "Continue if already on statin; do NOT initiate for primary prevention (4D, AURORA trials)",
-      };
-      return recommendations[value] || "Unable to determine";
-    },
-    clinicalPearls: [
-      "Cyclosporine + simvastatin/lovastatin = CONTRAINDICATED (rhabdomyolysis risk)",
-      "Preferred post-transplant: atorvastatin, rosuvastatin, pravastatin, fluvastatin",
-      "Initiate within 3 months post-transplant (ALERT trial: ↓ cardiac events)",
-      "Monitor CK, LFTs at baseline, 6-12 weeks, then annually",
-    ],
-    references: ["Stone NJ et al. Circulation. 2014;129(25 Suppl 2):S1-S45"],
-  },
-
   // ============================================================================
   // ANTHROPOMETRIC & BODY COMPOSITION
   // ============================================================================

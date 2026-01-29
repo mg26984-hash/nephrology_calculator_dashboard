@@ -856,12 +856,6 @@ export default function Dashboard() {
           );
           break;
 
-        case "statin-intensity":
-          // Statin Intensity is a reference guide, not a calculation
-          // Just return the indication value which will be used by the interpretation function
-          calculationResult = calculatorState.indication as any;
-          break;
-
         case "frax-simplified":
           const fraxResult = calc.fraxSimplified(
             calculatorState.age as number,
