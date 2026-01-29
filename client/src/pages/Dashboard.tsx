@@ -985,12 +985,52 @@ export default function Dashboard() {
 
   // Keyboard navigation handler
   const handleKeyboardNavigation = useCallback((e: KeyboardEvent) => {
-    // Only handle navigation when sidebar is focused or search input is focused
     const activeElement = document.activeElement;
     const isSearchFocused = activeElement === searchInputRef.current;
     const isSidebarFocused = activeElement?.closest('aside') || activeElement?.closest('[data-radix-dialog-content]');
     
-    if (!isSearchFocused && !isSidebarFocused) return;
+    // Allow normal text input in search field (don't intercept regular character keys)
+    if (isSearchFocused) {
+      // Only handle special navigation keys when search is focused
+      switch (e.key) {
+        case 'ArrowDown':
+          e.preventDefault();
+          setFocusedIndex(prev => {
+            const newIndex = prev < filteredCalculators.length - 1 ? prev + 1 : 0;
+            setTimeout(() => {
+              const button = document.querySelector(`[data-calculator-index="${newIndex}"]`) as HTMLElement;
+              button?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+            }, 0);
+            return newIndex;
+          });
+          break;
+        case 'ArrowUp':
+          e.preventDefault();
+          setFocusedIndex(prev => {
+            const newIndex = prev > 0 ? prev - 1 : filteredCalculators.length - 1;
+            setTimeout(() => {
+              const button = document.querySelector(`[data-calculator-index="${newIndex}"]`) as HTMLElement;
+              button?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+            }, 0);
+            return newIndex;
+          });
+          break;
+        case 'Enter':
+          if (focusedIndex >= 0 && focusedIndex < filteredCalculators.length) {
+            e.preventDefault();
+            handleSelectCalculator(filteredCalculators[focusedIndex].id);
+          }
+          break;
+        case 'Escape':
+          e.preventDefault();
+          clearSearch();
+          break;
+      }
+      return; // Don't process other keys when search is focused
+    }
+    
+    // Only handle navigation when sidebar is focused (but not search input)
+    if (!isSidebarFocused) return;
     
     const totalCalculators = filteredCalculators.length;
     if (totalCalculators === 0) return;
@@ -1000,7 +1040,6 @@ export default function Dashboard() {
         e.preventDefault();
         setFocusedIndex(prev => {
           const newIndex = prev < totalCalculators - 1 ? prev + 1 : 0;
-          // Scroll the focused item into view
           setTimeout(() => {
             const button = document.querySelector(`[data-calculator-index="${newIndex}"]`) as HTMLElement;
             button?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
@@ -1012,7 +1051,6 @@ export default function Dashboard() {
         e.preventDefault();
         setFocusedIndex(prev => {
           const newIndex = prev > 0 ? prev - 1 : totalCalculators - 1;
-          // Scroll the focused item into view
           setTimeout(() => {
             const button = document.querySelector(`[data-calculator-index="${newIndex}"]`) as HTMLElement;
             button?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
@@ -1028,9 +1066,7 @@ export default function Dashboard() {
         break;
       case 'Escape':
         e.preventDefault();
-        if (searchQuery) {
-          clearSearch();
-        } else if (selectedCalculatorId) {
+        if (selectedCalculatorId) {
           setSelectedCalculatorId(null);
         }
         break;
