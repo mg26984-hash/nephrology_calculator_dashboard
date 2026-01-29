@@ -1218,38 +1218,6 @@ export const calculators: Calculator[] = [
     references: ["Goff DC Jr et al. Circulation. 2014;129(25 Suppl 2):S49-73"],
   },
 
-  {
-    id: "statin-intensity",
-    name: "Statin Intensity Guide for CKD & Transplant",
-    description: "Guides statin selection and dosing in CKD/transplant",
-    category: "Cardiovascular Risk",
-    inputs: [
-      { id: "indication", label: "Clinical Indication", type: "select", options: [
-        { value: "primary", label: "Primary prevention (CKD stage 3-4)" },
-        { value: "secondary", label: "Secondary prevention (prior ASCVD)" },
-        { value: "transplant", label: "Post-transplant" },
-        { value: "dialysis", label: "Dialysis patient (secondary prevention only)" },
-      ], required: true },
-    ],
-    resultLabel: "Recommended Statin Intensity",
-    resultUnit: "recommendation",
-    interpretation: (value) => {
-      const recommendations: Record<string, string> = {
-        "primary": "Moderate-intensity statin (e.g., atorvastatin 10-20 mg, rosuvastatin 5-10 mg)",
-        "secondary": "High-intensity statin (e.g., atorvastatin 40-80 mg, rosuvastatin 20-40 mg)",
-        "transplant": "Moderate-intensity statin (atorvastatin 10-20 mg preferred; avoid simvastatin/lovastatin with calcineurin inhibitors)",
-        "dialysis": "Continue if already on statin; do NOT initiate for primary prevention (4D, AURORA trials)",
-      };
-      return recommendations[value] || "Unable to determine";
-    },
-    clinicalPearls: [
-      "Cyclosporine + simvastatin/lovastatin = CONTRAINDICATED (rhabdomyolysis risk)",
-      "Preferred post-transplant: atorvastatin, rosuvastatin, pravastatin, fluvastatin",
-      "Initiate within 3 months post-transplant (ALERT trial: ↓ cardiac events)",
-      "Monitor CK, LFTs at baseline, 6-12 weeks, then annually",
-    ],
-    references: ["Stone NJ et al. Circulation. 2014;129(25 Suppl 2):S1-S45"],
-  },
 
   // ============================================================================
   // ANTHROPOMETRIC & BODY COMPOSITION
@@ -1706,274 +1674,77 @@ export const calculators: Calculator[] = [
   },
 
   // ============================================================================
-  // ANTIBIOTIC DOSING IN CKD
+  // CONTRAST-INDUCED NEPHROPATHY RISK
   // ============================================================================
 
   {
-    id: "gentamicin-dosing",
-    name: "Gentamicin Dosing in CKD",
-    description: "Calculates gentamicin dosing based on renal function with extended-interval and traditional dosing options",
-    category: "Antibiotic Dosing",
+    id: "cin-mehran-score",
+    name: "Contrast-Induced Nephropathy (CIN) Risk - Mehran Score",
+    description: "Predicts risk of contrast-induced nephropathy after percutaneous coronary intervention using the Mehran score",
+    category: "Acute Kidney Injury (AKI) Workup",
     inputs: [
-      { id: "weight", label: "Actual Body Weight", type: "number", unit: "kg", placeholder: "70", required: true },
-      { id: "ibw", label: "Ideal Body Weight", type: "number", unit: "kg", placeholder: "70", required: true },
-      { id: "crcl", label: "Creatinine Clearance", type: "number", unit: "mL/min", placeholder: "60", required: true },
-      { id: "indication", label: "Indication", type: "select", options: [
-        { value: "standard", label: "Standard infection (synergy)" },
-        { value: "serious", label: "Serious gram-negative infection" },
-      ], required: true },
-      { id: "dialysis", label: "On Hemodialysis", type: "checkbox" },
+      { id: "hypotension", label: "Hypotension (SBP <80 mmHg for ≥1h requiring inotropes or IABP within 24h)", type: "checkbox" },
+      { id: "iabp", label: "Intra-aortic balloon pump (IABP) use", type: "checkbox" },
+      { id: "chf", label: "Congestive heart failure (NYHA class III-IV or history of pulmonary edema)", type: "checkbox" },
+      { id: "age", label: "Age >75 years", type: "checkbox" },
+      { id: "anemia", label: "Anemia (Hct <39% for men, <36% for women)", type: "checkbox" },
+      { id: "diabetes", label: "Diabetes mellitus", type: "checkbox" },
+      { id: "contrastVolume", label: "Contrast Volume", type: "number", unit: "mL", placeholder: "100", required: true },
+      { id: "creatinine", label: "Serum Creatinine", type: "number", unit: "mg/dL", placeholder: "1.5", required: true },
+      { id: "egfr", label: "eGFR (if known, otherwise calculated from SCr)", type: "number", unit: "mL/min/1.73m²", placeholder: "45" },
     ],
-    resultLabel: "Loading Dose",
-    resultUnit: "mg",
+    resultLabel: "Mehran Score",
+    resultUnit: "points",
     interpretation: (value, inputs) => {
-      const crcl = inputs?.crcl as number || 60;
-      const dialysis = inputs?.dialysis as boolean || false;
-      const indication = inputs?.indication as string || "standard";
+      // Risk categories based on Mehran score
+      let riskCategory = "";
+      let cinRisk = "";
+      let dialysisRisk = "";
       
-      let maintenanceInfo = "";
-      if (dialysis) {
-        maintenanceInfo = "**Hemodialysis:** Give loading dose, then 1-1.7 mg/kg after each HD session. Monitor levels.";
-      } else if (crcl >= 60) {
-        if (indication === "serious") {
-          maintenanceInfo = "**Extended-interval dosing:** 5-7 mg/kg q24h (preferred for serious infections)\n**Traditional dosing:** 1.5-2 mg/kg q8h";
-        } else {
-          maintenanceInfo = "**Synergy dosing:** 1 mg/kg q8h (for enterococcal/streptococcal endocarditis)";
-        }
-      } else if (crcl >= 40) {
-        maintenanceInfo = "**CrCl 40-59:** 5-7 mg/kg q36h (extended-interval) OR 1.5 mg/kg q12h (traditional)";
-      } else if (crcl >= 20) {
-        maintenanceInfo = "**CrCl 20-39:** 5-7 mg/kg q48h (extended-interval) OR 1 mg/kg q24h (traditional)";
+      if (value <= 5) {
+        riskCategory = "Low Risk";
+        cinRisk = "7.5%";
+        dialysisRisk = "0.04%";
+      } else if (value <= 10) {
+        riskCategory = "Moderate Risk";
+        cinRisk = "14%";
+        dialysisRisk = "0.12%";
+      } else if (value <= 15) {
+        riskCategory = "High Risk";
+        cinRisk = "26.1%";
+        dialysisRisk = "1.09%";
       } else {
-        maintenanceInfo = "**CrCl <20:** Avoid extended-interval. Use 1 mg/kg, redose based on levels. Consider alternative.";
+        riskCategory = "Very High Risk";
+        cinRisk = "57.3%";
+        dialysisRisk = "12.6%";
       }
       
-      return maintenanceInfo + "\n\n**Target Levels:**\n• Peak (traditional): 5-10 mcg/mL (serious: 8-10)\n• Trough: <2 mcg/mL (avoid nephrotoxicity)\n• Extended-interval: Check random level at 6-14h";
+      return `**${riskCategory}**\n\n` +
+        `**Risk of CIN (SCr rise ≥25% or ≥0.5 mg/dL):** ${cinRisk}\n` +
+        `**Risk of requiring dialysis:** ${dialysisRisk}\n\n` +
+        `**Prevention Strategies:**\n` +
+        `• IV hydration: 0.9% NaCl at 1 mL/kg/h for 12h before and after procedure\n` +
+        `• Minimize contrast volume (target <3-4 × eGFR in mL)\n` +
+        `• Use iso-osmolar or low-osmolar contrast\n` +
+        `• Hold nephrotoxins (NSAIDs, aminoglycosides) 24-48h before\n` +
+        `• Consider holding metformin 48h post-procedure\n` +
+        `• Monitor SCr at 48-72h post-procedure`;
     },
     clinicalPearls: [
-      "Use adjusted body weight if actual >120% IBW: AdjBW = IBW + 0.4(Actual - IBW)",
-      "Extended-interval dosing NOT recommended for endocarditis, burns, ascites, CrCl <20",
-      "Nephrotoxicity risk increases with trough >2 mcg/mL and duration >7 days",
-      "Synergistic dosing for enterococcal infections: 1 mg/kg q8h (lower doses)",
-      "Monitor SCr daily; hold if rising >0.5 mg/dL from baseline",
-      "Avoid concurrent nephrotoxins: NSAIDs, contrast, amphotericin B, vancomycin",
-      "Once-daily dosing may be LESS nephrotoxic than traditional dosing",
+      "Mehran score was developed for PCI patients but is widely applied to other contrast procedures",
+      "CIN typically occurs 24-72h after contrast exposure, peaks at 3-5 days",
+      "Most cases are non-oliguric and reversible within 1-2 weeks",
+      "IV hydration is the most effective preventive measure",
+      "N-acetylcysteine (NAC) has NOT shown consistent benefit in recent trials",
+      "Contrast volume/eGFR ratio >3-4 significantly increases CIN risk",
+      "Consider CO2 angiography or intravascular ultrasound to reduce contrast in high-risk patients",
+      "Statins may have protective effect - continue if patient is already on therapy",
     ],
     references: [
-      "Nicolau DP et al. Antimicrob Agents Chemother. 1995;39(3):650-655",
-      "Sanford Guide to Antimicrobial Therapy 2024",
-      "KDIGO AKI Guidelines - Drug dosing in kidney disease",
-    ],
-  },
-
-  {
-    id: "piperacillin-tazobactam-dosing",
-    name: "Piperacillin-Tazobactam Dosing in CKD",
-    description: "Calculates piperacillin-tazobactam dosing based on renal function",
-    category: "Antibiotic Dosing",
-    inputs: [
-      { id: "crcl", label: "Creatinine Clearance", type: "number", unit: "mL/min", placeholder: "60", required: true },
-      { id: "indication", label: "Indication", type: "select", options: [
-        { value: "standard", label: "Standard infection" },
-        { value: "pseudomonas", label: "Pseudomonas/serious infection" },
-        { value: "febrile-neutropenia", label: "Febrile neutropenia" },
-      ], required: true },
-      { id: "dialysis", label: "On Hemodialysis", type: "checkbox" },
-      { id: "crrt", label: "On CRRT", type: "checkbox" },
-    ],
-    resultLabel: "CrCl Value",
-    resultUnit: "mL/min",
-    interpretation: (value, inputs) => {
-      const crcl = inputs?.crcl as number || 60;
-      const dialysis = inputs?.dialysis as boolean || false;
-      const crrt = inputs?.crrt as boolean || false;
-      const indication = inputs?.indication as string || "standard";
-      
-      let dosing = "";
-      
-      if (crrt) {
-        dosing = "**CRRT:** 4.5g q6-8h (adjust based on CRRT modality and effluent rate)";
-      } else if (dialysis) {
-        dosing = "**Hemodialysis:** 2.25g q8h + 0.75g after each HD session\n(or 2.25g q6h for serious infections)";
-      } else if (crcl > 40) {
-        if (indication === "pseudomonas" || indication === "febrile-neutropenia") {
-          dosing = "**CrCl >40:** 4.5g q6h (extended infusion over 4h preferred for Pseudomonas)";
-        } else {
-          dosing = "**CrCl >40:** 3.375g q6h (or 4.5g q8h)";
-        }
-      } else if (crcl >= 20) {
-        dosing = "**CrCl 20-40:** 2.25g q6h (or 3.375g q8h for serious infections)";
-      } else {
-        dosing = "**CrCl <20:** 2.25g q8h";
-      }
-      
-      return dosing + "\n\n**Extended Infusion:** Infuse over 4 hours for improved PK/PD and Pseudomonas coverage\n\n**Note:** Each 4.5g vial = piperacillin 4g + tazobactam 0.5g";
-    },
-    clinicalPearls: [
-      "Extended infusion (4h) improves time above MIC - preferred for serious infections",
-      "Contains 2.35 mEq sodium per gram - monitor in heart failure/fluid overload",
-      "May cause false-positive galactomannan test (Aspergillus antigen)",
-      "Neurotoxicity risk in renal impairment - monitor for seizures, encephalopathy",
-      "Can cause hypokalemia - monitor potassium levels",
-      "Interstitial nephritis reported - monitor renal function",
-      "Combination with vancomycin may increase AKI risk",
-    ],
-    references: [
-      "Lodise TP et al. Clin Infect Dis. 2007;44(3):357-363",
-      "Sanford Guide to Antimicrobial Therapy 2024",
-      "Aronoff GR et al. Drug Prescribing in Renal Failure, 5th ed.",
-    ],
-  },
-
-  {
-    id: "meropenem-dosing",
-    name: "Meropenem Dosing in CKD",
-    description: "Calculates meropenem dosing based on renal function",
-    category: "Antibiotic Dosing",
-    inputs: [
-      { id: "crcl", label: "Creatinine Clearance", type: "number", unit: "mL/min", placeholder: "60", required: true },
-      { id: "indication", label: "Indication", type: "select", options: [
-        { value: "standard", label: "Standard infection" },
-        { value: "meningitis", label: "Meningitis/CNS infection" },
-        { value: "pseudomonas", label: "Pseudomonas/serious infection" },
-      ], required: true },
-      { id: "dialysis", label: "On Hemodialysis", type: "checkbox" },
-      { id: "crrt", label: "On CRRT", type: "checkbox" },
-    ],
-    resultLabel: "CrCl Value",
-    resultUnit: "mL/min",
-    interpretation: (value, inputs) => {
-      const crcl = inputs?.crcl as number || 60;
-      const dialysis = inputs?.dialysis as boolean || false;
-      const crrt = inputs?.crrt as boolean || false;
-      const indication = inputs?.indication as string || "standard";
-      
-      let dosing = "";
-      const isSeriousIndication = indication === "meningitis" || indication === "pseudomonas";
-      
-      if (crrt) {
-        dosing = "**CRRT:** 1g q8h (or 2g q8h for meningitis/Pseudomonas)\nAdjust based on CRRT modality";
-      } else if (dialysis) {
-        if (isSeriousIndication) {
-          dosing = "**Hemodialysis:** 1g q12h + 1g after each HD session (for serious infections)";
-        } else {
-          dosing = "**Hemodialysis:** 500mg q12h + 500mg after each HD session";
-        }
-      } else if (crcl >= 50) {
-        if (indication === "meningitis") {
-          dosing = "**CrCl ≥50:** 2g q8h (meningitis dose)";
-        } else if (indication === "pseudomonas") {
-          dosing = "**CrCl ≥50:** 1-2g q8h (extended infusion over 3h preferred)";
-        } else {
-          dosing = "**CrCl ≥50:** 1g q8h (standard dose)";
-        }
-      } else if (crcl >= 25) {
-        if (isSeriousIndication) {
-          dosing = "**CrCl 25-49:** 1g q12h (or 2g q12h for meningitis)";
-        } else {
-          dosing = "**CrCl 25-49:** 1g q12h";
-        }
-      } else if (crcl >= 10) {
-        dosing = "**CrCl 10-24:** 500mg q12h (or 1g q12h for serious infections)";
-      } else {
-        dosing = "**CrCl <10:** 500mg q24h (or 1g q24h for serious infections)";
-      }
-      
-      return dosing + "\n\n**Extended Infusion:** Infuse over 3 hours for improved PK/PD\n\n**Seizure Risk:** Lower threshold in renal impairment - use with caution";
-    },
-    clinicalPearls: [
-      "Extended infusion (3h) improves time above MIC - preferred for Pseudomonas",
-      "Seizure risk increased in renal impairment - avoid high doses in CKD 4-5",
-      "Does NOT require dose adjustment for hepatic impairment",
-      "Penetrates CSF well - drug of choice for gram-negative meningitis",
-      "Stable with valproic acid (unlike imipenem) but still monitor levels",
-      "Less seizure risk than imipenem - preferred in CNS infections",
-      "Can be used in penicillin allergy (low cross-reactivity ~1%)",
-    ],
-    references: [
-      "Nicolau DP. Expert Rev Anti Infect Ther. 2008;6(5):593-599",
-      "Sanford Guide to Antimicrobial Therapy 2024",
-      "Thalhammer F et al. J Antimicrob Chemother. 1999;43(4):523-527",
-    ],
-  },
-
-  {
-    id: "ciprofloxacin-dosing",
-    name: "Ciprofloxacin Dosing in CKD",
-    description: "Calculates ciprofloxacin dosing based on renal function",
-    category: "Antibiotic Dosing",
-    inputs: [
-      { id: "crcl", label: "Creatinine Clearance", type: "number", unit: "mL/min", placeholder: "60", required: true },
-      { id: "route", label: "Route", type: "select", options: [
-        { value: "iv", label: "Intravenous" },
-        { value: "po", label: "Oral" },
-      ], required: true },
-      { id: "indication", label: "Indication", type: "select", options: [
-        { value: "uti", label: "Urinary tract infection" },
-        { value: "respiratory", label: "Respiratory/intra-abdominal" },
-        { value: "pseudomonas", label: "Pseudomonas infection" },
-      ], required: true },
-      { id: "dialysis", label: "On Hemodialysis", type: "checkbox" },
-    ],
-    resultLabel: "CrCl Value",
-    resultUnit: "mL/min",
-    interpretation: (value, inputs) => {
-      const crcl = inputs?.crcl as number || 60;
-      const dialysis = inputs?.dialysis as boolean || false;
-      const route = inputs?.route as string || "po";
-      const indication = inputs?.indication as string || "uti";
-      
-      let dosing = "";
-      
-      if (dialysis) {
-        if (route === "iv") {
-          dosing = "**Hemodialysis (IV):** 200-400mg q24h (give after HD on dialysis days)";
-        } else {
-          dosing = "**Hemodialysis (PO):** 250-500mg q24h (give after HD on dialysis days)";
-        }
-      } else if (crcl >= 50) {
-        if (route === "iv") {
-          if (indication === "pseudomonas") {
-            dosing = "**CrCl ≥50 (IV):** 400mg q8h (Pseudomonas)";
-          } else {
-            dosing = "**CrCl ≥50 (IV):** 400mg q12h (standard) or 400mg q8h (serious)";
-          }
-        } else {
-          if (indication === "uti") {
-            dosing = "**CrCl ≥50 (PO):** 250-500mg q12h (UTI)";
-          } else {
-            dosing = "**CrCl ≥50 (PO):** 500-750mg q12h";
-          }
-        }
-      } else if (crcl >= 30) {
-        if (route === "iv") {
-          dosing = "**CrCl 30-49 (IV):** 200-400mg q12h";
-        } else {
-          dosing = "**CrCl 30-49 (PO):** 250-500mg q12h";
-        }
-      } else {
-        if (route === "iv") {
-          dosing = "**CrCl <30 (IV):** 200-400mg q18-24h";
-        } else {
-          dosing = "**CrCl <30 (PO):** 250-500mg q18-24h";
-        }
-      }
-      
-      return dosing + "\n\n**Oral bioavailability:** ~70-80% (can switch IV to PO at same dose)\n\n**Drug Interactions:** Avoid with tizanidine, theophylline. Separate from antacids/iron by 2h.";
-    },
-    clinicalPearls: [
-      "Excellent oral bioavailability - IV to PO switch often appropriate",
-      "QT prolongation risk - avoid with other QT-prolonging drugs",
-      "Tendinopathy/rupture risk - increased in elderly, steroids, renal impairment",
-      "CNS effects (confusion, seizures) more common in renal impairment",
-      "Crystalluria risk - ensure adequate hydration",
-      "Avoid in myasthenia gravis - may exacerbate weakness",
-      "Chelates with divalent cations - separate from calcium, iron, antacids",
-    ],
-    references: [
-      "Sanford Guide to Antimicrobial Therapy 2024",
-      "Aronoff GR et al. Drug Prescribing in Renal Failure, 5th ed.",
-      "FDA Drug Safety Communication: Fluoroquinolone warnings",
+      "Mehran R et al. J Am Coll Cardiol. 2004;44(7):1393-1399",
+      "KDIGO Clinical Practice Guideline for AKI. Kidney Int Suppl. 2012;2:1-138",
+      "ACR Manual on Contrast Media, Version 2023",
+      "Weisbord SD et al. N Engl J Med. 2018;378(7):603-614 (PRESERVE trial)",
     ],
   },
 

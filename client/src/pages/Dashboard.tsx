@@ -818,54 +818,53 @@ export default function Dashboard() {
           setResult(banffResult.category);
           return; // Skip the default interpretation handling
 
-        // Antibiotic Dosing Calculators
-        case "gentamicin-dosing":
-          const gentWeight = calculatorState.weight as number;
-          const gentIbw = calculatorState.ibw as number;
-          const gentCrcl = calculatorState.crcl as number;
-          const gentDialysis = Boolean(calculatorState.dialysis);
-          const gentIndication = calculatorState.indication as string;
-          // Use adjusted body weight if actual > 120% IBW
-          const gentDosingWeight = gentWeight > gentIbw * 1.2 
-            ? gentIbw + 0.4 * (gentWeight - gentIbw) 
-            : gentWeight;
-          const gentLoadingDose = Math.round(gentDosingWeight * 2); // 2 mg/kg loading
-          calculationResult = gentLoadingDose;
-          setResultInterpretation(
-            `**Loading Dose:** ${gentLoadingDose} mg (2 mg/kg x ${gentDosingWeight.toFixed(1)} kg)\n\n` +
-            selectedCalculator.interpretation(gentLoadingDose, { crcl: gentCrcl, dialysis: gentDialysis, indication: gentIndication })
-          );
-          setResult(gentLoadingDose);
-          return;
 
-        case "piperacillin-tazobactam-dosing":
-          const ptCrcl = calculatorState.crcl as number;
-          const ptDialysis = Boolean(calculatorState.dialysis);
-          const ptCrrt = Boolean(calculatorState.crrt);
-          const ptIndication = calculatorState.indication as string;
-          calculationResult = ptCrcl;
-          setResultInterpretation(selectedCalculator.interpretation(ptCrcl, { crcl: ptCrcl, dialysis: ptDialysis, crrt: ptCrrt, indication: ptIndication }));
-          setResult(ptCrcl);
-          return;
-
-        case "meropenem-dosing":
-          const meroCrcl = calculatorState.crcl as number;
-          const meroDialysis = Boolean(calculatorState.dialysis);
-          const meroCrrt = Boolean(calculatorState.crrt);
-          const meroIndication = calculatorState.indication as string;
-          calculationResult = meroCrcl;
-          setResultInterpretation(selectedCalculator.interpretation(meroCrcl, { crcl: meroCrcl, dialysis: meroDialysis, crrt: meroCrrt, indication: meroIndication }));
-          setResult(meroCrcl);
-          return;
-
-        case "ciprofloxacin-dosing":
-          const ciproCrcl = calculatorState.crcl as number;
-          const ciproDialysis = Boolean(calculatorState.dialysis);
-          const ciproRoute = calculatorState.route as string;
-          const ciproIndication = calculatorState.indication as string;
-          calculationResult = ciproCrcl;
-          setResultInterpretation(selectedCalculator.interpretation(ciproCrcl, { crcl: ciproCrcl, dialysis: ciproDialysis, route: ciproRoute, indication: ciproIndication }));
-          setResult(ciproCrcl);
+        // Contrast-Induced Nephropathy Risk Calculator
+        case "cin-mehran-score":
+          // Calculate Mehran score based on risk factors
+          let mehranScore = 0;
+          
+          // Hypotension: 5 points
+          if (calculatorState.hypotension) mehranScore += 5;
+          
+          // IABP: 5 points
+          if (calculatorState.iabp) mehranScore += 5;
+          
+          // CHF: 5 points
+          if (calculatorState.chf) mehranScore += 5;
+          
+          // Age >75: 4 points
+          if (calculatorState.age) mehranScore += 4;
+          
+          // Anemia: 3 points
+          if (calculatorState.anemia) mehranScore += 3;
+          
+          // Diabetes: 3 points
+          if (calculatorState.diabetes) mehranScore += 3;
+          
+          // Contrast volume: 1 point per 100cc
+          const contrastVol = calculatorState.contrastVolume as number || 0;
+          mehranScore += Math.floor(contrastVol / 100);
+          
+          // eGFR points: 2 points if 40-60, 4 points if 20-40, 6 points if <20
+          const cinEgfr = calculatorState.egfr as number || 60;
+          if (cinEgfr < 20) {
+            mehranScore += 6;
+          } else if (cinEgfr < 40) {
+            mehranScore += 4;
+          } else if (cinEgfr < 60) {
+            mehranScore += 2;
+          }
+          
+          // SCr >1.5: 4 points (only if eGFR not provided)
+          const cinScr = calculatorState.creatinine as number || 1.0;
+          if (!calculatorState.egfr && cinScr > 1.5) {
+            mehranScore += 4;
+          }
+          
+          calculationResult = mehranScore;
+          setResultInterpretation(selectedCalculator.interpretation(mehranScore, { egfr: cinEgfr, contrastVolume: contrastVol }));
+          setResult(mehranScore);
           return;
 
         // Drug Interaction Checker
