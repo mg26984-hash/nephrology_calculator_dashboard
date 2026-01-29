@@ -588,6 +588,73 @@ export default function Dashboard() {
           );
           break;
 
+        case "acr-from-pcr":
+          calculationResult = calc.acrFromPcr(
+            calculatorState.pcr as number
+          );
+          break;
+
+        case "ktv-hemodialysis":
+          calculationResult = calc.ktv(
+            getValue("preBUN"),
+            getValue("postBUN"),
+            calculatorState.postWeight as number,
+            calculatorState.sessionTime as number,
+            calculatorState.ultrafiltration as number || 0,
+            (calculatorState.bunUnit as "mg/dL" | "mmol/L") || "mg/dL"
+          );
+          break;
+
+        case "hd-session-duration":
+          calculationResult = calc.hemodialysisSessionDuration(
+            calculatorState.targetKtV as number,
+            getValue("preBUN"),
+            getValue("postBUN"),
+            calculatorState.weight as number,
+            getInputUnit("preBUN") === "si" ? "mmol/L" : "mg/dL"
+          );
+          break;
+
+        case "pd-weekly-ktv":
+          calculationResult = calc.pdWeeklyKtv(
+            calculatorState.dailyDialysateUrea as number,
+            calculatorState.plasmaUrea as number,
+            calculatorState.dialysateVolume as number,
+            calculatorState.totalBodyWater as number,
+            calculatorState.residualKtv as number || 0
+          );
+          break;
+
+        case "residual-rkf-ktv":
+          calculationResult = calc.residualKfKtv(
+            calculatorState.ureaUrineClearance as number,
+            calculatorState.totalBodyWater as number
+          );
+          break;
+
+        case "equilibrated-ktv":
+          calculationResult = calc.equilibratedKtv(
+            calculatorState.spKtv as number,
+            calculatorState.sessionTime as number
+          );
+          break;
+
+        case "standard-ktv":
+          calculationResult = calc.standardKtv(
+            calculatorState.spKtv as number,
+            4, // Default 4-hour session for standard Kt/V calculation
+            calculatorState.residualKtv as number || 0
+          );
+          break;
+
+        case "devine-ibw":
+          calculationResult = calc.devineIdealBodyWeight(
+            calculatorState.height as number,
+            calculatorState.sex as "M" | "F",
+            (calculatorState.heightUnit as "cm" | "in") || "cm"
+          );
+          break;
+
         case "kt-v-daugirdas":
           calculationResult = calc.ktv(
             getValue("preBUN"),
