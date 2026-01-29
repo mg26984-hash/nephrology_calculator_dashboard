@@ -568,12 +568,72 @@ export default function Dashboard() {
           calculationResult = Math.round((dialysateCr / plasmaCr) * (dialVol / bodyWt) * 100) / 100;
           break;
 
+        case "ktv-hemodialysis":
+          // Get BUN unit from unitState (inline toggle uses "conventional" or "si")
+          const bunUnitType = unitState["preBUN"] || "conventional";
+          const bunUnit = bunUnitType === "si" ? "mmol/L" : "mg/dL";
+          calculationResult = calc.ktv(
+            getValue("preBUN"),
+            getValue("postBUN"),
+            calculatorState.postWeight as number,
+            calculatorState.sessionTime as number,
+            calculatorState.ultrafiltration as number || 0,
+            bunUnit
+          );
+          break;
+
         case "total-body-water":
           calculationResult = calc.totalBodyWaterWatson(
             calculatorState.weight as number,
             calculatorState.height as number,
             calculatorState.age as number,
             calculatorState.sex as "M" | "F"
+          );
+          break;
+
+        case "hd-session-duration":
+          // Calculate required session duration to achieve target Kt/V
+          // Using reverse engineering of Daugirdas formula
+          const targetKtV = calculatorState.targetKtV as number;
+          const preBUNHd = getValue("preBUN");
+          const postBUNHd = getValue("postBUN");
+          const weightHd = calculatorState.weight as number;
+          // Simplified estimation: session time ≈ targetKtV * V / K
+          // Using approximation based on typical clearance rates
+          const estimatedTBW = 0.6 * weightHd; // Approximate TBW
+          const estimatedK = 250; // Typical dialyzer clearance mL/min
+          calculationResult = Math.round((targetKtV * estimatedTBW * 1000) / estimatedK);
+          break;
+
+        case "pd-weekly-ktv":
+          calculationResult = calc.pdWeeklyKtv(
+            calculatorState.dailyDialysateUrea as number,
+            getValue("plasmaUrea"),
+            calculatorState.dialysateVolume as number,
+            calculatorState.totalBodyWater as number,
+            (calculatorState.residualKtv as number) || 0
+          );
+          break;
+
+        case "residual-rkf-ktv":
+          calculationResult = calc.residualKfKtv(
+            calculatorState.ureaUrineClearance as number,
+            calculatorState.totalBodyWater as number
+          );
+          break;
+
+        case "equilibrated-ktv":
+          calculationResult = calc.equilibratedKtv(
+            calculatorState.spKtv as number,
+            calculatorState.sessionTime as number
+          );
+          break;
+
+        case "standard-ktv":
+          calculationResult = calc.standardKtv(
+            calculatorState.spKtv as number,
+            calculatorState.sessionTime as number || 4,
+            (calculatorState.residualKtv as number) || 0
           );
           break;
 
