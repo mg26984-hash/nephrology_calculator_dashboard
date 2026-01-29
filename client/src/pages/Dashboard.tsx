@@ -1522,9 +1522,25 @@ export default function Dashboard() {
               </nav>
 
               {/* Calculator Header */}
-              <div>
-                <h2 className="text-2xl font-bold">{selectedCalculator.name}</h2>
-                <p className="text-muted-foreground mt-1">{selectedCalculator.description}</p>
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <h2 className="text-2xl font-bold">{selectedCalculator.name}</h2>
+                  <p className="text-muted-foreground mt-1">{selectedCalculator.description}</p>
+                </div>
+                <button
+                  onClick={(e) => toggleFavorite(selectedCalculator.id, e)}
+                  className="p-2 rounded-lg hover:bg-accent transition-colors flex-shrink-0"
+                  title={favorites.includes(selectedCalculator.id) ? "Remove from favorites" : "Add to favorites"}
+                >
+                  <Star
+                    className={cn(
+                      "w-5 h-5 transition-colors",
+                      favorites.includes(selectedCalculator.id)
+                        ? "fill-amber-500 text-amber-500"
+                        : "text-muted-foreground hover:text-amber-500"
+                    )}
+                  />
+                </button>
               </div>
 
               {/* Input Card */}
