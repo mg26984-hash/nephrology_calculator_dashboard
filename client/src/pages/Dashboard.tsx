@@ -103,7 +103,12 @@ const unitOptions: { [inputId: string]: { conventional: string; si: string; conv
   urineaNitrogen: { conventional: "mg/dL", si: "mmol/L", conversionFactor: 0.357 },
   glucose: { conventional: "mg/dL", si: "mmol/L", conversionFactor: 0.0555 },
   albumin: { conventional: "g/dL", si: "g/L", conversionFactor: 10 },
+  // UACR inputs
   urineAlbumin: { conventional: "mg", si: "μg", conversionFactor: 1000 },
+  urineCreatinineUACR: { conventional: "g", si: "mg", conversionFactor: 1000 },
+  // UPCR inputs
+  urineProtein: { conventional: "mg", si: "g", conversionFactor: 0.001 },
+  urineCreatinineUPCR: { conventional: "mg", si: "g", conversionFactor: 0.001 },
   calcium: { conventional: "mg/dL", si: "mmol/L", conversionFactor: 0.25 },
   measuredCa: { conventional: "mg/dL", si: "mmol/L", conversionFactor: 0.25 },
   phosphate: { conventional: "mg/dL", si: "mmol/L", conversionFactor: 0.323 },
@@ -542,16 +547,18 @@ export default function Dashboard() {
         case "uacr":
           calculationResult = calc.uacr(
             getValue("urineAlbumin"),
-            calculatorState.urineCreatinine as number,
-            "mg",
-            "g"
+            getValue("urineCreatinineUACR"),
+            getInputUnit("urineAlbumin") === "si" ? "μg" : "mg",
+            getInputUnit("urineCreatinineUACR") === "si" ? "mg" : "g"
           );
           break;
 
         case "upcr":
           calculationResult = calc.upcr(
-            calculatorState.urineProtein as number,
-            calculatorState.urineCreatinine as number
+            getValue("urineProtein"),
+            getValue("urineCreatinineUPCR"),
+            getInputUnit("urineProtein") === "si" ? "g" : "mg",
+            getInputUnit("urineCreatinineUPCR") === "si" ? "g" : "mg"
           );
           break;
 
