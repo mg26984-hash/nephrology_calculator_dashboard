@@ -697,6 +697,43 @@ export const calculators: Calculator[] = [
   },
 
   {
+    id: "estimated-24h-protein",
+    name: "24-Hour Protein Excretion Estimator",
+    description: "Converts spot urine PCR/ACR to estimated 24-hour protein excretion",
+    category: "Proteinuria & Glomerular Disease",
+    inputs: [
+      { id: "inputMode", label: "Input Method", type: "select", options: [{ value: "ratio", label: "I have the ratio value" }, { value: "raw", label: "I have protein and creatinine values" }], required: true },
+      { id: "ratioValue", label: "Ratio Value", type: "number", placeholder: "0.5", required: false },
+      { id: "ratioUnit", label: "Ratio Unit", type: "select", options: [{ value: "mg_mg", label: "mg/mg" }, { value: "mg_mmol", label: "mg/mmol" }, { value: "mg_g", label: "mg/g" }], required: false },
+      { id: "proteinValue", label: "Urine Protein Concentration", type: "number", placeholder: "50", required: false },
+      { id: "proteinUnit", label: "Protein Unit", type: "select", options: [{ value: "mg_dL", label: "mg/dL" }, { value: "g_L", label: "g/L" }, { value: "mg_L", label: "mg/L" }], required: false },
+      { id: "creatinineValue", label: "Urine Creatinine Concentration", type: "number", placeholder: "100", required: false },
+      { id: "creatinineUnit", label: "Creatinine Unit", type: "select", options: [{ value: "mg_dL", label: "mg/dL" }, { value: "mmol_L", label: "mmol/L" }], required: false },
+    ],
+    resultLabel: "Estimated 24-Hour Protein Excretion",
+    resultUnit: "g/day",
+    interpretation: (value) => {
+      if (value < 0.15) return "Normal (A1) - No significant proteinuria";
+      if (value < 3.0) return "Mildly to Moderately Increased (A1-A2) - Monitor and treat underlying cause";
+      if (value < 10) return "Nephrotic-Range (A3) - Requires aggressive treatment";
+      return "Severe Nephrotic-Range (A3) - Timed 24-hour collection recommended for clinical decisions";
+    },
+    referenceRanges: [
+      { label: "Normal (A1)", max: 0.15, unit: "g/day", note: "No significant proteinuria" },
+      { label: "Increased (A2)", min: 0.15, max: 3, unit: "g/day", note: "Mildly to moderately increased" },
+      { label: "Nephrotic-range (A3)", min: 3, unit: "g/day", note: "Severely increased" },
+    ],
+    clinicalPearls: [
+      "Formula: PCR (g/day) = Urine Protein (mg/dL) ÷ Urine Creatinine (mg/dL)",
+      "Spot urine PCR correlates well with 24-hour collection in most patients",
+      "Accuracy decreases at nephrotic-range values (>10 g/day)",
+      "Timed 24-hour collection recommended for clinical decisions in edge cases",
+      "Less accurate with tubular or overflow proteinuria",
+    ],
+    references: ["KDIGO 2024 Clinical Practice Guideline for the Evaluation and Management of CKD"],
+  },
+
+  {
     id: "igan-prediction",
     name: "International IgA Nephropathy (IgAN) Prediction Tool",
     description: "Predicts 2, 5, and 7-year risk of kidney failure in IgAN",

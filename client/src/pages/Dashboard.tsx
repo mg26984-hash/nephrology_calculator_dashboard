@@ -510,6 +510,24 @@ export default function Dashboard() {
           );
           break;
 
+        case "acr-from-pcr":
+          calculationResult = calc.acrFromPcr(
+            calculatorState.pcr as number
+          );
+          break;
+
+        case "estimated-24h-protein":
+          calculationResult = calc.estimated24HourProtein(
+            calculatorState.inputMode as "ratio" | "raw",
+            calculatorState.ratioValue as number | undefined,
+            calculatorState.ratioUnit as "mg_mg" | "mg_mmol" | "mg_g" | undefined,
+            calculatorState.proteinValue as number | undefined,
+            calculatorState.proteinUnit as "mg_dL" | "g_L" | "mg_L" | undefined,
+            calculatorState.creatinineValue as number | undefined,
+            calculatorState.creatinineUnit as "mg_dL" | "mmol_L" | undefined
+          );
+          break;
+
         case "igan-prediction":
           calculationResult = calc.iganPredictionTool(
             calculatorState.age as number,

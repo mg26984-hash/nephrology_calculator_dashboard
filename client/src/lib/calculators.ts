@@ -427,6 +427,77 @@ export function acrFromPcr(pcr: number): number {
   return Math.round(acr * 10) / 10;
 }
 
+export function estimated24HourProtein(
+  inputMode: "ratio" | "raw",
+  ratioValue?: number,
+  ratioUnit?: "mg_mg" | "mg_mmol" | "mg_g",
+  proteinValue?: number,
+  proteinUnit?: "mg_dL" | "g_L" | "mg_L",
+  creatinineValue?: number,
+  creatinineUnit?: "mg_dL" | "mmol_L"
+): number {
+  // 24-Hour Urinary Protein Excretion Estimator
+  // Formula: Protein (mg/dL) ÷ Creatinine (mg/dL) = g/day
+  // Reference: Standard clinical formula for spot urine PCR to 24h estimation
+  
+  let gPerDay: number;
+  
+  if (inputMode === "ratio") {
+    // Convert ratio to mg/mg (which equals g/day)
+    if (ratioValue === undefined || ratioValue <= 0) return 0;
+    
+    // Default to mg/mg if no unit specified
+    const unit = ratioUnit || "mg_mg";
+    
+    if (unit === "mg_mg") {
+      gPerDay = ratioValue;
+    } else if (unit === "mg_g") {
+      // mg/g = mg protein per g creatinine = 0.001 g protein per g creatinine
+      gPerDay = ratioValue / 1000.0;
+    } else if (unit === "mg_mmol") {
+      // mg/mmol creatinine - convert to mg/mg using 113.12 mg/mmol
+      gPerDay = ratioValue / 113.12;
+    } else {
+      gPerDay = ratioValue;
+    }
+  } else {
+    // Calculate from raw values
+    if (proteinValue === undefined || creatinineValue === undefined || creatinineValue <= 0) return 0;
+    
+    // Default units to mg/dL if not specified
+    const pUnit = proteinUnit || "mg_dL";
+    const cUnit = creatinineUnit || "mg_dL";
+    
+    // Convert protein to mg/dL for calculation
+    let proteinMgDL: number;
+    if (pUnit === "mg_dL") {
+      proteinMgDL = proteinValue;
+    } else if (pUnit === "g_L") {
+      // g/L to mg/dL: multiply by 100 (1 g/L = 100 mg/dL)
+      proteinMgDL = proteinValue * 100;
+    } else {
+      // mg_L to mg/dL: divide by 10 (1 mg/L = 0.1 mg/dL)
+      proteinMgDL = proteinValue / 10;
+    }
+    
+    // Convert creatinine to mg/dL for calculation
+    let creatinineMgDL: number;
+    if (cUnit === "mg_dL") {
+      creatinineMgDL = creatinineValue;
+    } else if (cUnit === "mmol_L") {
+      // mmol/L to mg/dL: multiply by 11.312 (1 mmol/L = 11.312 mg/dL)
+      creatinineMgDL = creatinineValue * 11.312;
+    } else {
+      creatinineMgDL = creatinineValue;
+    }
+    
+    // Formula: Protein (mg/dL) ÷ Creatinine (mg/dL) = g/day
+    gPerDay = proteinMgDL / creatinineMgDL;
+  }
+  
+  return Math.round(gPerDay * 1000) / 1000;
+}
+
 export function iganPredictionTool(
   age: number,
   eGFR: number,
