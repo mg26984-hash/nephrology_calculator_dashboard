@@ -118,7 +118,6 @@ export default function Dashboard() {
   const [calculatorState, setCalculatorState] = useState<CalculatorState>({});
   const [unitState, setUnitState] = useState<UnitState>({});
   const [result, setResult] = useState<number | null>(null);
-  const [secondaryResult, setSecondaryResult] = useState<{ value: number; unit: string } | null>(null);
   const [resultInterpretation, setResultInterpretation] = useState<string>("");
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
@@ -470,10 +469,6 @@ export default function Dashboard() {
             getValue("albumin"),
             "g/dL"
           );
-          // Also calculate in mmol/L (conversion factor: mg/dL * 0.25 = mmol/L)
-          if (typeof calculationResult === 'number') {
-            setSecondaryResult({ value: Math.round(calculationResult * 0.25 * 100) / 100, unit: 'mmol/L' });
-          }
           break;
 
         case "qtc-bazett":
@@ -512,25 +507,6 @@ export default function Dashboard() {
           calculationResult = calc.upcr(
             calculatorState.spotProtein as number,
             calculatorState.spotCreatinine as number
-          );
-          break;
-
-        case "acr-from-pcr":
-          calculationResult = calc.acrFromPcr(
-            calculatorState.pcr as number
-          );
-          break;
-
-        case "estimated-24h-protein":
-          calculationResult = calc.estimated24HourProtein(
-            (calculatorState.testType as "pcr" | "acr") || "pcr",
-            calculatorState.inputMode as "ratio" | "raw",
-            calculatorState.ratioValue as number | undefined,
-            calculatorState.ratioValueUnit as "mg_mg" | "mg_mmol" | "mg_g" | undefined,
-            calculatorState.proteinValue as number | undefined,
-            calculatorState.proteinValueUnit as "mg_dL" | "g_L" | "mg_L" | undefined,
-            calculatorState.creatinineValue as number | undefined,
-            calculatorState.creatinineValueUnit as "mg_dL" | "mmol_L" | undefined
           );
           break;
 
@@ -573,72 +549,12 @@ export default function Dashboard() {
           calculationResult = Math.round((dialysateCr / plasmaCr) * (dialVol / bodyWt) * 100) / 100;
           break;
 
-        case "ktv-hemodialysis":
-          // Get BUN unit from unitState (inline toggle uses "conventional" or "si")
-          const bunUnitType = unitState["preBUN"] || "conventional";
-          const bunUnit = bunUnitType === "si" ? "mmol/L" : "mg/dL";
-          calculationResult = calc.ktv(
-            getValue("preBUN"),
-            getValue("postBUN"),
-            calculatorState.postWeight as number,
-            calculatorState.sessionTime as number,
-            calculatorState.ultrafiltration as number || 0,
-            bunUnit
-          );
-          break;
-
         case "total-body-water":
           calculationResult = calc.totalBodyWaterWatson(
             calculatorState.weight as number,
             calculatorState.height as number,
             calculatorState.age as number,
             calculatorState.sex as "M" | "F"
-          );
-          break;
-
-        case "hd-session-duration":
-          // Calculate required session duration to achieve target Kt/V
-          // Using reverse engineering of Daugirdas formula
-          const targetKtV = calculatorState.targetKtV as number;
-          const preBUNHd = getValue("preBUN");
-          const postBUNHd = getValue("postBUN");
-          const weightHd = calculatorState.weight as number;
-          // Simplified estimation: session time ≈ targetKtV * V / K
-          // Using approximation based on typical clearance rates
-          const estimatedTBW = 0.6 * weightHd; // Approximate TBW
-          const estimatedK = 250; // Typical dialyzer clearance mL/min
-          calculationResult = Math.round((targetKtV * estimatedTBW * 1000) / estimatedK);
-          break;
-
-        case "pd-weekly-ktv":
-          calculationResult = calc.pdWeeklyKtv(
-            calculatorState.dailyDialysateUrea as number,
-            getValue("plasmaUrea"),
-            calculatorState.dialysateVolume as number,
-            calculatorState.totalBodyWater as number,
-            (calculatorState.residualKtv as number) || 0
-          );
-          break;
-
-        case "residual-rkf-ktv":
-          calculationResult = calc.residualKfKtv(
-            calculatorState.ureaUrineClearance as number,
-            calculatorState.totalBodyWater as number
-          );
-          break;
-
-        case "equilibrated-ktv":
-          calculationResult = calc.equilibratedKtv(
-            calculatorState.spKtv as number,
-            calculatorState.sessionTime as number
-          );
-          break;
-
-        case "standard-ktv":
-          calculationResult = calc.standardKtv(
-            calculatorState.spKtv as number,
-            calculatorState.sessionTime as number || 4,
-            (calculatorState.residualKtv as number) || 0
           );
           break;
 
@@ -856,7 +772,7 @@ export default function Dashboard() {
           );
           break;
 
-        case "frax-simplified":
+        case "frax":
           const fraxResult = calc.fraxSimplified(
             calculatorState.age as number,
             calculatorState.sex as "M" | "F",
@@ -902,60 +818,65 @@ export default function Dashboard() {
           setResult(banffResult.category);
           return; // Skip the default interpretation handling
 
-        // CKD Drug Dosing Calculators - these use interpretation function with inputs
-        case "vancomycin-dosing":
-          const vancoWeight = calculatorState.weight as number;
-          const vancoEgfr = calculatorState.egfr as number;
-          const vancoDialysis = Boolean(calculatorState.dialysis);
-          const vancoIndication = calculatorState.indication as string;
-          // Calculate loading dose based on weight
-          const loadingDose = Math.round(vancoWeight * 25); // 25 mg/kg loading
-          calculationResult = loadingDose;
+        // Antibiotic Dosing Calculators
+        case "gentamicin-dosing":
+          const gentWeight = calculatorState.weight as number;
+          const gentIbw = calculatorState.ibw as number;
+          const gentCrcl = calculatorState.crcl as number;
+          const gentDialysis = Boolean(calculatorState.dialysis);
+          const gentIndication = calculatorState.indication as string;
+          // Use adjusted body weight if actual > 120% IBW
+          const gentDosingWeight = gentWeight > gentIbw * 1.2 
+            ? gentIbw + 0.4 * (gentWeight - gentIbw) 
+            : gentWeight;
+          const gentLoadingDose = Math.round(gentDosingWeight * 2); // 2 mg/kg loading
+          calculationResult = gentLoadingDose;
           setResultInterpretation(
-            `**Loading Dose:** ${loadingDose} mg (25 mg/kg)\n\n` +
-            selectedCalculator.interpretation(loadingDose, { egfr: vancoEgfr, dialysis: vancoDialysis, indication: vancoIndication })
+            `**Loading Dose:** ${gentLoadingDose} mg (2 mg/kg x ${gentDosingWeight.toFixed(1)} kg)\n\n` +
+            selectedCalculator.interpretation(gentLoadingDose, { crcl: gentCrcl, dialysis: gentDialysis, indication: gentIndication })
           );
-          setResult(loadingDose);
+          setResult(gentLoadingDose);
           return;
 
-        case "metformin-ckd":
-          const metEgfr = calculatorState.egfr as number;
-          calculationResult = metEgfr;
-          setResultInterpretation(selectedCalculator.interpretation(metEgfr, { egfr: metEgfr }));
-          setResult(metEgfr);
+        case "piperacillin-tazobactam-dosing":
+          const ptCrcl = calculatorState.crcl as number;
+          const ptDialysis = Boolean(calculatorState.dialysis);
+          const ptCrrt = Boolean(calculatorState.crrt);
+          const ptIndication = calculatorState.indication as string;
+          calculationResult = ptCrcl;
+          setResultInterpretation(selectedCalculator.interpretation(ptCrcl, { crcl: ptCrcl, dialysis: ptDialysis, crrt: ptCrrt, indication: ptIndication }));
+          setResult(ptCrcl);
           return;
 
-        case "gabapentin-dosing":
-          const gabaCrcl = calculatorState.crcl as number;
-          const gabaDialysis = Boolean(calculatorState.dialysis);
-          calculationResult = gabaCrcl;
-          setResultInterpretation(selectedCalculator.interpretation(gabaCrcl, { crcl: gabaCrcl, dialysis: gabaDialysis }));
-          setResult(gabaCrcl);
+        case "meropenem-dosing":
+          const meroCrcl = calculatorState.crcl as number;
+          const meroDialysis = Boolean(calculatorState.dialysis);
+          const meroCrrt = Boolean(calculatorState.crrt);
+          const meroIndication = calculatorState.indication as string;
+          calculationResult = meroCrcl;
+          setResultInterpretation(selectedCalculator.interpretation(meroCrcl, { crcl: meroCrcl, dialysis: meroDialysis, crrt: meroCrrt, indication: meroIndication }));
+          setResult(meroCrcl);
           return;
 
-        case "enoxaparin-dosing":
-          const enoxWeight = calculatorState.weight as number;
-          const enoxCrcl = calculatorState.crcl as number;
-          const enoxIndication = calculatorState.indication as string;
-          calculationResult = enoxWeight;
-          setResultInterpretation(selectedCalculator.interpretation(enoxWeight, { weight: enoxWeight, crcl: enoxCrcl, indication: enoxIndication }));
-          setResult(enoxWeight);
+        case "ciprofloxacin-dosing":
+          const ciproCrcl = calculatorState.crcl as number;
+          const ciproDialysis = Boolean(calculatorState.dialysis);
+          const ciproRoute = calculatorState.route as string;
+          const ciproIndication = calculatorState.indication as string;
+          calculationResult = ciproCrcl;
+          setResultInterpretation(selectedCalculator.interpretation(ciproCrcl, { crcl: ciproCrcl, dialysis: ciproDialysis, route: ciproRoute, indication: ciproIndication }));
+          setResult(ciproCrcl);
           return;
 
-        case "acei-arb-dosing":
-          const aceiDrug = calculatorState.drug as string;
-          const aceiEgfr = calculatorState.egfr as number;
-          const aceiPotassium = calculatorState.potassium as number;
-          calculationResult = aceiEgfr;
-          setResultInterpretation(selectedCalculator.interpretation(aceiEgfr, { drug: aceiDrug, egfr: aceiEgfr, potassium: aceiPotassium }));
-          setResult(aceiEgfr);
-          return;
-
-        case "allopurinol-dosing":
-          const alloCrcl = calculatorState.crcl as number;
-          calculationResult = alloCrcl;
-          setResultInterpretation(selectedCalculator.interpretation(alloCrcl, { crcl: alloCrcl }));
-          setResult(alloCrcl);
+        // Drug Interaction Checker
+        case "nephrotoxic-interaction-checker":
+          const drug1 = calculatorState.drug1 as string;
+          const drug2 = calculatorState.drug2 as string;
+          const drug3 = calculatorState.drug3 as string || "none";
+          const interactionEgfr = calculatorState.egfr as number || 60;
+          calculationResult = 1; // Placeholder value
+          setResultInterpretation(selectedCalculator.interpretation(1, { drug1, drug2, drug3, egfr: interactionEgfr }));
+          setResult(1);
           return;
 
         default:
@@ -965,16 +886,11 @@ export default function Dashboard() {
       if (calculationResult !== undefined) {
         const numResult = typeof calculationResult === "number" ? calculationResult : 0;
         setResult(numResult);
-        // Clear secondary result for calculators that don't set it (corrected-calcium sets it in its case block)
-        if (selectedCalculator.id !== 'corrected-calcium') {
-          setSecondaryResult(null);
-        }
         setResultInterpretation(selectedCalculator.interpretation(numResult));
       }
     } catch (error) {
       console.error("Calculation error:", error);
       setResult(null);
-      setSecondaryResult(null);
       setResultInterpretation("Error in calculation. Please check your inputs.");
     }
   }, [selectedCalculator, calculatorState, normalizeValue]);
@@ -984,7 +900,6 @@ export default function Dashboard() {
     setCalculatorState({});
     setUnitState({});
     setResult(null);
-    setSecondaryResult(null);
     setResultInterpretation("");
     setMobileMenuOpen(false);
     // Track recent calculator usage
@@ -1163,41 +1078,35 @@ export default function Dashboard() {
               </div>
               <div className="space-y-1">
                 {favoriteCalculators.map((calc) => (
-                  <div
+                  <button
                     key={`fav-${calc.id}`}
                     data-calculator-id={calc.id}
                     onClick={() => handleSelectCalculator(calc.id)}
                     className={cn(
-                      "w-full text-left px-3 py-2 rounded-md text-sm transition-colors group cursor-pointer",
+                      "w-full text-left px-3 py-2 rounded-md text-sm transition-colors group",
                       "hover:bg-accent hover:text-accent-foreground",
                       selectedCalculatorId === calc.id
                         ? "bg-primary text-primary-foreground"
                         : "text-foreground"
                     )}
-                    role="button"
-                    tabIndex={0}
-                    onKeyDown={(e) => e.key === 'Enter' && handleSelectCalculator(calc.id)}
                   >
                     <div className="flex items-center justify-between">
                       <span className="break-words hyphens-auto pr-2" style={{ wordBreak: 'break-word' }}>{calc.name}</span>
                       <div className="flex items-center gap-1">
-                        <span
-                          onClick={(e) => { e.stopPropagation(); toggleFavorite(calc.id, e); }}
+                        <button
+                          onClick={(e) => toggleFavorite(calc.id, e)}
                           className={cn(
-                            "p-0.5 rounded hover:bg-background/50 transition-colors cursor-pointer",
+                            "p-0.5 rounded hover:bg-background/50 transition-colors",
                             selectedCalculatorId === calc.id ? "text-primary-foreground" : "text-amber-500"
                           )}
                           title="Remove from favorites"
-                          role="button"
-                          tabIndex={0}
-                          onKeyDown={(e) => { if (e.key === 'Enter') { e.stopPropagation(); toggleFavorite(calc.id, e as unknown as React.MouseEvent); } }}
                         >
                           <Star className="w-3 h-3 fill-current" />
-                        </span>
+                        </button>
                         <ChevronRight className="w-3 h-3 flex-shrink-0 opacity-50" />
                       </div>
                     </div>
-                  </div>
+                  </button>
                 ))}
               </div>
               <Separator className="my-3" />
@@ -1214,43 +1123,37 @@ export default function Dashboard() {
               </div>
               <div className="space-y-1">
                 {recentCalculators.map((calc) => (
-                  <div
+                  <button
                     key={`recent-${calc.id}`}
                     data-calculator-id={calc.id}
                     onClick={() => handleSelectCalculator(calc.id)}
                     className={cn(
-                      "w-full text-left px-3 py-2 rounded-md text-sm transition-colors group cursor-pointer",
+                      "w-full text-left px-3 py-2 rounded-md text-sm transition-colors group",
                       "hover:bg-accent hover:text-accent-foreground",
                       selectedCalculatorId === calc.id
                         ? "bg-primary text-primary-foreground"
                         : "text-foreground"
                     )}
-                    role="button"
-                    tabIndex={0}
-                    onKeyDown={(e) => e.key === 'Enter' && handleSelectCalculator(calc.id)}
                   >
                     <div className="flex items-center justify-between">
                       <span className="break-words hyphens-auto pr-2" style={{ wordBreak: 'break-word' }}>{calc.name}</span>
                       <div className="flex items-center gap-1">
-                        <span
-                          onClick={(e) => { e.stopPropagation(); toggleFavorite(calc.id, e); }}
+                        <button
+                          onClick={(e) => toggleFavorite(calc.id, e)}
                           className={cn(
-                            "p-0.5 rounded transition-colors cursor-pointer",
+                            "p-0.5 rounded transition-colors",
                             favorites.includes(calc.id)
                               ? "text-amber-500" 
                               : "text-muted-foreground/50 hover:text-amber-500 sm:opacity-0 sm:group-hover:opacity-100"
                           )}
                           title={favorites.includes(calc.id) ? "Remove from favorites" : "Add to favorites"}
-                          role="button"
-                          tabIndex={0}
-                          onKeyDown={(e) => { if (e.key === 'Enter') { e.stopPropagation(); toggleFavorite(calc.id, e as unknown as React.MouseEvent); } }}
                         >
                           <Star className={cn("w-3 h-3", favorites.includes(calc.id) && "fill-current")} />
-                        </span>
+                        </button>
                         <ChevronRight className="w-3 h-3 flex-shrink-0 opacity-50" />
                       </div>
                     </div>
-                  </div>
+                  </button>
                 ))}
               </div>
               <Separator className="my-3" />
@@ -1273,13 +1176,13 @@ export default function Dashboard() {
                     const isFocused = focusedIndex === currentIndex;
                     const isFavorite = favorites.includes(calc.id);
                     return (
-                      <div
+                      <button
                         key={calc.id}
                         data-calculator-id={calc.id}
                         data-calculator-index={currentIndex}
                         onClick={() => handleSelectCalculator(calc.id)}
                         className={cn(
-                          "w-full text-left px-3 py-2 rounded-md text-sm transition-colors group cursor-pointer",
+                          "w-full text-left px-3 py-2 rounded-md text-sm transition-colors group",
                           "hover:bg-accent hover:text-accent-foreground",
                           selectedCalculatorId === calc.id
                             ? "bg-primary text-primary-foreground"
@@ -1287,32 +1190,26 @@ export default function Dashboard() {
                             ? "bg-accent text-accent-foreground ring-2 ring-primary ring-offset-1"
                             : "text-foreground"
                         )}
-                        role="button"
-                        tabIndex={0}
-                        onKeyDown={(e) => e.key === 'Enter' && handleSelectCalculator(calc.id)}
                       >
                         <div className="flex items-center justify-between">
                           <span className="break-words hyphens-auto pr-2" style={{ wordBreak: 'break-word' }}>{calc.name}</span>
                           <div className="flex items-center gap-1">
-                            <span
-                              onClick={(e) => { e.stopPropagation(); toggleFavorite(calc.id, e); }}
+                            <button
+                              onClick={(e) => toggleFavorite(calc.id, e)}
                               className={cn(
-                                "p-0.5 rounded transition-colors cursor-pointer",
+                                "p-0.5 rounded transition-colors",
                                 isFavorite 
                                   ? "text-amber-500" 
                                   : "text-muted-foreground/50 hover:text-amber-500 sm:opacity-0 sm:group-hover:opacity-100"
                               )}
                               title={isFavorite ? "Remove from favorites" : "Add to favorites"}
-                              role="button"
-                              tabIndex={0}
-                              onKeyDown={(e) => { if (e.key === 'Enter') { e.stopPropagation(); toggleFavorite(calc.id, e as unknown as React.MouseEvent); } }}
                             >
                               <Star className={cn("w-3 h-3", isFavorite && "fill-current")} />
-                            </span>
+                            </button>
                             <ChevronRight className="w-3 h-3 flex-shrink-0 opacity-50" />
                           </div>
                         </div>
-                      </div>
+                      </button>
                     );
                   })}
                 </div>
@@ -1488,7 +1385,7 @@ export default function Dashboard() {
                 {calculators
                   .filter(c => c.category === viewingCategoryList)
                   .map((calc) => (
-                    <div
+                    <button
                       key={calc.id}
                       onClick={() => {
                         setSelectedCalculatorId(calc.id);
@@ -1496,10 +1393,9 @@ export default function Dashboard() {
                         setSelectedCategory(viewingCategoryList);
                         addToRecent(calc.id);
                         setResult(null);
-                        setSecondaryResult(null);
                         setCalculatorState({});
                       }}
-                      className="p-4 rounded-xl border border-border bg-card hover:bg-accent hover:border-primary/50 transition-all text-left group cursor-pointer"
+                      className="p-4 rounded-xl border border-border bg-card hover:bg-accent hover:border-primary/50 transition-all text-left group"
                     >
                       <div className="flex items-start justify-between gap-2">
                         <div className="flex-1">
@@ -1511,16 +1407,9 @@ export default function Dashboard() {
                           </p>
                         </div>
                         <div className="flex items-center gap-2">
-                          <span
-                            role="button"
-                            tabIndex={0}
+                          <button
                             onClick={(e) => toggleFavorite(calc.id, e)}
-                            onKeyDown={(e) => {
-                              if (e.key === 'Enter') {
-                                e.stopPropagation();
-                              }
-                            }}
-                            className="p-1 rounded hover:bg-background/50 transition-colors cursor-pointer"
+                            className="p-1 rounded hover:bg-background/50 transition-colors"
                           >
                             <Star
                               className={cn(
@@ -1530,11 +1419,11 @@ export default function Dashboard() {
                                   : "text-muted-foreground hover:text-yellow-500"
                               )}
                             />
-                          </span>
+                          </button>
                           <ChevronRight className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors" />
                         </div>
                       </div>
-                    </div>
+                    </button>
                   ))}
               </div>
             </div>
@@ -1653,38 +1542,8 @@ export default function Dashboard() {
                 <CardContent>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     {selectedCalculator.inputs
-                      .filter((input) => {
-                        // Skip unit selector inputs except for the 24h protein calculator
-                        if (input.id.endsWith("Unit")) {
-                          // For 24h protein calculator, we'll render unit selects inline with their inputs
-                          return false;
-                        }
-                        return true;
-                      })
-                      .map((input) => {
-                        // Check if this input has a corresponding unit selector for 24h protein calculator
-                        const unitInputId = input.id + "Unit";
-                        const unitInput = selectedCalculator.inputs.find(i => i.id === unitInputId);
-                        const isProteinCalc = selectedCalculator.id === "estimated-24h-protein";
-                        
-                        // For 24h protein calculator, check if this input should be hidden based on inputMode
-                        const inputMode = calculatorState.inputMode as string;
-                        if (isProteinCalc) {
-                          // Hide ratio inputs when in raw mode
-                          if (inputMode === "raw" && (input.id === "ratioValue")) {
-                            return null;
-                          }
-                          // Hide raw inputs when in ratio mode
-                          if (inputMode === "ratio" && (input.id === "proteinValue" || input.id === "creatinineValue")) {
-                            return null;
-                          }
-                          // Default to ratio mode if not set
-                          if (!inputMode && (input.id === "proteinValue" || input.id === "creatinineValue")) {
-                            return null;
-                          }
-                        }
-                        
-                        return (
+                      .filter((input) => !input.id.endsWith("Unit")) // Skip unit selector inputs
+                      .map((input) => (
                       <div key={input.id} className="space-y-2">
                         <div className="flex items-center justify-between gap-2">
                           <Label className="text-sm font-medium flex items-center gap-1">
@@ -1697,7 +1556,7 @@ export default function Dashboard() {
                         </div>
                         
                         {input.type === "number" && (
-                          <div className="flex gap-2">
+                          <div className="relative">
                             <Input
                               type="number"
                               placeholder={getDynamicPlaceholder(input)}
@@ -1706,29 +1565,13 @@ export default function Dashboard() {
                               min={input.min}
                               max={input.max}
                               step={input.step}
-                              className={unitInput ? "flex-1" : hasUnitToggle(input.id) ? "" : "pr-16"}
+                              className={hasUnitToggle(input.id) ? "" : "pr-16"}
                             />
-                            {unitInput && unitInput.options ? (
-                              <Select
-                                value={String(calculatorState[unitInputId] ?? unitInput.options[0]?.value ?? "")}
-                                onValueChange={(value) => handleInputChange(unitInputId, value)}
-                              >
-                                <SelectTrigger className="w-[120px]">
-                                  <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  {unitInput.options.map((opt) => (
-                                    <SelectItem key={opt.value} value={opt.value}>
-                                      {opt.label}
-                                    </SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
-                            ) : !hasUnitToggle(input.id) && input.unit ? (
-                              <span className="flex items-center text-xs text-muted-foreground px-2">
+                            {!hasUnitToggle(input.id) && input.unit && (
+                              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">
                                 {input.unit}
                               </span>
-                            ) : null}
+                            )}
                           </div>
                         )}
 
@@ -1780,8 +1623,7 @@ export default function Dashboard() {
                           </div>
                         )}
                       </div>
-                    );
-                    })}
+                    ))}
                   </div>
 
                   <Separator className="my-6" />
@@ -1808,7 +1650,7 @@ export default function Dashboard() {
                       size="sm"
                       className="h-8 px-2 text-muted-foreground hover:text-foreground"
                       onClick={() => {
-                        const resultText = `${selectedCalculator.name}\nResult: ${typeof result === "number" ? result.toFixed(2) : result}${selectedCalculator.resultUnit ? " " + selectedCalculator.resultUnit : ""}${secondaryResult ? ` (${secondaryResult.value.toFixed(2)} ${secondaryResult.unit})` : ""}\nInterpretation: ${resultInterpretation}`;
+                        const resultText = `${selectedCalculator.name}\nResult: ${typeof result === "number" ? result.toFixed(2) : result}${selectedCalculator.resultUnit ? " " + selectedCalculator.resultUnit : ""}\nInterpretation: ${resultInterpretation}`;
                         navigator.clipboard.writeText(resultText);
                         setCopied(true);
                         setTimeout(() => setCopied(false), 2000);
@@ -1829,11 +1671,6 @@ export default function Dashboard() {
                       {selectedCalculator.resultUnit && (
                         <p className="text-sm text-muted-foreground mt-1">{selectedCalculator.resultUnit}</p>
                       )}
-                      {secondaryResult && (
-                        <p className="text-lg font-semibold text-primary/80 mt-2">
-                          {secondaryResult.value.toFixed(2)} <span className="text-sm text-muted-foreground">{secondaryResult.unit}</span>
-                        </p>
-                      )}
                     </div>
 
                     {resultInterpretation && (
@@ -1843,70 +1680,47 @@ export default function Dashboard() {
                       </Alert>
                     )}
 
-                    {/* Reference Ranges - Formatted Table */}
+                    {/* Reference Ranges */}
                     {selectedCalculator.referenceRanges && selectedCalculator.referenceRanges.length > 0 && (
                       <div className="mt-4 pt-4 border-t">
-                        <p className="text-sm font-medium mb-3 flex items-center gap-2">
+                        <p className="text-sm font-medium mb-2 flex items-center gap-2">
                           <Activity className="w-4 h-4 text-primary" />
                           Reference Ranges
                         </p>
-                        <div className="overflow-x-auto">
-                          <table className="w-full text-sm border-collapse">
-                            <thead>
-                              <tr className="bg-muted/50">
-                                <th className="px-3 py-2 text-left font-semibold border-b border-border">Category</th>
-                                <th className="px-3 py-2 text-left font-semibold border-b border-border">Range</th>
-                                <th className="px-3 py-2 text-left font-semibold border-b border-border">Notes</th>
-                                <th className="px-3 py-2 text-center font-semibold border-b border-border">Status</th>
-                              </tr>
-                            </thead>
-                            <tbody>
-                              {selectedCalculator.referenceRanges.map((range, idx) => {
-                                const isInRange = typeof result === 'number' && (
-                                  (range.min !== undefined && range.max !== undefined && result >= range.min && result <= range.max) ||
-                                  (range.min !== undefined && range.max === undefined && result >= range.min) ||
-                                  (range.min === undefined && range.max !== undefined && result <= range.max)
-                                );
-                                // Determine color based on category label
-                                const getCategoryColor = (label: string) => {
-                                  const lowerLabel = label.toLowerCase();
-                                  if (lowerLabel.includes('normal') || lowerLabel.includes('adequate')) return 'text-green-600 dark:text-green-400';
-                                  if (lowerLabel.includes('mild') || lowerLabel.includes('borderline') || lowerLabel.includes('overweight')) return 'text-yellow-600 dark:text-yellow-400';
-                                  if (lowerLabel.includes('moderate')) return 'text-orange-600 dark:text-orange-400';
-                                  if (lowerLabel.includes('severe') || lowerLabel.includes('kidney failure') || lowerLabel.includes('inadequate') || lowerLabel.includes('intrinsic') || lowerLabel.includes('high') || lowerLabel.includes('obese')) return 'text-red-600 dark:text-red-400';
-                                  if (lowerLabel.includes('underweight') || lowerLabel.includes('prerenal')) return 'text-blue-600 dark:text-blue-400';
-                                  return 'text-muted-foreground';
-                                };
-                                return (
-                                  <tr key={idx} className={`hover:bg-muted/30 ${isInRange ? 'bg-primary/5' : ''}`}>
-                                    <td className={`px-3 py-2 border-b border-border font-medium ${getCategoryColor(range.label)}`}>
-                                      {range.label}
-                                    </td>
-                                    <td className="px-3 py-2 border-b border-border text-muted-foreground">
-                                      {range.min !== undefined && range.max !== undefined
-                                        ? `${range.min} - ${range.max} ${range.unit}`
-                                        : range.min !== undefined
-                                        ? `≥${range.min} ${range.unit}`
-                                        : `≤${range.max} ${range.unit}`}
-                                    </td>
-                                    <td className="px-3 py-2 border-b border-border text-muted-foreground text-xs">
-                                      {range.note || '—'}
-                                    </td>
-                                    <td className="px-3 py-2 border-b border-border text-center">
-                                      {isInRange ? (
-                                        <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-primary/20 text-primary">
-                                          ✓
-                                        </span>
-                                      ) : (
-                                        <span className="text-muted-foreground/50">—</span>
-                                      )}
-                                    </td>
-                                  </tr>
-                                );
-                              })}
-                            </tbody>
-                          </table>
+                        <div className="space-y-1">
+                          {selectedCalculator.referenceRanges.map((range, idx) => {
+                            const isInRange = typeof result === 'number' && (
+                              (range.min !== undefined && range.max !== undefined && result >= range.min && result <= range.max) ||
+                              (range.min !== undefined && range.max === undefined && result >= range.min) ||
+                              (range.min === undefined && range.max !== undefined && result <= range.max)
+                            );
+                            return (
+                              <div
+                                key={idx}
+                                className={`flex items-center justify-between text-xs p-2 rounded ${
+                                  isInRange ? 'bg-primary/10 border border-primary/30' : 'bg-muted/50'
+                                }`}
+                              >
+                                <span className={`font-medium ${isInRange ? 'text-primary' : 'text-muted-foreground'}`}>
+                                  {range.label}
+                                  {isInRange && ' ✓'}
+                                </span>
+                                <span className="text-muted-foreground">
+                                  {range.min !== undefined && range.max !== undefined
+                                    ? `${range.min} - ${range.max} ${range.unit}`
+                                    : range.min !== undefined
+                                    ? `≥${range.min} ${range.unit}`
+                                    : `≤${range.max} ${range.unit}`}
+                                </span>
+                              </div>
+                            );
+                          })}
                         </div>
+                        {selectedCalculator.referenceRanges.some(r => r.note) && (
+                          <p className="text-xs text-muted-foreground mt-2 italic">
+                            {selectedCalculator.referenceRanges.find(r => r.note)?.note}
+                          </p>
+                        )}
                       </div>
                     )}
                   </CardContent>
@@ -1923,122 +1737,14 @@ export default function Dashboard() {
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
-                    {/* Special rendering for 24h protein calculator with validation table */}
-                    {selectedCalculator.id === 'estimated-24h-protein' ? (
-                      <div className="space-y-4">
-                        {/* Regular clinical pearls (first 6 items) */}
-                        <ul className="space-y-2">
-                          {selectedCalculator.clinicalPearls.slice(0, 6).map((pearl, idx) => (
-                            <li key={idx} className="flex gap-2 text-sm text-muted-foreground">
-                              <span className="text-primary flex-shrink-0">•</span>
-                              <span>{pearl}</span>
-                            </li>
-                          ))}
-                        </ul>
-                        
-                        {/* PCR Validation Reference Table */}
-                        <div className="mt-4">
-                          <h4 className="text-sm font-semibold mb-2 text-foreground">PCR Validation Reference Table</h4>
-                          <p className="text-xs text-muted-foreground mb-3">Test your inputs against these standard cases:</p>
-                          <div className="overflow-x-auto">
-                            <table className="w-full text-sm border-collapse">
-                              <thead>
-                                <tr className="bg-muted/50">
-                                  <th className="px-3 py-2 text-left font-semibold border-b border-border">Protein (mg/dL)</th>
-                                  <th className="px-3 py-2 text-left font-semibold border-b border-border">Creatinine (mg/dL)</th>
-                                  <th className="px-3 py-2 text-left font-semibold border-b border-border">Ratio (mg/mg)</th>
-                                  <th className="px-3 py-2 text-left font-semibold border-b border-border">Expected g/day</th>
-                                  <th className="px-3 py-2 text-left font-semibold border-b border-border">Category</th>
-                                </tr>
-                              </thead>
-                              <tbody>
-                                <tr className="hover:bg-muted/30">
-                                  <td className="px-3 py-2 border-b border-border text-muted-foreground">20</td>
-                                  <td className="px-3 py-2 border-b border-border text-muted-foreground">100</td>
-                                  <td className="px-3 py-2 border-b border-border text-muted-foreground">0.2</td>
-                                  <td className="px-3 py-2 border-b border-border text-muted-foreground">0.2</td>
-                                  <td className="px-3 py-2 border-b border-border text-green-600 dark:text-green-400">Normal</td>
-                                </tr>
-                                <tr className="hover:bg-muted/30">
-                                  <td className="px-3 py-2 border-b border-border text-muted-foreground">50</td>
-                                  <td className="px-3 py-2 border-b border-border text-muted-foreground">75</td>
-                                  <td className="px-3 py-2 border-b border-border text-muted-foreground">0.67</td>
-                                  <td className="px-3 py-2 border-b border-border text-muted-foreground">0.67</td>
-                                  <td className="px-3 py-2 border-b border-border text-yellow-600 dark:text-yellow-400">Mild</td>
-                                </tr>
-                                <tr className="hover:bg-muted/30">
-                                  <td className="px-3 py-2 border-b border-border text-muted-foreground">100</td>
-                                  <td className="px-3 py-2 border-b border-border text-muted-foreground">60</td>
-                                  <td className="px-3 py-2 border-b border-border text-muted-foreground">1.67</td>
-                                  <td className="px-3 py-2 border-b border-border text-muted-foreground">1.67</td>
-                                  <td className="px-3 py-2 border-b border-border text-orange-600 dark:text-orange-400">Moderate</td>
-                                </tr>
-                                <tr className="hover:bg-muted/30">
-                                  <td className="px-3 py-2 border-b border-border text-muted-foreground">150</td>
-                                  <td className="px-3 py-2 border-b border-border text-muted-foreground">50</td>
-                                  <td className="px-3 py-2 border-b border-border text-muted-foreground">3.0</td>
-                                  <td className="px-3 py-2 border-b border-border text-muted-foreground">3.0</td>
-                                  <td className="px-3 py-2 border-b border-border text-red-600 dark:text-red-400">Nephrotic</td>
-                                </tr>
-                                <tr className="hover:bg-muted/30">
-                                  <td className="px-3 py-2 border-b border-border text-muted-foreground">300</td>
-                                  <td className="px-3 py-2 border-b border-border text-muted-foreground">40</td>
-                                  <td className="px-3 py-2 border-b border-border text-muted-foreground">7.5</td>
-                                  <td className="px-3 py-2 border-b border-border text-muted-foreground">7.5</td>
-                                  <td className="px-3 py-2 border-b border-border text-red-700 dark:text-red-300 font-medium">Severe</td>
-                                </tr>
-                              </tbody>
-                            </table>
-                          </div>
-                        </div>
-                        
-                        {/* ACR KDIGO Categories */}
-                        <div className="mt-4">
-                          <h4 className="text-sm font-semibold mb-2 text-foreground">ACR KDIGO Categories</h4>
-                          <div className="overflow-x-auto">
-                            <table className="w-full text-sm border-collapse">
-                              <thead>
-                                <tr className="bg-muted/50">
-                                  <th className="px-3 py-2 text-left font-semibold border-b border-border">Category</th>
-                                  <th className="px-3 py-2 text-left font-semibold border-b border-border">ACR (mg/g)</th>
-                                  <th className="px-3 py-2 text-left font-semibold border-b border-border">ACR (mg/mmol)</th>
-                                  <th className="px-3 py-2 text-left font-semibold border-b border-border">Description</th>
-                                </tr>
-                              </thead>
-                              <tbody>
-                                <tr className="hover:bg-muted/30">
-                                  <td className="px-3 py-2 border-b border-border text-green-600 dark:text-green-400 font-medium">A1</td>
-                                  <td className="px-3 py-2 border-b border-border text-muted-foreground">&lt;30</td>
-                                  <td className="px-3 py-2 border-b border-border text-muted-foreground">&lt;3</td>
-                                  <td className="px-3 py-2 border-b border-border text-muted-foreground">Normal to mildly increased</td>
-                                </tr>
-                                <tr className="hover:bg-muted/30">
-                                  <td className="px-3 py-2 border-b border-border text-yellow-600 dark:text-yellow-400 font-medium">A2</td>
-                                  <td className="px-3 py-2 border-b border-border text-muted-foreground">30-300</td>
-                                  <td className="px-3 py-2 border-b border-border text-muted-foreground">3-30</td>
-                                  <td className="px-3 py-2 border-b border-border text-muted-foreground">Moderately increased</td>
-                                </tr>
-                                <tr className="hover:bg-muted/30">
-                                  <td className="px-3 py-2 border-b border-border text-red-600 dark:text-red-400 font-medium">A3</td>
-                                  <td className="px-3 py-2 border-b border-border text-muted-foreground">&gt;300</td>
-                                  <td className="px-3 py-2 border-b border-border text-muted-foreground">&gt;30</td>
-                                  <td className="px-3 py-2 border-b border-border text-muted-foreground">Severely increased</td>
-                                </tr>
-                              </tbody>
-                            </table>
-                          </div>
-                        </div>
-                      </div>
-                    ) : (
-                      <ul className="space-y-2">
-                        {selectedCalculator.clinicalPearls.map((pearl, idx) => (
-                          <li key={idx} className="flex gap-2 text-sm text-muted-foreground">
-                            <span className="text-primary flex-shrink-0">•</span>
-                            <span>{pearl}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    )}
+                    <ul className="space-y-2">
+                      {selectedCalculator.clinicalPearls.map((pearl, idx) => (
+                        <li key={idx} className="flex gap-2 text-sm text-muted-foreground">
+                          <span className="text-primary flex-shrink-0">•</span>
+                          <span>{pearl}</span>
+                        </li>
+                      ))}
+                    </ul>
                   </CardContent>
                 </Card>
               )}

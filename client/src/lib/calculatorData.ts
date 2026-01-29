@@ -624,8 +624,8 @@ export const calculators: Calculator[] = [
     inputs: [
       { id: "urineAlbumin", label: "Urine Albumin", type: "number", unit: "mg or μg", placeholder: "150", required: true },
       { id: "urineCreatinine", label: "Urine Creatinine", type: "number", unit: "g or mg", placeholder: "1.0", required: true },
-      { id: "urineAlbuminUnit", label: "Albumin Unit", type: "select", options: [{ value: "mg", label: "mg" }, { value: "μg", label: "μg" }], required: true },
-      { id: "urineCreatinineUnit", label: "Creatinine Unit", type: "select", options: [{ value: "g", label: "g" }, { value: "mg", label: "mg" }], required: true },
+      { id: "albuminUnit", label: "Albumin Unit", type: "select", options: [{ value: "mg", label: "mg" }, { value: "μg", label: "μg" }], required: true },
+      { id: "creatinineUnit", label: "Creatinine Unit", type: "select", options: [{ value: "g", label: "g" }, { value: "mg", label: "mg" }], required: true },
     ],
     resultLabel: "uACR",
     resultUnit: "mg/g",
@@ -652,8 +652,8 @@ export const calculators: Calculator[] = [
     inputs: [
       { id: "urineProtein", label: "Urine Total Protein", type: "number", unit: "mg or g", placeholder: "500", required: true },
       { id: "urineCreatinine", label: "Urine Creatinine", type: "number", unit: "mg or g", placeholder: "100", required: true },
-      { id: "urineProteinUnit", label: "Protein Unit", type: "select", options: [{ value: "mg", label: "mg" }, { value: "g", label: "g" }], required: true },
-      { id: "urineCreatinineUnit", label: "Creatinine Unit", type: "select", options: [{ value: "mg", label: "mg" }, { value: "g", label: "g" }], required: true },
+      { id: "proteinUnit", label: "Protein Unit", type: "select", options: [{ value: "mg", label: "mg" }, { value: "g", label: "g" }], required: true },
+      { id: "creatinineUnit", label: "Creatinine Unit", type: "select", options: [{ value: "mg", label: "mg" }, { value: "g", label: "g" }], required: true },
     ],
     resultLabel: "UPCR",
     resultUnit: "g/g",
@@ -694,55 +694,6 @@ export const calculators: Calculator[] = [
       "Not a substitute for direct ACR measurement when precision needed",
     ],
     references: ["Sumida K et al. Ann Intern Med. 2020;173(6):426-435"],
-  },
-
-  {
-    id: "estimated-24h-protein",
-    name: "24-Hour Protein Excretion Estimator",
-    description: "Converts spot urine PCR/ACR to estimated 24-hour protein excretion",
-    category: "Proteinuria & Glomerular Disease",
-    inputs: [
-      { id: "testType", label: "Test Type", type: "select", options: [{ value: "pcr", label: "Protein/Creatinine Ratio (PCR)" }, { value: "acr", label: "Albumin/Creatinine Ratio (ACR)" }], required: true },
-      { id: "inputMode", label: "Input Method", type: "select", options: [{ value: "ratio", label: "I have the ratio value" }, { value: "raw", label: "I have protein/albumin and creatinine values" }], required: true },
-      { id: "ratioValue", label: "Ratio Value", type: "number", placeholder: "0.5", required: false },
-      { id: "ratioValueUnit", label: "Ratio Unit", type: "select", options: [{ value: "mg_mg", label: "mg/mg" }, { value: "mg_mmol", label: "mg/mmol" }, { value: "mg_g", label: "mg/g" }], required: false },
-      { id: "proteinValue", label: "Urine Protein/Albumin Concentration", type: "number", placeholder: "50", required: false },
-      { id: "proteinValueUnit", label: "Protein/Albumin Unit", type: "select", options: [{ value: "mg_dL", label: "mg/dL" }, { value: "g_L", label: "g/L" }, { value: "mg_L", label: "mg/L" }], required: false },
-      { id: "creatinineValue", label: "Urine Creatinine Concentration", type: "number", placeholder: "100", required: false },
-      { id: "creatinineValueUnit", label: "Creatinine Unit", type: "select", options: [{ value: "mg_dL", label: "mg/dL" }, { value: "mmol_L", label: "mmol/L" }], required: false },
-    ],
-    resultLabel: "Estimated 24-Hour Protein Excretion",
-    resultUnit: "g/day",
-    interpretation: (value) => {
-      if (value < 0.15) return "Normal (A1) - No significant proteinuria";
-      if (value < 3.0) return "Mildly to Moderately Increased (A1-A2) - Monitor and treat underlying cause";
-      if (value < 10) return "Nephrotic-Range (A3) - Requires aggressive treatment";
-      return "Severe Nephrotic-Range (A3) - Timed 24-hour collection recommended for clinical decisions";
-    },
-    referenceRanges: [
-      { label: "Normal (A1)", max: 0.15, unit: "g/day", note: "No significant proteinuria" },
-      { label: "Increased (A2)", min: 0.15, max: 3, unit: "g/day", note: "Mildly to moderately increased" },
-      { label: "Nephrotic-range (A3)", min: 3, unit: "g/day", note: "Severely increased" },
-    ],
-    clinicalPearls: [
-      "PCR Formula: g/day = Urine Protein (mg/dL) ÷ Urine Creatinine (mg/dL)",
-      "ACR Formula: g/day = Urine Albumin (mg/dL) ÷ Urine Creatinine (mg/dL)",
-      "Spot urine PCR/ACR correlates well with 24-hour collection in most patients",
-      "Accuracy decreases at nephrotic-range values (>10 g/day)",
-      "Timed 24-hour collection recommended for clinical decisions in edge cases",
-      "Less accurate with tubular or overflow proteinuria",
-      "PCR VALIDATION REFERENCE TABLE:",
-      "• Protein 20 mg/dL ÷ Creatinine 100 mg/dL = 0.2 g/day (Normal)",
-      "• Protein 50 mg/dL ÷ Creatinine 75 mg/dL = 0.67 g/day (Mild)",
-      "• Protein 100 mg/dL ÷ Creatinine 60 mg/dL = 1.67 g/day (Moderate)",
-      "• Protein 150 mg/dL ÷ Creatinine 50 mg/dL = 3.0 g/day (Nephrotic)",
-      "• Protein 300 mg/dL ÷ Creatinine 40 mg/dL = 7.5 g/day (Severe)",
-      "ACR KDIGO CATEGORIES:",
-      "• A1 (Normal): <30 mg/g or <3 mg/mmol",
-      "• A2 (Moderately increased): 30-300 mg/g or 3-30 mg/mmol",
-      "• A3 (Severely increased): >300 mg/g or >30 mg/mmol",
-    ],
-    references: ["KDIGO 2024 Clinical Practice Guideline for the Evaluation and Management of CKD"],
   },
 
   {
@@ -1263,17 +1214,41 @@ export const calculators: Calculator[] = [
       "Traditional calculators UNDERESTIMATE risk in CKD",
       "CVD = leading cause of death in CKD",
       "Lower thresholds for statin initiation in CKD patients",
-      "STATIN INTENSITY GUIDE:",
-      "• Primary prevention (CKD 3-4): Moderate-intensity (atorvastatin 10-20mg, rosuvastatin 5-10mg)",
-      "• Secondary prevention (prior ASCVD): High-intensity (atorvastatin 40-80mg, rosuvastatin 20-40mg)",
-      "• Post-transplant: Moderate-intensity preferred (atorvastatin 10-20mg); AVOID simvastatin/lovastatin with calcineurin inhibitors",
-      "• Dialysis: Continue if already on statin; do NOT initiate for primary prevention (4D, AURORA trials)",
-      "DRUG INTERACTIONS: Cyclosporine + simvastatin/lovastatin = CONTRAINDICATED (rhabdomyolysis risk)",
-      "Preferred post-transplant statins: atorvastatin, rosuvastatin, pravastatin, fluvastatin",
+    ],
+    references: ["Goff DC Jr et al. Circulation. 2014;129(25 Suppl 2):S49-73"],
+  },
+
+  {
+    id: "statin-intensity",
+    name: "Statin Intensity Guide for CKD & Transplant",
+    description: "Guides statin selection and dosing in CKD/transplant",
+    category: "Cardiovascular Risk",
+    inputs: [
+      { id: "indication", label: "Clinical Indication", type: "select", options: [
+        { value: "primary", label: "Primary prevention (CKD stage 3-4)" },
+        { value: "secondary", label: "Secondary prevention (prior ASCVD)" },
+        { value: "transplant", label: "Post-transplant" },
+        { value: "dialysis", label: "Dialysis patient (secondary prevention only)" },
+      ], required: true },
+    ],
+    resultLabel: "Recommended Statin Intensity",
+    resultUnit: "recommendation",
+    interpretation: (value) => {
+      const recommendations: Record<string, string> = {
+        "primary": "Moderate-intensity statin (e.g., atorvastatin 10-20 mg, rosuvastatin 5-10 mg)",
+        "secondary": "High-intensity statin (e.g., atorvastatin 40-80 mg, rosuvastatin 20-40 mg)",
+        "transplant": "Moderate-intensity statin (atorvastatin 10-20 mg preferred; avoid simvastatin/lovastatin with calcineurin inhibitors)",
+        "dialysis": "Continue if already on statin; do NOT initiate for primary prevention (4D, AURORA trials)",
+      };
+      return recommendations[value] || "Unable to determine";
+    },
+    clinicalPearls: [
+      "Cyclosporine + simvastatin/lovastatin = CONTRAINDICATED (rhabdomyolysis risk)",
+      "Preferred post-transplant: atorvastatin, rosuvastatin, pravastatin, fluvastatin",
       "Initiate within 3 months post-transplant (ALERT trial: ↓ cardiac events)",
       "Monitor CK, LFTs at baseline, 6-12 weeks, then annually",
     ],
-    references: ["Goff DC Jr et al. Circulation. 2014;129(25 Suppl 2):S49-73", "Stone NJ et al. Circulation. 2014;129(25 Suppl 2):S1-S45", "Holdaas H et al. Lancet. 2003;361(9374):2024-31 (ALERT)"],
+    references: ["Stone NJ et al. Circulation. 2014;129(25 Suppl 2):S1-S45"],
   },
 
   // ============================================================================
@@ -1731,238 +1706,488 @@ export const calculators: Calculator[] = [
   },
 
   // ============================================================================
-  // CKD DRUG DOSING
+  // ANTIBIOTIC DOSING IN CKD
   // ============================================================================
 
   {
-    id: "vancomycin-dosing",
-    name: "Vancomycin Dosing in CKD",
-    description: "Calculates vancomycin dosing based on renal function",
-    category: "CKD Drug Dosing",
+    id: "gentamicin-dosing",
+    name: "Gentamicin Dosing in CKD",
+    description: "Calculates gentamicin dosing based on renal function with extended-interval and traditional dosing options",
+    category: "Antibiotic Dosing",
     inputs: [
       { id: "weight", label: "Actual Body Weight", type: "number", unit: "kg", placeholder: "70", required: true },
-      { id: "egfr", label: "eGFR", type: "number", unit: "mL/min/1.73m²", placeholder: "60", required: true },
+      { id: "ibw", label: "Ideal Body Weight", type: "number", unit: "kg", placeholder: "70", required: true },
+      { id: "crcl", label: "Creatinine Clearance", type: "number", unit: "mL/min", placeholder: "60", required: true },
       { id: "indication", label: "Indication", type: "select", options: [
-        { value: "standard", label: "Standard infection" },
-        { value: "severe", label: "Severe/complicated infection" },
+        { value: "standard", label: "Standard infection (synergy)" },
+        { value: "serious", label: "Serious gram-negative infection" },
       ], required: true },
       { id: "dialysis", label: "On Hemodialysis", type: "checkbox" },
     ],
-    resultLabel: "Recommended Vancomycin Dose",
+    resultLabel: "Loading Dose",
     resultUnit: "mg",
     interpretation: (value, inputs) => {
-      const egfr = inputs?.egfr as number;
-      const dialysis = inputs?.dialysis as boolean;
-      if (dialysis) return "HD: Give loading dose, then 500-1000mg after each HD session. Monitor trough levels.";
-      if (egfr >= 90) return "Normal renal function: Standard dosing 15-20 mg/kg q8-12h";
-      if (egfr >= 50) return "CKD Stage 3a: 15-20 mg/kg q12-24h";
-      if (egfr >= 30) return "CKD Stage 3b: 15-20 mg/kg q24-48h";
-      if (egfr >= 15) return "CKD Stage 4: 15-20 mg/kg q48-72h";
-      return "CKD Stage 5: Loading dose only, then based on levels";
-    },
-    clinicalPearls: [
-      "Loading dose: 25-30 mg/kg (actual body weight) regardless of renal function",
-      "Target trough: 15-20 mcg/mL for serious infections (MRSA bacteremia, endocarditis, osteomyelitis)",
-      "Target trough: 10-15 mcg/mL for less severe infections",
-      "AUC/MIC-guided dosing preferred over trough-only monitoring",
-      "Nephrotoxicity risk increases with trough >20 mcg/mL",
-      "HD patients: Give after dialysis; high-flux HD removes ~30-40%",
-      "PD patients: 15-30 mg/kg loading, then 500-1000mg q48-72h based on levels",
-    ],
-    references: ["Rybak MJ et al. Am J Health Syst Pharm. 2020;77(11):835-864"],
-  },
-
-  {
-    id: "metformin-ckd",
-    name: "Metformin Dosing in CKD",
-    description: "Guides metformin use and dosing based on eGFR",
-    category: "CKD Drug Dosing",
-    inputs: [
-      { id: "egfr", label: "eGFR", type: "number", unit: "mL/min/1.73m²", placeholder: "45", required: true },
-      { id: "currentDose", label: "Current Metformin Dose (if any)", type: "number", unit: "mg/day", placeholder: "1000" },
-    ],
-    resultLabel: "Metformin Recommendation",
-    resultUnit: "guidance",
-    interpretation: (value, inputs) => {
-      const egfr = inputs?.egfr as number;
-      if (egfr >= 60) return "No dose adjustment needed. Max 2000-2550 mg/day.";
-      if (egfr >= 45) return "Continue current dose. Max 2000 mg/day. Monitor eGFR every 3-6 months.";
-      if (egfr >= 30) return "Reduce dose to max 1000 mg/day. Monitor eGFR every 3 months.";
-      return "DISCONTINUE metformin. Contraindicated at eGFR <30.";
-    },
-    clinicalPearls: [
-      "FDA updated labeling in 2016 to allow use in moderate CKD",
-      "Hold before iodinated contrast if eGFR 30-60; restart 48h after if stable",
-      "Risk of lactic acidosis increases with declining renal function",
-      "Hold during acute illness, dehydration, or hypoxic states",
-      "KDIGO 2020: Consider continuing in stable CKD 3b with close monitoring",
-      "First-line agent for T2DM in CKD if eGFR permits",
-    ],
-    references: ["FDA Drug Safety Communication 2016", "KDIGO 2020 Diabetes Management in CKD"],
-  },
-
-  {
-    id: "gabapentin-dosing",
-    name: "Gabapentin Dosing in CKD",
-    description: "Adjusts gabapentin dose based on renal function",
-    category: "CKD Drug Dosing",
-    inputs: [
-      { id: "crcl", label: "Creatinine Clearance", type: "number", unit: "mL/min", placeholder: "50", required: true },
-      { id: "indication", label: "Indication", type: "select", options: [
-        { value: "neuropathy", label: "Neuropathic pain" },
-        { value: "seizure", label: "Seizure disorder" },
-        { value: "rls", label: "Restless legs syndrome" },
-      ], required: true },
-      { id: "dialysis", label: "On Hemodialysis", type: "checkbox" },
-    ],
-    resultLabel: "Gabapentin Dose Adjustment",
-    resultUnit: "mg/day",
-    interpretation: (value, inputs) => {
-      const crcl = inputs?.crcl as number;
-      const dialysis = inputs?.dialysis as boolean;
-      if (dialysis) return "HD: 100-300mg after each dialysis session. Supplemental dose post-HD.";
-      if (crcl >= 60) return "Normal dosing: 300-1200mg TID (900-3600mg/day)";
-      if (crcl >= 30) return "CrCl 30-59: 200-700mg BID (400-1400mg/day)";
-      if (crcl >= 15) return "CrCl 15-29: 200-700mg daily (200-700mg/day)";
-      return "CrCl <15: 100-300mg daily. Max 300mg/day.";
-    },
-    clinicalPearls: [
-      "Common cause of encephalopathy in CKD patients - dose carefully!",
-      "Symptoms of toxicity: sedation, ataxia, myoclonus, encephalopathy",
-      "Useful for uremic pruritus at low doses (100-300mg post-HD)",
-      "Pregabalin also requires renal dose adjustment",
-      "Start low, go slow in elderly CKD patients",
-      "HD removes ~35% of dose; give supplemental dose after dialysis",
-    ],
-    references: ["Lexicomp Drug Information", "Bockbrader HN et al. Clin Pharmacokinet. 2010;49(10):661-669"],
-  },
-
-  {
-    id: "enoxaparin-dosing",
-    name: "Enoxaparin Dosing in CKD",
-    description: "Adjusts enoxaparin dose for renal impairment",
-    category: "CKD Drug Dosing",
-    inputs: [
-      { id: "weight", label: "Actual Body Weight", type: "number", unit: "kg", placeholder: "70", required: true },
-      { id: "crcl", label: "Creatinine Clearance", type: "number", unit: "mL/min", placeholder: "30", required: true },
-      { id: "indication", label: "Indication", type: "select", options: [
-        { value: "dvtProphylaxis", label: "DVT prophylaxis" },
-        { value: "dvtTreatment", label: "DVT/PE treatment" },
-        { value: "acs", label: "Acute coronary syndrome" },
-      ], required: true },
-    ],
-    resultLabel: "Enoxaparin Dose",
-    resultUnit: "mg",
-    interpretation: (value, inputs) => {
-      const crcl = inputs?.crcl as number;
-      const indication = inputs?.indication as string;
-      const weight = inputs?.weight as number;
+      const crcl = inputs?.crcl as number || 60;
+      const dialysis = inputs?.dialysis as boolean || false;
+      const indication = inputs?.indication as string || "standard";
       
-      if (crcl < 30) {
-        if (indication === "dvtProphylaxis") return `CrCl <30: 30mg SC daily (reduced from 40mg)`;
-        if (indication === "dvtTreatment") return `CrCl <30: 1mg/kg SC daily (NOT BID). Dose: ${Math.round(weight)}mg daily`;
-        return `CrCl <30 ACS: 1mg/kg SC daily. Dose: ${Math.round(weight)}mg daily`;
+      let maintenanceInfo = "";
+      if (dialysis) {
+        maintenanceInfo = "**Hemodialysis:** Give loading dose, then 1-1.7 mg/kg after each HD session. Monitor levels.";
+      } else if (crcl >= 60) {
+        if (indication === "serious") {
+          maintenanceInfo = "**Extended-interval dosing:** 5-7 mg/kg q24h (preferred for serious infections)\n**Traditional dosing:** 1.5-2 mg/kg q8h";
+        } else {
+          maintenanceInfo = "**Synergy dosing:** 1 mg/kg q8h (for enterococcal/streptococcal endocarditis)";
+        }
+      } else if (crcl >= 40) {
+        maintenanceInfo = "**CrCl 40-59:** 5-7 mg/kg q36h (extended-interval) OR 1.5 mg/kg q12h (traditional)";
+      } else if (crcl >= 20) {
+        maintenanceInfo = "**CrCl 20-39:** 5-7 mg/kg q48h (extended-interval) OR 1 mg/kg q24h (traditional)";
+      } else {
+        maintenanceInfo = "**CrCl <20:** Avoid extended-interval. Use 1 mg/kg, redose based on levels. Consider alternative.";
       }
       
-      if (indication === "dvtProphylaxis") return `Standard: 40mg SC daily`;
-      if (indication === "dvtTreatment") return `Standard: 1mg/kg SC BID. Dose: ${Math.round(weight)}mg BID`;
-      return `ACS: 1mg/kg SC BID. Dose: ${Math.round(weight)}mg BID`;
+      return maintenanceInfo + "\n\n**Target Levels:**\n• Peak (traditional): 5-10 mcg/mL (serious: 8-10)\n• Trough: <2 mcg/mL (avoid nephrotoxicity)\n• Extended-interval: Check random level at 6-14h";
     },
     clinicalPearls: [
-      "CrCl <30: Reduce frequency from BID to daily for treatment doses",
-      "Consider anti-Xa monitoring in CKD, obesity, pregnancy",
-      "Target anti-Xa (treatment): 0.5-1.0 IU/mL (4h post-dose)",
-      "Avoid in severe CKD (CrCl <15) - use UFH instead",
-      "HD patients: UFH preferred; if LMWH needed, monitor anti-Xa",
-      "Obesity: Use actual body weight up to 150kg; consider anti-Xa monitoring >150kg",
+      "Use adjusted body weight if actual >120% IBW: AdjBW = IBW + 0.4(Actual - IBW)",
+      "Extended-interval dosing NOT recommended for endocarditis, burns, ascites, CrCl <20",
+      "Nephrotoxicity risk increases with trough >2 mcg/mL and duration >7 days",
+      "Synergistic dosing for enterococcal infections: 1 mg/kg q8h (lower doses)",
+      "Monitor SCr daily; hold if rising >0.5 mg/dL from baseline",
+      "Avoid concurrent nephrotoxins: NSAIDs, contrast, amphotericin B, vancomycin",
+      "Once-daily dosing may be LESS nephrotoxic than traditional dosing",
     ],
-    references: ["Lexicomp Drug Information", "Garcia DA et al. Chest. 2012;141(2 Suppl):e24S-e43S"],
+    references: [
+      "Nicolau DP et al. Antimicrob Agents Chemother. 1995;39(3):650-655",
+      "Sanford Guide to Antimicrobial Therapy 2024",
+      "KDIGO AKI Guidelines - Drug dosing in kidney disease",
+    ],
   },
 
   {
-    id: "acei-arb-dosing",
-    name: "ACEi/ARB Dosing in CKD",
-    description: "Guides ACE inhibitor and ARB dosing in CKD",
-    category: "CKD Drug Dosing",
+    id: "piperacillin-tazobactam-dosing",
+    name: "Piperacillin-Tazobactam Dosing in CKD",
+    description: "Calculates piperacillin-tazobactam dosing based on renal function",
+    category: "Antibiotic Dosing",
     inputs: [
-      { id: "drug", label: "Medication", type: "select", options: [
-        { value: "lisinopril", label: "Lisinopril" },
-        { value: "enalapril", label: "Enalapril" },
-        { value: "ramipril", label: "Ramipril" },
-        { value: "losartan", label: "Losartan" },
-        { value: "valsartan", label: "Valsartan" },
-        { value: "irbesartan", label: "Irbesartan" },
+      { id: "crcl", label: "Creatinine Clearance", type: "number", unit: "mL/min", placeholder: "60", required: true },
+      { id: "indication", label: "Indication", type: "select", options: [
+        { value: "standard", label: "Standard infection" },
+        { value: "pseudomonas", label: "Pseudomonas/serious infection" },
+        { value: "febrile-neutropenia", label: "Febrile neutropenia" },
       ], required: true },
-      { id: "egfr", label: "eGFR", type: "number", unit: "mL/min/1.73m²", placeholder: "40", required: true },
-      { id: "potassium", label: "Serum Potassium", type: "number", unit: "mEq/L", placeholder: "4.5", required: true },
+      { id: "dialysis", label: "On Hemodialysis", type: "checkbox" },
+      { id: "crrt", label: "On CRRT", type: "checkbox" },
     ],
-    resultLabel: "ACEi/ARB Recommendation",
-    resultUnit: "guidance",
+    resultLabel: "CrCl Value",
+    resultUnit: "mL/min",
     interpretation: (value, inputs) => {
-      const drug = inputs?.drug as string;
-      const egfr = inputs?.egfr as number;
-      const potassium = inputs?.potassium as number;
+      const crcl = inputs?.crcl as number || 60;
+      const dialysis = inputs?.dialysis as boolean || false;
+      const crrt = inputs?.crrt as boolean || false;
+      const indication = inputs?.indication as string || "standard";
       
-      if (potassium > 5.5) return "HOLD ACEi/ARB - Hyperkalemia (K+ >5.5). Treat hyperkalemia first.";
-      if (potassium > 5.0) return "CAUTION: K+ 5.0-5.5. Reduce dose or add K+ binder. Monitor closely.";
+      let dosing = "";
       
-      const dosing: Record<string, string> = {
-        lisinopril: egfr >= 30 ? "Start 2.5-5mg daily, titrate to 20-40mg daily" : "Start 2.5mg daily, max 40mg daily. Monitor K+ and Cr.",
-        enalapril: egfr >= 30 ? "Start 2.5mg BID, titrate to 10-20mg BID" : "Start 2.5mg daily, titrate cautiously",
-        ramipril: egfr >= 40 ? "Start 1.25-2.5mg daily, titrate to 10mg daily" : "Start 1.25mg daily, max 5mg daily",
-        losartan: "No dose adjustment needed. Start 25-50mg daily, max 100mg daily.",
-        valsartan: "No dose adjustment needed. Start 40-80mg daily, max 320mg daily.",
-        irbesartan: "No dose adjustment needed. Start 150mg daily, max 300mg daily.",
+      if (crrt) {
+        dosing = "**CRRT:** 4.5g q6-8h (adjust based on CRRT modality and effluent rate)";
+      } else if (dialysis) {
+        dosing = "**Hemodialysis:** 2.25g q8h + 0.75g after each HD session\n(or 2.25g q6h for serious infections)";
+      } else if (crcl > 40) {
+        if (indication === "pseudomonas" || indication === "febrile-neutropenia") {
+          dosing = "**CrCl >40:** 4.5g q6h (extended infusion over 4h preferred for Pseudomonas)";
+        } else {
+          dosing = "**CrCl >40:** 3.375g q6h (or 4.5g q8h)";
+        }
+      } else if (crcl >= 20) {
+        dosing = "**CrCl 20-40:** 2.25g q6h (or 3.375g q8h for serious infections)";
+      } else {
+        dosing = "**CrCl <20:** 2.25g q8h";
+      }
+      
+      return dosing + "\n\n**Extended Infusion:** Infuse over 4 hours for improved PK/PD and Pseudomonas coverage\n\n**Note:** Each 4.5g vial = piperacillin 4g + tazobactam 0.5g";
+    },
+    clinicalPearls: [
+      "Extended infusion (4h) improves time above MIC - preferred for serious infections",
+      "Contains 2.35 mEq sodium per gram - monitor in heart failure/fluid overload",
+      "May cause false-positive galactomannan test (Aspergillus antigen)",
+      "Neurotoxicity risk in renal impairment - monitor for seizures, encephalopathy",
+      "Can cause hypokalemia - monitor potassium levels",
+      "Interstitial nephritis reported - monitor renal function",
+      "Combination with vancomycin may increase AKI risk",
+    ],
+    references: [
+      "Lodise TP et al. Clin Infect Dis. 2007;44(3):357-363",
+      "Sanford Guide to Antimicrobial Therapy 2024",
+      "Aronoff GR et al. Drug Prescribing in Renal Failure, 5th ed.",
+    ],
+  },
+
+  {
+    id: "meropenem-dosing",
+    name: "Meropenem Dosing in CKD",
+    description: "Calculates meropenem dosing based on renal function",
+    category: "Antibiotic Dosing",
+    inputs: [
+      { id: "crcl", label: "Creatinine Clearance", type: "number", unit: "mL/min", placeholder: "60", required: true },
+      { id: "indication", label: "Indication", type: "select", options: [
+        { value: "standard", label: "Standard infection" },
+        { value: "meningitis", label: "Meningitis/CNS infection" },
+        { value: "pseudomonas", label: "Pseudomonas/serious infection" },
+      ], required: true },
+      { id: "dialysis", label: "On Hemodialysis", type: "checkbox" },
+      { id: "crrt", label: "On CRRT", type: "checkbox" },
+    ],
+    resultLabel: "CrCl Value",
+    resultUnit: "mL/min",
+    interpretation: (value, inputs) => {
+      const crcl = inputs?.crcl as number || 60;
+      const dialysis = inputs?.dialysis as boolean || false;
+      const crrt = inputs?.crrt as boolean || false;
+      const indication = inputs?.indication as string || "standard";
+      
+      let dosing = "";
+      const isSeriousIndication = indication === "meningitis" || indication === "pseudomonas";
+      
+      if (crrt) {
+        dosing = "**CRRT:** 1g q8h (or 2g q8h for meningitis/Pseudomonas)\nAdjust based on CRRT modality";
+      } else if (dialysis) {
+        if (isSeriousIndication) {
+          dosing = "**Hemodialysis:** 1g q12h + 1g after each HD session (for serious infections)";
+        } else {
+          dosing = "**Hemodialysis:** 500mg q12h + 500mg after each HD session";
+        }
+      } else if (crcl >= 50) {
+        if (indication === "meningitis") {
+          dosing = "**CrCl ≥50:** 2g q8h (meningitis dose)";
+        } else if (indication === "pseudomonas") {
+          dosing = "**CrCl ≥50:** 1-2g q8h (extended infusion over 3h preferred)";
+        } else {
+          dosing = "**CrCl ≥50:** 1g q8h (standard dose)";
+        }
+      } else if (crcl >= 25) {
+        if (isSeriousIndication) {
+          dosing = "**CrCl 25-49:** 1g q12h (or 2g q12h for meningitis)";
+        } else {
+          dosing = "**CrCl 25-49:** 1g q12h";
+        }
+      } else if (crcl >= 10) {
+        dosing = "**CrCl 10-24:** 500mg q12h (or 1g q12h for serious infections)";
+      } else {
+        dosing = "**CrCl <10:** 500mg q24h (or 1g q24h for serious infections)";
+      }
+      
+      return dosing + "\n\n**Extended Infusion:** Infuse over 3 hours for improved PK/PD\n\n**Seizure Risk:** Lower threshold in renal impairment - use with caution";
+    },
+    clinicalPearls: [
+      "Extended infusion (3h) improves time above MIC - preferred for Pseudomonas",
+      "Seizure risk increased in renal impairment - avoid high doses in CKD 4-5",
+      "Does NOT require dose adjustment for hepatic impairment",
+      "Penetrates CSF well - drug of choice for gram-negative meningitis",
+      "Stable with valproic acid (unlike imipenem) but still monitor levels",
+      "Less seizure risk than imipenem - preferred in CNS infections",
+      "Can be used in penicillin allergy (low cross-reactivity ~1%)",
+    ],
+    references: [
+      "Nicolau DP. Expert Rev Anti Infect Ther. 2008;6(5):593-599",
+      "Sanford Guide to Antimicrobial Therapy 2024",
+      "Thalhammer F et al. J Antimicrob Chemother. 1999;43(4):523-527",
+    ],
+  },
+
+  {
+    id: "ciprofloxacin-dosing",
+    name: "Ciprofloxacin Dosing in CKD",
+    description: "Calculates ciprofloxacin dosing based on renal function",
+    category: "Antibiotic Dosing",
+    inputs: [
+      { id: "crcl", label: "Creatinine Clearance", type: "number", unit: "mL/min", placeholder: "60", required: true },
+      { id: "route", label: "Route", type: "select", options: [
+        { value: "iv", label: "Intravenous" },
+        { value: "po", label: "Oral" },
+      ], required: true },
+      { id: "indication", label: "Indication", type: "select", options: [
+        { value: "uti", label: "Urinary tract infection" },
+        { value: "respiratory", label: "Respiratory/intra-abdominal" },
+        { value: "pseudomonas", label: "Pseudomonas infection" },
+      ], required: true },
+      { id: "dialysis", label: "On Hemodialysis", type: "checkbox" },
+    ],
+    resultLabel: "CrCl Value",
+    resultUnit: "mL/min",
+    interpretation: (value, inputs) => {
+      const crcl = inputs?.crcl as number || 60;
+      const dialysis = inputs?.dialysis as boolean || false;
+      const route = inputs?.route as string || "po";
+      const indication = inputs?.indication as string || "uti";
+      
+      let dosing = "";
+      
+      if (dialysis) {
+        if (route === "iv") {
+          dosing = "**Hemodialysis (IV):** 200-400mg q24h (give after HD on dialysis days)";
+        } else {
+          dosing = "**Hemodialysis (PO):** 250-500mg q24h (give after HD on dialysis days)";
+        }
+      } else if (crcl >= 50) {
+        if (route === "iv") {
+          if (indication === "pseudomonas") {
+            dosing = "**CrCl ≥50 (IV):** 400mg q8h (Pseudomonas)";
+          } else {
+            dosing = "**CrCl ≥50 (IV):** 400mg q12h (standard) or 400mg q8h (serious)";
+          }
+        } else {
+          if (indication === "uti") {
+            dosing = "**CrCl ≥50 (PO):** 250-500mg q12h (UTI)";
+          } else {
+            dosing = "**CrCl ≥50 (PO):** 500-750mg q12h";
+          }
+        }
+      } else if (crcl >= 30) {
+        if (route === "iv") {
+          dosing = "**CrCl 30-49 (IV):** 200-400mg q12h";
+        } else {
+          dosing = "**CrCl 30-49 (PO):** 250-500mg q12h";
+        }
+      } else {
+        if (route === "iv") {
+          dosing = "**CrCl <30 (IV):** 200-400mg q18-24h";
+        } else {
+          dosing = "**CrCl <30 (PO):** 250-500mg q18-24h";
+        }
+      }
+      
+      return dosing + "\n\n**Oral bioavailability:** ~70-80% (can switch IV to PO at same dose)\n\n**Drug Interactions:** Avoid with tizanidine, theophylline. Separate from antacids/iron by 2h.";
+    },
+    clinicalPearls: [
+      "Excellent oral bioavailability - IV to PO switch often appropriate",
+      "QT prolongation risk - avoid with other QT-prolonging drugs",
+      "Tendinopathy/rupture risk - increased in elderly, steroids, renal impairment",
+      "CNS effects (confusion, seizures) more common in renal impairment",
+      "Crystalluria risk - ensure adequate hydration",
+      "Avoid in myasthenia gravis - may exacerbate weakness",
+      "Chelates with divalent cations - separate from calcium, iron, antacids",
+    ],
+    references: [
+      "Sanford Guide to Antimicrobial Therapy 2024",
+      "Aronoff GR et al. Drug Prescribing in Renal Failure, 5th ed.",
+      "FDA Drug Safety Communication: Fluoroquinolone warnings",
+    ],
+  },
+
+  // ============================================================================
+  // DRUG INTERACTION CHECKER
+  // ============================================================================
+
+  {
+    id: "nephrotoxic-interaction-checker",
+    name: "Nephrotoxic Drug Interaction Checker",
+    description: "Identifies potentially nephrotoxic drug combinations and CKD-relevant interactions",
+    category: "Drug Interactions",
+    inputs: [
+      { id: "drug1", label: "Drug 1", type: "select", options: [
+        { value: "none", label: "Select a drug..." },
+        { value: "nsaid", label: "NSAIDs (ibuprofen, naproxen, ketorolac)" },
+        { value: "acei", label: "ACE Inhibitor (lisinopril, enalapril, ramipril)" },
+        { value: "arb", label: "ARB (losartan, valsartan, irbesartan)" },
+        { value: "diuretic", label: "Diuretic (furosemide, HCTZ, spironolactone)" },
+        { value: "vancomycin", label: "Vancomycin" },
+        { value: "aminoglycoside", label: "Aminoglycoside (gentamicin, tobramycin, amikacin)" },
+        { value: "amphotericin", label: "Amphotericin B" },
+        { value: "contrast", label: "IV Contrast (iodinated)" },
+        { value: "cyclosporine", label: "Cyclosporine" },
+        { value: "tacrolimus", label: "Tacrolimus" },
+        { value: "metformin", label: "Metformin" },
+        { value: "lithium", label: "Lithium" },
+        { value: "digoxin", label: "Digoxin" },
+        { value: "piptazo", label: "Piperacillin-Tazobactam" },
+        { value: "trimethoprim", label: "Trimethoprim/TMP-SMX" },
+        { value: "statin", label: "Statin (simvastatin, lovastatin, atorvastatin)" },
+        { value: "colchicine", label: "Colchicine" },
+        { value: "methotrexate", label: "Methotrexate" },
+        { value: "allopurinol", label: "Allopurinol" },
+      ], required: true },
+      { id: "drug2", label: "Drug 2", type: "select", options: [
+        { value: "none", label: "Select a drug..." },
+        { value: "nsaid", label: "NSAIDs (ibuprofen, naproxen, ketorolac)" },
+        { value: "acei", label: "ACE Inhibitor (lisinopril, enalapril, ramipril)" },
+        { value: "arb", label: "ARB (losartan, valsartan, irbesartan)" },
+        { value: "diuretic", label: "Diuretic (furosemide, HCTZ, spironolactone)" },
+        { value: "vancomycin", label: "Vancomycin" },
+        { value: "aminoglycoside", label: "Aminoglycoside (gentamicin, tobramycin, amikacin)" },
+        { value: "amphotericin", label: "Amphotericin B" },
+        { value: "contrast", label: "IV Contrast (iodinated)" },
+        { value: "cyclosporine", label: "Cyclosporine" },
+        { value: "tacrolimus", label: "Tacrolimus" },
+        { value: "metformin", label: "Metformin" },
+        { value: "lithium", label: "Lithium" },
+        { value: "digoxin", label: "Digoxin" },
+        { value: "piptazo", label: "Piperacillin-Tazobactam" },
+        { value: "trimethoprim", label: "Trimethoprim/TMP-SMX" },
+        { value: "statin", label: "Statin (simvastatin, lovastatin, atorvastatin)" },
+        { value: "colchicine", label: "Colchicine" },
+        { value: "methotrexate", label: "Methotrexate" },
+        { value: "allopurinol", label: "Allopurinol" },
+      ], required: true },
+      { id: "drug3", label: "Drug 3 (optional)", type: "select", options: [
+        { value: "none", label: "None" },
+        { value: "nsaid", label: "NSAIDs (ibuprofen, naproxen, ketorolac)" },
+        { value: "acei", label: "ACE Inhibitor (lisinopril, enalapril, ramipril)" },
+        { value: "arb", label: "ARB (losartan, valsartan, irbesartan)" },
+        { value: "diuretic", label: "Diuretic (furosemide, HCTZ, spironolactone)" },
+        { value: "vancomycin", label: "Vancomycin" },
+        { value: "aminoglycoside", label: "Aminoglycoside (gentamicin, tobramycin, amikacin)" },
+        { value: "amphotericin", label: "Amphotericin B" },
+        { value: "contrast", label: "IV Contrast (iodinated)" },
+        { value: "cyclosporine", label: "Cyclosporine" },
+        { value: "tacrolimus", label: "Tacrolimus" },
+        { value: "metformin", label: "Metformin" },
+        { value: "lithium", label: "Lithium" },
+        { value: "digoxin", label: "Digoxin" },
+        { value: "piptazo", label: "Piperacillin-Tazobactam" },
+        { value: "trimethoprim", label: "Trimethoprim/TMP-SMX" },
+        { value: "statin", label: "Statin (simvastatin, lovastatin, atorvastatin)" },
+        { value: "colchicine", label: "Colchicine" },
+        { value: "methotrexate", label: "Methotrexate" },
+        { value: "allopurinol", label: "Allopurinol" },
+      ] },
+      { id: "egfr", label: "Patient eGFR (if known)", type: "number", unit: "mL/min/1.73m²", placeholder: "60" },
+    ],
+    resultLabel: "Risk Assessment",
+    resultUnit: "",
+    interpretation: (value, inputs) => {
+      const drug1 = inputs?.drug1 as string || "none";
+      const drug2 = inputs?.drug2 as string || "none";
+      const drug3 = inputs?.drug3 as string || "none";
+      const egfr = inputs?.egfr as number || 60;
+      
+      const drugs = [drug1, drug2, drug3].filter(d => d !== "none");
+      const interactions: string[] = [];
+      let riskLevel = 0; // 0=none, 1=low, 2=moderate, 3=high, 4=contraindicated
+      
+      // Define interaction pairs
+      const checkPair = (d1: string, d2: string) => {
+        const pair = [d1, d2].sort().join("-");
+        
+        // TRIPLE WHAMMY - highest risk
+        if (drugs.includes("nsaid") && drugs.includes("diuretic") && (drugs.includes("acei") || drugs.includes("arb"))) {
+          interactions.push("⚠️ **TRIPLE WHAMMY (NSAID + Diuretic + ACEi/ARB):** HIGH RISK of AKI. This combination significantly increases risk of acute kidney injury, especially in elderly, CKD, or volume-depleted patients. AVOID if possible.");
+          riskLevel = Math.max(riskLevel, 4);
+        }
+        
+        // High-risk combinations
+        if (pair === "aminoglycoside-vancomycin") {
+          interactions.push("🔴 **Vancomycin + Aminoglycoside:** Synergistic nephrotoxicity. Monitor SCr daily, check trough levels. Consider alternatives if possible.");
+          riskLevel = Math.max(riskLevel, 3);
+        }
+        if (pair === "amphotericin-aminoglycoside") {
+          interactions.push("🔴 **Amphotericin B + Aminoglycoside:** Severe additive nephrotoxicity. AVOID combination. Use liposomal amphotericin if must use.");
+          riskLevel = Math.max(riskLevel, 4);
+        }
+        if (pair === "contrast-metformin") {
+          interactions.push("🟡 **Contrast + Metformin:** Hold metformin for 48h after contrast. Risk of lactic acidosis if AKI develops. Check SCr before restarting.");
+          riskLevel = Math.max(riskLevel, 2);
+        }
+        if (pair === "cyclosporine-statin" || pair === "statin-tacrolimus") {
+          interactions.push("🔴 **Calcineurin Inhibitor + Statin:** Increased risk of rhabdomyolysis. AVOID simvastatin/lovastatin. Use pravastatin, fluvastatin, or low-dose atorvastatin.");
+          riskLevel = Math.max(riskLevel, 3);
+        }
+        if (pair === "acei-arb") {
+          interactions.push("🔴 **ACEi + ARB (Dual RAAS blockade):** Increased risk of hyperkalemia, AKI, and hypotension. Generally NOT recommended (ONTARGET trial).");
+          riskLevel = Math.max(riskLevel, 3);
+        }
+        if (pair === "acei-trimethoprim" || pair === "arb-trimethoprim") {
+          interactions.push("🟡 **ACEi/ARB + Trimethoprim:** Risk of severe hyperkalemia. Monitor K+ within 1 week. Use alternative antibiotic if K+ >5.0.");
+          riskLevel = Math.max(riskLevel, 2);
+        }
+        if (pair === "diuretic-lithium" || pair === "acei-lithium" || pair === "arb-lithium" || pair === "nsaid-lithium") {
+          interactions.push("🔴 **Lithium + Diuretic/ACEi/ARB/NSAID:** Reduced lithium clearance → toxicity. Monitor lithium levels closely. May need dose reduction.");
+          riskLevel = Math.max(riskLevel, 3);
+        }
+        if (pair === "nsaid-acei" || pair === "nsaid-arb") {
+          interactions.push("🟡 **NSAID + ACEi/ARB:** Blunts antihypertensive effect, increases AKI risk. Avoid NSAIDs in CKD if possible.");
+          riskLevel = Math.max(riskLevel, 2);
+        }
+        if (pair === "piptazo-vancomycin") {
+          interactions.push("🟡 **Piperacillin-Tazobactam + Vancomycin:** Emerging data suggests increased AKI risk vs. cefepime + vancomycin. Monitor SCr daily.");
+          riskLevel = Math.max(riskLevel, 2);
+        }
+        if (pair === "cyclosporine-colchicine" || pair === "colchicine-tacrolimus") {
+          interactions.push("🔴 **Calcineurin Inhibitor + Colchicine:** Increased colchicine toxicity (myopathy, neuropathy). Reduce colchicine dose significantly.");
+          riskLevel = Math.max(riskLevel, 3);
+        }
+        if (pair === "allopurinol-acei" || pair === "allopurinol-arb") {
+          interactions.push("🟢 **Allopurinol + ACEi/ARB:** Generally safe. Rare reports of hypersensitivity. Start allopurinol at low dose in CKD.");
+          riskLevel = Math.max(riskLevel, 1);
+        }
+        if (pair === "methotrexate-nsaid") {
+          interactions.push("🔴 **Methotrexate + NSAID:** Reduced MTX clearance → toxicity. AVOID NSAIDs with high-dose MTX. Monitor closely with low-dose.");
+          riskLevel = Math.max(riskLevel, 3);
+        }
+        if (pair === "methotrexate-trimethoprim") {
+          interactions.push("🔴 **Methotrexate + Trimethoprim:** Both are folate antagonists. Increased bone marrow toxicity. AVOID combination.");
+          riskLevel = Math.max(riskLevel, 4);
+        }
+        if (pair === "digoxin-diuretic") {
+          interactions.push("🟡 **Digoxin + Diuretic:** Hypokalemia increases digoxin toxicity. Monitor K+ and digoxin levels. Maintain K+ >4.0.");
+          riskLevel = Math.max(riskLevel, 2);
+        }
       };
-      return dosing[drug] || "Consult pharmacy for specific dosing.";
+      
+      // Check all pairs
+      for (let i = 0; i < drugs.length; i++) {
+        for (let j = i + 1; j < drugs.length; j++) {
+          checkPair(drugs[i], drugs[j]);
+        }
+      }
+      
+      // CKD-specific warnings
+      if (egfr < 30) {
+        if (drugs.includes("metformin")) {
+          interactions.push("⚠️ **Metformin in CKD 4-5:** CONTRAINDICATED when eGFR <30. Risk of lactic acidosis.");
+          riskLevel = Math.max(riskLevel, 4);
+        }
+        if (drugs.includes("nsaid")) {
+          interactions.push("⚠️ **NSAIDs in CKD 4-5:** HIGH RISK. Can precipitate AKI and accelerate CKD progression. AVOID.");
+          riskLevel = Math.max(riskLevel, 3);
+        }
+      } else if (egfr < 45) {
+        if (drugs.includes("metformin")) {
+          interactions.push("🟡 **Metformin in CKD 3b:** Use with caution. Max 1000mg/day. Monitor SCr every 3 months.");
+          riskLevel = Math.max(riskLevel, 2);
+        }
+      }
+      
+      // Generate summary
+      if (interactions.length === 0) {
+        return "✅ **No significant nephrotoxic interactions identified** between selected drugs.\n\nNote: This checker covers common nephrology-relevant interactions but is not comprehensive. Always consult pharmacy resources for complete interaction checking.";
+      }
+      
+      let riskLabel = "";
+      if (riskLevel === 4) riskLabel = "🚫 **CONTRAINDICATED/AVOID**";
+      else if (riskLevel === 3) riskLabel = "🔴 **HIGH RISK**";
+      else if (riskLevel === 2) riskLabel = "🟡 **MODERATE RISK**";
+      else riskLabel = "🟢 **LOW RISK**";
+      
+      return riskLabel + "\n\n" + interactions.join("\n\n");
     },
     clinicalPearls: [
-      "Continue ACEi/ARB in CKD for renoprotection unless contraindicated",
-      "Expect 20-30% rise in creatinine after initiation - this is acceptable",
-      "Hold if Cr rises >30% or K+ >5.5 mEq/L",
-      "Do NOT combine ACEi + ARB (ONTARGET trial: increased adverse events)",
-      "Monitor K+ and Cr at 1-2 weeks after initiation or dose change",
-      "ARBs generally have less cough than ACEi",
-      "Losartan, valsartan, irbesartan: No renal dose adjustment needed",
-      "Consider K+ binder (patiromer, SZC) to enable RAAS blockade",
+      "'Triple Whammy' (NSAID + Diuretic + ACEi/ARB) is the most common preventable cause of drug-induced AKI",
+      "Vancomycin + Piperacillin-Tazobactam may have higher AKI risk than Vancomycin + Cefepime",
+      "Calcineurin inhibitors (cyclosporine, tacrolimus) interact with many drugs via CYP3A4",
+      "In CKD, always check if drugs need dose adjustment AND interaction potential",
+      "Trimethoprim blocks creatinine secretion - may falsely elevate SCr without true GFR decline",
+      "NSAIDs should generally be avoided in CKD - even short courses can cause AKI",
+      "This tool is for educational purposes - always verify with comprehensive drug interaction databases",
     ],
-    references: ["KDIGO 2021 Blood Pressure in CKD", "ONTARGET Investigators. N Engl J Med. 2008;358(15):1547-1559"],
-  },
-
-  {
-    id: "allopurinol-dosing",
-    name: "Allopurinol Dosing in CKD",
-    description: "Adjusts allopurinol dose based on renal function",
-    category: "CKD Drug Dosing",
-    inputs: [
-      { id: "crcl", label: "Creatinine Clearance", type: "number", unit: "mL/min", placeholder: "40", required: true },
-      { id: "currentUricAcid", label: "Current Uric Acid Level", type: "number", unit: "mg/dL", placeholder: "8.5", required: true },
-      { id: "targetUricAcid", label: "Target Uric Acid", type: "select", options: [
-        { value: "6", label: "<6 mg/dL (standard gout)" },
-        { value: "5", label: "<5 mg/dL (tophaceous gout)" },
-      ], required: true },
+    references: [
+      "Lapi F et al. BMJ. 2013;346:e8525 (Triple Whammy)",
+      "Luther MK et al. Clin Infect Dis. 2018;67(12):1861-1867 (Pip-Tazo + Vanc)",
+      "Matzke GR et al. Kidney Int. 2011;80(11):1122-1137 (Drug dosing in CKD)",
+      "Lexicomp Drug Interactions Database",
     ],
-    resultLabel: "Allopurinol Starting Dose",
-    resultUnit: "mg/day",
-    interpretation: (value, inputs) => {
-      const crcl = inputs?.crcl as number;
-      if (crcl >= 80) return "Start 100mg daily, titrate by 100mg every 2-4 weeks to target uric acid. Max 800mg/day.";
-      if (crcl >= 60) return "Start 100mg daily, titrate by 50-100mg every 2-4 weeks. Max 400mg/day.";
-      if (crcl >= 40) return "Start 50-100mg daily, titrate slowly. Max 300mg/day.";
-      if (crcl >= 20) return "Start 50mg daily, titrate by 50mg every 4 weeks. Max 200mg/day.";
-      if (crcl >= 10) return "Start 50mg daily or every other day. Max 100mg/day.";
-      return "CrCl <10: 50mg every 2-3 days. Consider febuxostat as alternative.";
-    },
-    clinicalPearls: [
-      "Start low, go slow - reduces risk of allopurinol hypersensitivity syndrome (AHS)",
-      "AHS risk factors: CKD, HLA-B*5801 (screen in high-risk populations)",
-      "Titrate to target uric acid, not to a fixed dose",
-      "Modern guidelines support higher doses in CKD with careful titration",
-      "Febuxostat: No renal dose adjustment needed (alternative in CKD)",
-      "Colchicine prophylaxis during initiation: 0.6mg daily (adjust for CKD)",
-      "HD patients: 100mg after each dialysis session",
-    ],
-    references: ["Stamp LK et al. Ann Rheum Dis. 2017;76(10):1693-1700", "ACR 2020 Gout Guidelines"],
   },
 ];
 
