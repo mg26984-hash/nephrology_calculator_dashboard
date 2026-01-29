@@ -34,7 +34,7 @@ export interface Calculator {
   inputs: CalculatorInput[];
   resultLabel: string;
   resultUnit?: string;
-  interpretation: (value: number) => string;
+  interpretation: (value: number, inputs?: Record<string, unknown>) => string;
   referenceRanges?: ReferenceRange[];
   clinicalPearls: string[];
   references: string[];
@@ -1263,8 +1263,17 @@ export const calculators: Calculator[] = [
       "Traditional calculators UNDERESTIMATE risk in CKD",
       "CVD = leading cause of death in CKD",
       "Lower thresholds for statin initiation in CKD patients",
+      "STATIN INTENSITY GUIDE:",
+      "• Primary prevention (CKD 3-4): Moderate-intensity (atorvastatin 10-20mg, rosuvastatin 5-10mg)",
+      "• Secondary prevention (prior ASCVD): High-intensity (atorvastatin 40-80mg, rosuvastatin 20-40mg)",
+      "• Post-transplant: Moderate-intensity preferred (atorvastatin 10-20mg); AVOID simvastatin/lovastatin with calcineurin inhibitors",
+      "• Dialysis: Continue if already on statin; do NOT initiate for primary prevention (4D, AURORA trials)",
+      "DRUG INTERACTIONS: Cyclosporine + simvastatin/lovastatin = CONTRAINDICATED (rhabdomyolysis risk)",
+      "Preferred post-transplant statins: atorvastatin, rosuvastatin, pravastatin, fluvastatin",
+      "Initiate within 3 months post-transplant (ALERT trial: ↓ cardiac events)",
+      "Monitor CK, LFTs at baseline, 6-12 weeks, then annually",
     ],
-    references: ["Goff DC Jr et al. Circulation. 2014;129(25 Suppl 2):S49-73"],
+    references: ["Goff DC Jr et al. Circulation. 2014;129(25 Suppl 2):S49-73", "Stone NJ et al. Circulation. 2014;129(25 Suppl 2):S1-S45", "Holdaas H et al. Lancet. 2003;361(9374):2024-31 (ALERT)"],
   },
 
   // ============================================================================
@@ -1719,6 +1728,241 @@ export const calculators: Calculator[] = [
       "KDIGO 2017 Clinical Practice Guideline Update for CKD-MBD",
       "Naylor KL et al. Am J Kidney Dis. 2014;63(4):612-622",
     ],
+  },
+
+  // ============================================================================
+  // CKD DRUG DOSING
+  // ============================================================================
+
+  {
+    id: "vancomycin-dosing",
+    name: "Vancomycin Dosing in CKD",
+    description: "Calculates vancomycin dosing based on renal function",
+    category: "CKD Drug Dosing",
+    inputs: [
+      { id: "weight", label: "Actual Body Weight", type: "number", unit: "kg", placeholder: "70", required: true },
+      { id: "egfr", label: "eGFR", type: "number", unit: "mL/min/1.73m²", placeholder: "60", required: true },
+      { id: "indication", label: "Indication", type: "select", options: [
+        { value: "standard", label: "Standard infection" },
+        { value: "severe", label: "Severe/complicated infection" },
+      ], required: true },
+      { id: "dialysis", label: "On Hemodialysis", type: "checkbox" },
+    ],
+    resultLabel: "Recommended Vancomycin Dose",
+    resultUnit: "mg",
+    interpretation: (value, inputs) => {
+      const egfr = inputs?.egfr as number;
+      const dialysis = inputs?.dialysis as boolean;
+      if (dialysis) return "HD: Give loading dose, then 500-1000mg after each HD session. Monitor trough levels.";
+      if (egfr >= 90) return "Normal renal function: Standard dosing 15-20 mg/kg q8-12h";
+      if (egfr >= 50) return "CKD Stage 3a: 15-20 mg/kg q12-24h";
+      if (egfr >= 30) return "CKD Stage 3b: 15-20 mg/kg q24-48h";
+      if (egfr >= 15) return "CKD Stage 4: 15-20 mg/kg q48-72h";
+      return "CKD Stage 5: Loading dose only, then based on levels";
+    },
+    clinicalPearls: [
+      "Loading dose: 25-30 mg/kg (actual body weight) regardless of renal function",
+      "Target trough: 15-20 mcg/mL for serious infections (MRSA bacteremia, endocarditis, osteomyelitis)",
+      "Target trough: 10-15 mcg/mL for less severe infections",
+      "AUC/MIC-guided dosing preferred over trough-only monitoring",
+      "Nephrotoxicity risk increases with trough >20 mcg/mL",
+      "HD patients: Give after dialysis; high-flux HD removes ~30-40%",
+      "PD patients: 15-30 mg/kg loading, then 500-1000mg q48-72h based on levels",
+    ],
+    references: ["Rybak MJ et al. Am J Health Syst Pharm. 2020;77(11):835-864"],
+  },
+
+  {
+    id: "metformin-ckd",
+    name: "Metformin Dosing in CKD",
+    description: "Guides metformin use and dosing based on eGFR",
+    category: "CKD Drug Dosing",
+    inputs: [
+      { id: "egfr", label: "eGFR", type: "number", unit: "mL/min/1.73m²", placeholder: "45", required: true },
+      { id: "currentDose", label: "Current Metformin Dose (if any)", type: "number", unit: "mg/day", placeholder: "1000" },
+    ],
+    resultLabel: "Metformin Recommendation",
+    resultUnit: "guidance",
+    interpretation: (value, inputs) => {
+      const egfr = inputs?.egfr as number;
+      if (egfr >= 60) return "No dose adjustment needed. Max 2000-2550 mg/day.";
+      if (egfr >= 45) return "Continue current dose. Max 2000 mg/day. Monitor eGFR every 3-6 months.";
+      if (egfr >= 30) return "Reduce dose to max 1000 mg/day. Monitor eGFR every 3 months.";
+      return "DISCONTINUE metformin. Contraindicated at eGFR <30.";
+    },
+    clinicalPearls: [
+      "FDA updated labeling in 2016 to allow use in moderate CKD",
+      "Hold before iodinated contrast if eGFR 30-60; restart 48h after if stable",
+      "Risk of lactic acidosis increases with declining renal function",
+      "Hold during acute illness, dehydration, or hypoxic states",
+      "KDIGO 2020: Consider continuing in stable CKD 3b with close monitoring",
+      "First-line agent for T2DM in CKD if eGFR permits",
+    ],
+    references: ["FDA Drug Safety Communication 2016", "KDIGO 2020 Diabetes Management in CKD"],
+  },
+
+  {
+    id: "gabapentin-dosing",
+    name: "Gabapentin Dosing in CKD",
+    description: "Adjusts gabapentin dose based on renal function",
+    category: "CKD Drug Dosing",
+    inputs: [
+      { id: "crcl", label: "Creatinine Clearance", type: "number", unit: "mL/min", placeholder: "50", required: true },
+      { id: "indication", label: "Indication", type: "select", options: [
+        { value: "neuropathy", label: "Neuropathic pain" },
+        { value: "seizure", label: "Seizure disorder" },
+        { value: "rls", label: "Restless legs syndrome" },
+      ], required: true },
+      { id: "dialysis", label: "On Hemodialysis", type: "checkbox" },
+    ],
+    resultLabel: "Gabapentin Dose Adjustment",
+    resultUnit: "mg/day",
+    interpretation: (value, inputs) => {
+      const crcl = inputs?.crcl as number;
+      const dialysis = inputs?.dialysis as boolean;
+      if (dialysis) return "HD: 100-300mg after each dialysis session. Supplemental dose post-HD.";
+      if (crcl >= 60) return "Normal dosing: 300-1200mg TID (900-3600mg/day)";
+      if (crcl >= 30) return "CrCl 30-59: 200-700mg BID (400-1400mg/day)";
+      if (crcl >= 15) return "CrCl 15-29: 200-700mg daily (200-700mg/day)";
+      return "CrCl <15: 100-300mg daily. Max 300mg/day.";
+    },
+    clinicalPearls: [
+      "Common cause of encephalopathy in CKD patients - dose carefully!",
+      "Symptoms of toxicity: sedation, ataxia, myoclonus, encephalopathy",
+      "Useful for uremic pruritus at low doses (100-300mg post-HD)",
+      "Pregabalin also requires renal dose adjustment",
+      "Start low, go slow in elderly CKD patients",
+      "HD removes ~35% of dose; give supplemental dose after dialysis",
+    ],
+    references: ["Lexicomp Drug Information", "Bockbrader HN et al. Clin Pharmacokinet. 2010;49(10):661-669"],
+  },
+
+  {
+    id: "enoxaparin-dosing",
+    name: "Enoxaparin Dosing in CKD",
+    description: "Adjusts enoxaparin dose for renal impairment",
+    category: "CKD Drug Dosing",
+    inputs: [
+      { id: "weight", label: "Actual Body Weight", type: "number", unit: "kg", placeholder: "70", required: true },
+      { id: "crcl", label: "Creatinine Clearance", type: "number", unit: "mL/min", placeholder: "30", required: true },
+      { id: "indication", label: "Indication", type: "select", options: [
+        { value: "dvtProphylaxis", label: "DVT prophylaxis" },
+        { value: "dvtTreatment", label: "DVT/PE treatment" },
+        { value: "acs", label: "Acute coronary syndrome" },
+      ], required: true },
+    ],
+    resultLabel: "Enoxaparin Dose",
+    resultUnit: "mg",
+    interpretation: (value, inputs) => {
+      const crcl = inputs?.crcl as number;
+      const indication = inputs?.indication as string;
+      const weight = inputs?.weight as number;
+      
+      if (crcl < 30) {
+        if (indication === "dvtProphylaxis") return `CrCl <30: 30mg SC daily (reduced from 40mg)`;
+        if (indication === "dvtTreatment") return `CrCl <30: 1mg/kg SC daily (NOT BID). Dose: ${Math.round(weight)}mg daily`;
+        return `CrCl <30 ACS: 1mg/kg SC daily. Dose: ${Math.round(weight)}mg daily`;
+      }
+      
+      if (indication === "dvtProphylaxis") return `Standard: 40mg SC daily`;
+      if (indication === "dvtTreatment") return `Standard: 1mg/kg SC BID. Dose: ${Math.round(weight)}mg BID`;
+      return `ACS: 1mg/kg SC BID. Dose: ${Math.round(weight)}mg BID`;
+    },
+    clinicalPearls: [
+      "CrCl <30: Reduce frequency from BID to daily for treatment doses",
+      "Consider anti-Xa monitoring in CKD, obesity, pregnancy",
+      "Target anti-Xa (treatment): 0.5-1.0 IU/mL (4h post-dose)",
+      "Avoid in severe CKD (CrCl <15) - use UFH instead",
+      "HD patients: UFH preferred; if LMWH needed, monitor anti-Xa",
+      "Obesity: Use actual body weight up to 150kg; consider anti-Xa monitoring >150kg",
+    ],
+    references: ["Lexicomp Drug Information", "Garcia DA et al. Chest. 2012;141(2 Suppl):e24S-e43S"],
+  },
+
+  {
+    id: "acei-arb-dosing",
+    name: "ACEi/ARB Dosing in CKD",
+    description: "Guides ACE inhibitor and ARB dosing in CKD",
+    category: "CKD Drug Dosing",
+    inputs: [
+      { id: "drug", label: "Medication", type: "select", options: [
+        { value: "lisinopril", label: "Lisinopril" },
+        { value: "enalapril", label: "Enalapril" },
+        { value: "ramipril", label: "Ramipril" },
+        { value: "losartan", label: "Losartan" },
+        { value: "valsartan", label: "Valsartan" },
+        { value: "irbesartan", label: "Irbesartan" },
+      ], required: true },
+      { id: "egfr", label: "eGFR", type: "number", unit: "mL/min/1.73m²", placeholder: "40", required: true },
+      { id: "potassium", label: "Serum Potassium", type: "number", unit: "mEq/L", placeholder: "4.5", required: true },
+    ],
+    resultLabel: "ACEi/ARB Recommendation",
+    resultUnit: "guidance",
+    interpretation: (value, inputs) => {
+      const drug = inputs?.drug as string;
+      const egfr = inputs?.egfr as number;
+      const potassium = inputs?.potassium as number;
+      
+      if (potassium > 5.5) return "HOLD ACEi/ARB - Hyperkalemia (K+ >5.5). Treat hyperkalemia first.";
+      if (potassium > 5.0) return "CAUTION: K+ 5.0-5.5. Reduce dose or add K+ binder. Monitor closely.";
+      
+      const dosing: Record<string, string> = {
+        lisinopril: egfr >= 30 ? "Start 2.5-5mg daily, titrate to 20-40mg daily" : "Start 2.5mg daily, max 40mg daily. Monitor K+ and Cr.",
+        enalapril: egfr >= 30 ? "Start 2.5mg BID, titrate to 10-20mg BID" : "Start 2.5mg daily, titrate cautiously",
+        ramipril: egfr >= 40 ? "Start 1.25-2.5mg daily, titrate to 10mg daily" : "Start 1.25mg daily, max 5mg daily",
+        losartan: "No dose adjustment needed. Start 25-50mg daily, max 100mg daily.",
+        valsartan: "No dose adjustment needed. Start 40-80mg daily, max 320mg daily.",
+        irbesartan: "No dose adjustment needed. Start 150mg daily, max 300mg daily.",
+      };
+      return dosing[drug] || "Consult pharmacy for specific dosing.";
+    },
+    clinicalPearls: [
+      "Continue ACEi/ARB in CKD for renoprotection unless contraindicated",
+      "Expect 20-30% rise in creatinine after initiation - this is acceptable",
+      "Hold if Cr rises >30% or K+ >5.5 mEq/L",
+      "Do NOT combine ACEi + ARB (ONTARGET trial: increased adverse events)",
+      "Monitor K+ and Cr at 1-2 weeks after initiation or dose change",
+      "ARBs generally have less cough than ACEi",
+      "Losartan, valsartan, irbesartan: No renal dose adjustment needed",
+      "Consider K+ binder (patiromer, SZC) to enable RAAS blockade",
+    ],
+    references: ["KDIGO 2021 Blood Pressure in CKD", "ONTARGET Investigators. N Engl J Med. 2008;358(15):1547-1559"],
+  },
+
+  {
+    id: "allopurinol-dosing",
+    name: "Allopurinol Dosing in CKD",
+    description: "Adjusts allopurinol dose based on renal function",
+    category: "CKD Drug Dosing",
+    inputs: [
+      { id: "crcl", label: "Creatinine Clearance", type: "number", unit: "mL/min", placeholder: "40", required: true },
+      { id: "currentUricAcid", label: "Current Uric Acid Level", type: "number", unit: "mg/dL", placeholder: "8.5", required: true },
+      { id: "targetUricAcid", label: "Target Uric Acid", type: "select", options: [
+        { value: "6", label: "<6 mg/dL (standard gout)" },
+        { value: "5", label: "<5 mg/dL (tophaceous gout)" },
+      ], required: true },
+    ],
+    resultLabel: "Allopurinol Starting Dose",
+    resultUnit: "mg/day",
+    interpretation: (value, inputs) => {
+      const crcl = inputs?.crcl as number;
+      if (crcl >= 80) return "Start 100mg daily, titrate by 100mg every 2-4 weeks to target uric acid. Max 800mg/day.";
+      if (crcl >= 60) return "Start 100mg daily, titrate by 50-100mg every 2-4 weeks. Max 400mg/day.";
+      if (crcl >= 40) return "Start 50-100mg daily, titrate slowly. Max 300mg/day.";
+      if (crcl >= 20) return "Start 50mg daily, titrate by 50mg every 4 weeks. Max 200mg/day.";
+      if (crcl >= 10) return "Start 50mg daily or every other day. Max 100mg/day.";
+      return "CrCl <10: 50mg every 2-3 days. Consider febuxostat as alternative.";
+    },
+    clinicalPearls: [
+      "Start low, go slow - reduces risk of allopurinol hypersensitivity syndrome (AHS)",
+      "AHS risk factors: CKD, HLA-B*5801 (screen in high-risk populations)",
+      "Titrate to target uric acid, not to a fixed dose",
+      "Modern guidelines support higher doses in CKD with careful titration",
+      "Febuxostat: No renal dose adjustment needed (alternative in CKD)",
+      "Colchicine prophylaxis during initiation: 0.6mg daily (adjust for CKD)",
+      "HD patients: 100mg after each dialysis session",
+    ],
+    references: ["Stamp LK et al. Ann Rheum Dis. 2017;76(10):1693-1700", "ACR 2020 Gout Guidelines"],
   },
 ];
 

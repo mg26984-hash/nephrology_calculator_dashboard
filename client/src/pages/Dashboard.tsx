@@ -902,6 +902,62 @@ export default function Dashboard() {
           setResult(banffResult.category);
           return; // Skip the default interpretation handling
 
+        // CKD Drug Dosing Calculators - these use interpretation function with inputs
+        case "vancomycin-dosing":
+          const vancoWeight = calculatorState.weight as number;
+          const vancoEgfr = calculatorState.egfr as number;
+          const vancoDialysis = Boolean(calculatorState.dialysis);
+          const vancoIndication = calculatorState.indication as string;
+          // Calculate loading dose based on weight
+          const loadingDose = Math.round(vancoWeight * 25); // 25 mg/kg loading
+          calculationResult = loadingDose;
+          setResultInterpretation(
+            `**Loading Dose:** ${loadingDose} mg (25 mg/kg)\n\n` +
+            selectedCalculator.interpretation(loadingDose, { egfr: vancoEgfr, dialysis: vancoDialysis, indication: vancoIndication })
+          );
+          setResult(loadingDose);
+          return;
+
+        case "metformin-ckd":
+          const metEgfr = calculatorState.egfr as number;
+          calculationResult = metEgfr;
+          setResultInterpretation(selectedCalculator.interpretation(metEgfr, { egfr: metEgfr }));
+          setResult(metEgfr);
+          return;
+
+        case "gabapentin-dosing":
+          const gabaCrcl = calculatorState.crcl as number;
+          const gabaDialysis = Boolean(calculatorState.dialysis);
+          calculationResult = gabaCrcl;
+          setResultInterpretation(selectedCalculator.interpretation(gabaCrcl, { crcl: gabaCrcl, dialysis: gabaDialysis }));
+          setResult(gabaCrcl);
+          return;
+
+        case "enoxaparin-dosing":
+          const enoxWeight = calculatorState.weight as number;
+          const enoxCrcl = calculatorState.crcl as number;
+          const enoxIndication = calculatorState.indication as string;
+          calculationResult = enoxWeight;
+          setResultInterpretation(selectedCalculator.interpretation(enoxWeight, { weight: enoxWeight, crcl: enoxCrcl, indication: enoxIndication }));
+          setResult(enoxWeight);
+          return;
+
+        case "acei-arb-dosing":
+          const aceiDrug = calculatorState.drug as string;
+          const aceiEgfr = calculatorState.egfr as number;
+          const aceiPotassium = calculatorState.potassium as number;
+          calculationResult = aceiEgfr;
+          setResultInterpretation(selectedCalculator.interpretation(aceiEgfr, { drug: aceiDrug, egfr: aceiEgfr, potassium: aceiPotassium }));
+          setResult(aceiEgfr);
+          return;
+
+        case "allopurinol-dosing":
+          const alloCrcl = calculatorState.crcl as number;
+          calculationResult = alloCrcl;
+          setResultInterpretation(selectedCalculator.interpretation(alloCrcl, { crcl: alloCrcl }));
+          setResult(alloCrcl);
+          return;
+
         default:
           calculationResult = undefined;
       }
