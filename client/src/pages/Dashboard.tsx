@@ -1767,14 +1767,122 @@ export default function Dashboard() {
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <ul className="space-y-2">
-                      {selectedCalculator.clinicalPearls.map((pearl, idx) => (
-                        <li key={idx} className="flex gap-2 text-sm text-muted-foreground">
-                          <span className="text-primary flex-shrink-0">•</span>
-                          <span>{pearl}</span>
-                        </li>
-                      ))}
-                    </ul>
+                    {/* Special rendering for 24h protein calculator with validation table */}
+                    {selectedCalculator.id === 'estimated-24h-protein' ? (
+                      <div className="space-y-4">
+                        {/* Regular clinical pearls (first 6 items) */}
+                        <ul className="space-y-2">
+                          {selectedCalculator.clinicalPearls.slice(0, 6).map((pearl, idx) => (
+                            <li key={idx} className="flex gap-2 text-sm text-muted-foreground">
+                              <span className="text-primary flex-shrink-0">•</span>
+                              <span>{pearl}</span>
+                            </li>
+                          ))}
+                        </ul>
+                        
+                        {/* PCR Validation Reference Table */}
+                        <div className="mt-4">
+                          <h4 className="text-sm font-semibold mb-2 text-foreground">PCR Validation Reference Table</h4>
+                          <p className="text-xs text-muted-foreground mb-3">Test your inputs against these standard cases:</p>
+                          <div className="overflow-x-auto">
+                            <table className="w-full text-sm border-collapse">
+                              <thead>
+                                <tr className="bg-muted/50">
+                                  <th className="px-3 py-2 text-left font-semibold border-b border-border">Protein (mg/dL)</th>
+                                  <th className="px-3 py-2 text-left font-semibold border-b border-border">Creatinine (mg/dL)</th>
+                                  <th className="px-3 py-2 text-left font-semibold border-b border-border">Ratio (mg/mg)</th>
+                                  <th className="px-3 py-2 text-left font-semibold border-b border-border">Expected g/day</th>
+                                  <th className="px-3 py-2 text-left font-semibold border-b border-border">Category</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                <tr className="hover:bg-muted/30">
+                                  <td className="px-3 py-2 border-b border-border text-muted-foreground">20</td>
+                                  <td className="px-3 py-2 border-b border-border text-muted-foreground">100</td>
+                                  <td className="px-3 py-2 border-b border-border text-muted-foreground">0.2</td>
+                                  <td className="px-3 py-2 border-b border-border text-muted-foreground">0.2</td>
+                                  <td className="px-3 py-2 border-b border-border text-green-600 dark:text-green-400">Normal</td>
+                                </tr>
+                                <tr className="hover:bg-muted/30">
+                                  <td className="px-3 py-2 border-b border-border text-muted-foreground">50</td>
+                                  <td className="px-3 py-2 border-b border-border text-muted-foreground">75</td>
+                                  <td className="px-3 py-2 border-b border-border text-muted-foreground">0.67</td>
+                                  <td className="px-3 py-2 border-b border-border text-muted-foreground">0.67</td>
+                                  <td className="px-3 py-2 border-b border-border text-yellow-600 dark:text-yellow-400">Mild</td>
+                                </tr>
+                                <tr className="hover:bg-muted/30">
+                                  <td className="px-3 py-2 border-b border-border text-muted-foreground">100</td>
+                                  <td className="px-3 py-2 border-b border-border text-muted-foreground">60</td>
+                                  <td className="px-3 py-2 border-b border-border text-muted-foreground">1.67</td>
+                                  <td className="px-3 py-2 border-b border-border text-muted-foreground">1.67</td>
+                                  <td className="px-3 py-2 border-b border-border text-orange-600 dark:text-orange-400">Moderate</td>
+                                </tr>
+                                <tr className="hover:bg-muted/30">
+                                  <td className="px-3 py-2 border-b border-border text-muted-foreground">150</td>
+                                  <td className="px-3 py-2 border-b border-border text-muted-foreground">50</td>
+                                  <td className="px-3 py-2 border-b border-border text-muted-foreground">3.0</td>
+                                  <td className="px-3 py-2 border-b border-border text-muted-foreground">3.0</td>
+                                  <td className="px-3 py-2 border-b border-border text-red-600 dark:text-red-400">Nephrotic</td>
+                                </tr>
+                                <tr className="hover:bg-muted/30">
+                                  <td className="px-3 py-2 border-b border-border text-muted-foreground">300</td>
+                                  <td className="px-3 py-2 border-b border-border text-muted-foreground">40</td>
+                                  <td className="px-3 py-2 border-b border-border text-muted-foreground">7.5</td>
+                                  <td className="px-3 py-2 border-b border-border text-muted-foreground">7.5</td>
+                                  <td className="px-3 py-2 border-b border-border text-red-700 dark:text-red-300 font-medium">Severe</td>
+                                </tr>
+                              </tbody>
+                            </table>
+                          </div>
+                        </div>
+                        
+                        {/* ACR KDIGO Categories */}
+                        <div className="mt-4">
+                          <h4 className="text-sm font-semibold mb-2 text-foreground">ACR KDIGO Categories</h4>
+                          <div className="overflow-x-auto">
+                            <table className="w-full text-sm border-collapse">
+                              <thead>
+                                <tr className="bg-muted/50">
+                                  <th className="px-3 py-2 text-left font-semibold border-b border-border">Category</th>
+                                  <th className="px-3 py-2 text-left font-semibold border-b border-border">ACR (mg/g)</th>
+                                  <th className="px-3 py-2 text-left font-semibold border-b border-border">ACR (mg/mmol)</th>
+                                  <th className="px-3 py-2 text-left font-semibold border-b border-border">Description</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                <tr className="hover:bg-muted/30">
+                                  <td className="px-3 py-2 border-b border-border text-green-600 dark:text-green-400 font-medium">A1</td>
+                                  <td className="px-3 py-2 border-b border-border text-muted-foreground">&lt;30</td>
+                                  <td className="px-3 py-2 border-b border-border text-muted-foreground">&lt;3</td>
+                                  <td className="px-3 py-2 border-b border-border text-muted-foreground">Normal to mildly increased</td>
+                                </tr>
+                                <tr className="hover:bg-muted/30">
+                                  <td className="px-3 py-2 border-b border-border text-yellow-600 dark:text-yellow-400 font-medium">A2</td>
+                                  <td className="px-3 py-2 border-b border-border text-muted-foreground">30-300</td>
+                                  <td className="px-3 py-2 border-b border-border text-muted-foreground">3-30</td>
+                                  <td className="px-3 py-2 border-b border-border text-muted-foreground">Moderately increased</td>
+                                </tr>
+                                <tr className="hover:bg-muted/30">
+                                  <td className="px-3 py-2 border-b border-border text-red-600 dark:text-red-400 font-medium">A3</td>
+                                  <td className="px-3 py-2 border-b border-border text-muted-foreground">&gt;300</td>
+                                  <td className="px-3 py-2 border-b border-border text-muted-foreground">&gt;30</td>
+                                  <td className="px-3 py-2 border-b border-border text-muted-foreground">Severely increased</td>
+                                </tr>
+                              </tbody>
+                            </table>
+                          </div>
+                        </div>
+                      </div>
+                    ) : (
+                      <ul className="space-y-2">
+                        {selectedCalculator.clinicalPearls.map((pearl, idx) => (
+                          <li key={idx} className="flex gap-2 text-sm text-muted-foreground">
+                            <span className="text-primary flex-shrink-0">•</span>
+                            <span>{pearl}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
                   </CardContent>
                 </Card>
               )}
