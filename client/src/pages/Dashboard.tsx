@@ -118,6 +118,8 @@ const unitOptions: { [inputId: string]: { conventional: string; si: string; conv
   targetHemoglobin: { conventional: "g/dL", si: "g/L", conversionFactor: 10 },
   currentHemoglobin: { conventional: "g/dL", si: "g/L", conversionFactor: 10 },
   acr: { conventional: "mg/g", si: "mg/mmol", conversionFactor: 0.113 },
+  // ACR from PCR calculator - PCR: 1 g/g = 113 mg/mmol (1000 mg/g ÷ 8.84 mmol/g creatinine)
+  pcr: { conventional: "g/g", si: "mg/mmol", conversionFactor: 113 },
 };
 
 export default function Dashboard() {
@@ -590,7 +592,7 @@ export default function Dashboard() {
 
         case "acr-from-pcr":
           calculationResult = calc.acrFromPcr(
-            calculatorState.pcr as number
+            getValue("pcr")
           );
           break;
 
@@ -608,10 +610,8 @@ export default function Dashboard() {
         case "hd-session-duration":
           calculationResult = calc.hemodialysisSessionDuration(
             calculatorState.targetKtV as number,
-            getValue("preBUN"),
-            getValue("postBUN"),
-            calculatorState.weight as number,
-            getInputUnit("preBUN") === "si" ? "mmol/L" : "mg/dL"
+            calculatorState.dialyzerClearance as number,
+            calculatorState.totalBodyWater as number
           );
           break;
 

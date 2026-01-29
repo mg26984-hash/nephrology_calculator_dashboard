@@ -510,22 +510,19 @@ export function totalBodyWaterWatson(
 
 export function hemodialysisSessionDuration(
   targetKtV: number,
-  preBUN: number,
-  postBUN: number,
-  weight: number,
-  bunUnit: "mg/dL" | "mmol/L" = "mg/dL"
+  dialyzerClearance: number,
+  totalBodyWater: number
 ): number {
-  let preBUNMgDl = bunUnit === "mmol/L" ? preBUN * 2.8 : preBUN;
-  let postBUNMgDl = bunUnit === "mmol/L" ? postBUN * 2.8 : postBUN;
-
-  const R = postBUNMgDl / preBUNMgDl;
-
-  // Rearranged Daugirdas equation to solve for t
-  const numerator = Math.log(R - 0.008);
-  const denominator = -targetKtV - (4 - 3.5 * R);
-  const sessionTime = (numerator / denominator) * 60;
-
-  return Math.round(sessionTime * 10) / 10;
+  // Simple formula: Kt/V = K × t / V
+  // Solving for t: t = (Kt/V × V) / K
+  // K = dialyzer clearance in mL/min
+  // V = total body water in mL (liters × 1000)
+  // t = session time in minutes
+  
+  const vInMl = totalBodyWater * 1000; // Convert L to mL
+  const sessionTimeMinutes = (targetKtV * vInMl) / dialyzerClearance;
+  
+  return Math.round(sessionTimeMinutes * 10) / 10;
 }
 
 export function pdWeeklyKtv(

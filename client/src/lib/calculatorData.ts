@@ -791,27 +791,28 @@ export const calculators: Calculator[] = [
   {
     id: "hd-session-duration",
     name: "Hemodialysis Session Duration from Target Kt/V",
-    description: "Calculates required session time to achieve target Kt/V",
+    description: "Calculates required session time to achieve target Kt/V based on dialyzer clearance and total body water",
     category: "Dialysis Adequacy",
     inputs: [
       { id: "targetKtV", label: "Target Kt/V", type: "number", unit: "ratio", placeholder: "1.4", required: true },
-      { id: "preBUN", label: "Pre-Dialysis BUN", type: "number", unit: "mg/dL", placeholder: "60", required: true },
-      { id: "postBUN", label: "Post-Dialysis BUN", type: "number", unit: "mg/dL", placeholder: "20", required: true },
-      { id: "weight", label: "Body Weight", type: "number", unit: "kg", placeholder: "70", required: true },
+      { id: "dialyzerClearance", label: "Dialyzer Urea Clearance (K)", type: "number", unit: "mL/min", placeholder: "250", required: true },
+      { id: "totalBodyWater", label: "Total Body Water (V)", type: "number", unit: "L", placeholder: "42", required: true },
     ],
     resultLabel: "Required Session Duration",
     resultUnit: "minutes",
     interpretation: (value) => {
+      if (value <= 180) return `${(value / 60).toFixed(1)} hours - short session`;
       if (value <= 240) return `${(value / 60).toFixed(1)} hours - standard session`;
       if (value <= 300) return `${(value / 60).toFixed(1)} hours - extended session`;
       return `${(value / 60).toFixed(1)} hours - very extended session - consider nocturnal HD`;
     },
     clinicalPearls: [
-      "Helps prescribe adequate dialysis dose",
-      "Adjust for individual patient factors",
-      "More frequent or longer sessions improve outcomes",
+      "Formula: t = (Kt/V × V) / K",
+      "Typical dialyzer clearance: 200-300 mL/min",
+      "TBW can be estimated using Watson formula (approx. 60% of body weight for men, 50% for women)",
+      "Target Kt/V ≥1.4 for thrice-weekly HD (minimum 1.2)",
     ],
-    references: ["Daugirdas JT. Adv Ren Replace Ther. 1995;2(4):295-304"],
+    references: ["Daugirdas JT. Adv Ren Replace Ther. 1995;2(4):295-304", "KDOQI Clinical Practice Guideline for Hemodialysis Adequacy: 2015 Update"],
   },
 
   {
