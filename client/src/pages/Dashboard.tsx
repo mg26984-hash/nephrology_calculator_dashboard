@@ -1710,47 +1710,70 @@ export default function Dashboard() {
                       </Alert>
                     )}
 
-                    {/* Reference Ranges */}
+                    {/* Reference Ranges - Formatted Table */}
                     {selectedCalculator.referenceRanges && selectedCalculator.referenceRanges.length > 0 && (
                       <div className="mt-4 pt-4 border-t">
-                        <p className="text-sm font-medium mb-2 flex items-center gap-2">
+                        <p className="text-sm font-medium mb-3 flex items-center gap-2">
                           <Activity className="w-4 h-4 text-primary" />
                           Reference Ranges
                         </p>
-                        <div className="space-y-1">
-                          {selectedCalculator.referenceRanges.map((range, idx) => {
-                            const isInRange = typeof result === 'number' && (
-                              (range.min !== undefined && range.max !== undefined && result >= range.min && result <= range.max) ||
-                              (range.min !== undefined && range.max === undefined && result >= range.min) ||
-                              (range.min === undefined && range.max !== undefined && result <= range.max)
-                            );
-                            return (
-                              <div
-                                key={idx}
-                                className={`flex items-center justify-between text-xs p-2 rounded ${
-                                  isInRange ? 'bg-primary/10 border border-primary/30' : 'bg-muted/50'
-                                }`}
-                              >
-                                <span className={`font-medium ${isInRange ? 'text-primary' : 'text-muted-foreground'}`}>
-                                  {range.label}
-                                  {isInRange && ' ✓'}
-                                </span>
-                                <span className="text-muted-foreground">
-                                  {range.min !== undefined && range.max !== undefined
-                                    ? `${range.min} - ${range.max} ${range.unit}`
-                                    : range.min !== undefined
-                                    ? `≥${range.min} ${range.unit}`
-                                    : `≤${range.max} ${range.unit}`}
-                                </span>
-                              </div>
-                            );
-                          })}
+                        <div className="overflow-x-auto">
+                          <table className="w-full text-sm border-collapse">
+                            <thead>
+                              <tr className="bg-muted/50">
+                                <th className="px-3 py-2 text-left font-semibold border-b border-border">Category</th>
+                                <th className="px-3 py-2 text-left font-semibold border-b border-border">Range</th>
+                                <th className="px-3 py-2 text-left font-semibold border-b border-border">Notes</th>
+                                <th className="px-3 py-2 text-center font-semibold border-b border-border">Status</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {selectedCalculator.referenceRanges.map((range, idx) => {
+                                const isInRange = typeof result === 'number' && (
+                                  (range.min !== undefined && range.max !== undefined && result >= range.min && result <= range.max) ||
+                                  (range.min !== undefined && range.max === undefined && result >= range.min) ||
+                                  (range.min === undefined && range.max !== undefined && result <= range.max)
+                                );
+                                // Determine color based on category label
+                                const getCategoryColor = (label: string) => {
+                                  const lowerLabel = label.toLowerCase();
+                                  if (lowerLabel.includes('normal') || lowerLabel.includes('adequate')) return 'text-green-600 dark:text-green-400';
+                                  if (lowerLabel.includes('mild') || lowerLabel.includes('borderline') || lowerLabel.includes('overweight')) return 'text-yellow-600 dark:text-yellow-400';
+                                  if (lowerLabel.includes('moderate')) return 'text-orange-600 dark:text-orange-400';
+                                  if (lowerLabel.includes('severe') || lowerLabel.includes('kidney failure') || lowerLabel.includes('inadequate') || lowerLabel.includes('intrinsic') || lowerLabel.includes('high') || lowerLabel.includes('obese')) return 'text-red-600 dark:text-red-400';
+                                  if (lowerLabel.includes('underweight') || lowerLabel.includes('prerenal')) return 'text-blue-600 dark:text-blue-400';
+                                  return 'text-muted-foreground';
+                                };
+                                return (
+                                  <tr key={idx} className={`hover:bg-muted/30 ${isInRange ? 'bg-primary/5' : ''}`}>
+                                    <td className={`px-3 py-2 border-b border-border font-medium ${getCategoryColor(range.label)}`}>
+                                      {range.label}
+                                    </td>
+                                    <td className="px-3 py-2 border-b border-border text-muted-foreground">
+                                      {range.min !== undefined && range.max !== undefined
+                                        ? `${range.min} - ${range.max} ${range.unit}`
+                                        : range.min !== undefined
+                                        ? `≥${range.min} ${range.unit}`
+                                        : `≤${range.max} ${range.unit}`}
+                                    </td>
+                                    <td className="px-3 py-2 border-b border-border text-muted-foreground text-xs">
+                                      {range.note || '—'}
+                                    </td>
+                                    <td className="px-3 py-2 border-b border-border text-center">
+                                      {isInRange ? (
+                                        <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-primary/20 text-primary">
+                                          ✓
+                                        </span>
+                                      ) : (
+                                        <span className="text-muted-foreground/50">—</span>
+                                      )}
+                                    </td>
+                                  </tr>
+                                );
+                              })}
+                            </tbody>
+                          </table>
                         </div>
-                        {selectedCalculator.referenceRanges.some(r => r.note) && (
-                          <p className="text-xs text-muted-foreground mt-2 italic">
-                            {selectedCalculator.referenceRanges.find(r => r.note)?.note}
-                          </p>
-                        )}
                       </div>
                     )}
                   </CardContent>
