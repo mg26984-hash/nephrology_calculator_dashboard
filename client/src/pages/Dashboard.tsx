@@ -123,6 +123,7 @@ export default function Dashboard() {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [viewingCategoryList, setViewingCategoryList] = useState<string | null>(null);
   const [showAllCategories, setShowAllCategories] = useState(false);
+  const [showCategoryCustomizer, setShowCategoryCustomizer] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [focusedIndex, setFocusedIndex] = useState<number>(-1);
   const [copied, setCopied] = useState(false);
@@ -157,6 +158,17 @@ export default function Dashboard() {
     [favorites]
   );
 
+  // Category preference state with localStorage persistence
+  const [categoryOrder, setCategoryOrder] = useState<string[]>(() => {
+    const saved = localStorage.getItem('nephrology-calculator-category-order');
+    return saved ? JSON.parse(saved) : [];
+  });
+
+  // Save category order to localStorage when it changes
+  useEffect(() => {
+    localStorage.setItem('nephrology-calculator-category-order', JSON.stringify(categoryOrder));
+  }, [categoryOrder]);
+
   // Recent calculators state with localStorage persistence (max 5)
   const [recentCalculatorIds, setRecentCalculatorIds] = useState<string[]>(() => {
     const saved = localStorage.getItem('nephrology-calculator-recent');
@@ -185,6 +197,18 @@ export default function Dashboard() {
   );
 
   const categories = useMemo(() => getCategories(), []);
+  
+  // Get sorted categories based on user preference
+  const sortedCategories = useMemo(() => {
+    if (categoryOrder.length === 0) return categories;
+    const sorted = [...categoryOrder];
+    categories.forEach(cat => {
+      if (!sorted.includes(cat)) {
+        sorted.push(cat);
+      }
+    });
+    return sorted;
+  }, [categories, categoryOrder]);
   const selectedCalculator = useMemo(
     () => (selectedCalculatorId ? getCalculatorById(selectedCalculatorId) : null),
     [selectedCalculatorId]
@@ -867,17 +891,6 @@ export default function Dashboard() {
           setResult(mehranScore);
           return;
 
-        // Drug Interaction Checker
-        case "nephrotoxic-interaction-checker":
-          const drug1 = calculatorState.drug1 as string;
-          const drug2 = calculatorState.drug2 as string;
-          const drug3 = calculatorState.drug3 as string || "none";
-          const interactionEgfr = calculatorState.egfr as number || 60;
-          calculationResult = 1; // Placeholder value
-          setResultInterpretation(selectedCalculator.interpretation(1, { drug1, drug2, drug3, egfr: interactionEgfr }));
-          setResult(1);
-          return;
-
         default:
           calculationResult = undefined;
       }
@@ -1448,20 +1461,110 @@ export default function Dashboard() {
                 <h3 className="text-lg font-semibold">
                   {showAllCategories ? "All Categories" : "Browse by Category"}
                 </h3>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setShowAllCategories(!showAllCategories)}
-                  className="text-primary hover:text-primary/80"
-                >
-                  {showAllCategories ? "Show Less" : `View All ${categories.length} Categories`}
-                  <ChevronRight className={cn("w-4 h-4 ml-1 transition-transform", showAllCategories && "rotate-90")} />
-                </Button>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setShowCategoryCustomizer(!showCategoryCustomizer)}
+                    className="text-primary hover:text-primary/80"
+                    title="Customize category order"
+                  >
+                    ⚙️ Customize
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setShowAllCategories(!showAllCategories)}
+                    className="text-primary hover:text-primary/80"
+                  >
+                    {showAllCategories ? "Show Less" : `View All ${categories.length} Categories`}
+                    <ChevronRight className={cn("w-4 h-4 ml-1 transition-transform", showAllCategories && "rotate-90")} />
+                  </Button>
+                </div>
               </div>
+
+              {/* Category Customizer Modal */}
+              {showCategoryCustomizer && (
+                <Card className="mb-6 border-primary/50 bg-primary/5">
+                  <CardHeader>
+                    <div className="flex items-center justify-between">
+                      <CardTitle className="text-base">Customize Category Order</CardTitle>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setShowCategoryCustomizer(false)}
+                      >
+                        <X className="w-4 h-4" />
+                      </Button>
+                    </div>
+                    <CardDescription>
+                      Drag categories to reorder them. Your preferences will be saved automatically.
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-2">
+                    {sortedCategories.map((category, index) => (
+                      <div
+                        key={category}
+                        className="flex items-center gap-3 p-3 rounded-lg border border-border bg-card hover:bg-accent/50 transition-colors"
+                      >
+                        <div className="flex items-center gap-2 flex-1">
+                          <div className="p-1 rounded text-muted-foreground">::</div>
+                          <div className="p-1.5 rounded-lg bg-primary/10 text-primary">
+                            {categoryIcons[category] || <Calculator className="w-4 h-4" />}
+                          </div>
+                          <span className="text-sm font-medium">{category}</span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => {
+                              if (index > 0) {
+                                const newOrder = [...sortedCategories];
+                                [newOrder[index], newOrder[index - 1]] = [newOrder[index - 1], newOrder[index]];
+                                setCategoryOrder(newOrder);
+                              }
+                            }}
+                            disabled={index === 0}
+                            className="h-8 w-8 p-0"
+                          >
+                            ↑
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => {
+                              if (index < sortedCategories.length - 1) {
+                                const newOrder = [...sortedCategories];
+                                [newOrder[index], newOrder[index + 1]] = [newOrder[index + 1], newOrder[index]];
+                                setCategoryOrder(newOrder);
+                              }
+                            }}
+                            disabled={index === sortedCategories.length - 1}
+                            className="h-8 w-8 p-0"
+                          >
+                            ↓
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        setCategoryOrder([]);
+                      }}
+                      className="w-full mt-4"
+                    >
+                      Reset to Default
+                    </Button>
+                  </CardContent>
+                </Card>
+              )}
 
               {/* Category Grid */}
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-                {(showAllCategories ? categories : categories.slice(0, 9)).map((category) => {
+                {(showAllCategories ? sortedCategories : sortedCategories.slice(0, 9)).map((category) => {
                   const categoryCalculators = calculators.filter((c) => c.category === category);
                   return (
                     <button
