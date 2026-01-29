@@ -518,6 +518,7 @@ export default function Dashboard() {
 
         case "estimated-24h-protein":
           calculationResult = calc.estimated24HourProtein(
+            (calculatorState.testType as "pcr" | "acr") || "pcr",
             calculatorState.inputMode as "ratio" | "raw",
             calculatorState.ratioValue as number | undefined,
             calculatorState.ratioUnit as "mg_mg" | "mg_mmol" | "mg_g" | undefined,

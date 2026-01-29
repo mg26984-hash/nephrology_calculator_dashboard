@@ -428,6 +428,7 @@ export function acrFromPcr(pcr: number): number {
 }
 
 export function estimated24HourProtein(
+  testType: "pcr" | "acr",
   inputMode: "ratio" | "raw",
   ratioValue?: number,
   ratioUnit?: "mg_mg" | "mg_mmol" | "mg_g",
@@ -437,6 +438,7 @@ export function estimated24HourProtein(
   creatinineUnit?: "mg_dL" | "mmol_L"
 ): number {
   // 24-Hour Urinary Protein Excretion Estimator
+  // Supports both PCR (Protein/Creatinine Ratio) and ACR (Albumin/Creatinine Ratio)
   // Exact implementation matching the original HTML calculator
   // Formula: ratio in mg/mg = g/day
   
@@ -471,7 +473,7 @@ export function estimated24HourProtein(
     const pUnit = proteinUnit || "mg_dL";
     const cUnit = creatinineUnit || "mg_dL";
     
-    // Convert protein to mg/L (exact same as original HTML)
+    // Convert protein/albumin to mg/L (exact same as original HTML)
     if (pUnit === "mg_dL") {
       protein = protein * 10;
     } else if (pUnit === "g_L") {
@@ -491,6 +493,8 @@ export function estimated24HourProtein(
   }
   
   // The ratio in mg/mg equals g/day (standard approximation)
+  // This applies to both PCR and ACR - the formula is the same
+  // The difference is in the interpretation (albumin vs total protein)
   const gPerDay = ratioMgPerMg;
   
   return Math.round(gPerDay * 1000) / 1000;
