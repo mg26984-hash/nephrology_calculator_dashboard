@@ -43,6 +43,7 @@ import {
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { calculators, getCategories, getCalculatorById, CalculatorInput } from "@/lib/calculatorData";
 import * as calc from "@/lib/calculators";
+import { getRecommendations } from '@/lib/clinicalRecommendations';
 import { useTheme } from "@/contexts/ThemeContext";
 import { cn } from "@/lib/utils";
 
@@ -125,6 +126,7 @@ export default function Dashboard() {
   const [showAllCategories, setShowAllCategories] = useState(false);
   const [showCategoryCustomizer, setShowCategoryCustomizer] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [clinicalRecommendation, setClinicalRecommendation] = useState<any>(null);
   const [focusedIndex, setFocusedIndex] = useState<number>(-1);
   const [copied, setCopied] = useState(false);
   const searchInputRef = useRef<HTMLInputElement>(null);
@@ -189,6 +191,39 @@ export default function Dashboard() {
       return [calcId, ...filtered].slice(0, 5);
     });
   }, []);
+
+  // Helper function to get recommendation key based on calculator and result
+  const getRecommendationKey = (calculatorId: string, result: number): string | null => {
+    switch (calculatorId) {
+      case "ckd-epi-creatinine":
+        if (result >= 90) return "stage1";
+        if (result >= 60) return "stage2";
+        if (result >= 45) return "stage3a";
+        if (result >= 30) return "stage3b";
+        if (result >= 15) return "stage4";
+        return "stage5";
+      
+      case "kfre":
+        if (result < 10) return "low";
+        if (result < 40) return "moderate";
+        return "high";
+      
+      case "cin-mehran":
+        if (result < 8) return "low";
+        if (result < 16) return "moderate";
+        if (result < 26) return "high";
+        return "veryhigh";
+      
+      case "ascvd":
+        if (result < 5) return "low";
+        if (result < 7.5) return "borderline";
+        if (result < 20) return "intermediate";
+        return "high";
+      
+      default:
+        return null;
+    }
+  };
 
   // Get recent calculators (excluding favorites to avoid duplication)
   const recentCalculators = useMemo(() => 
@@ -1844,6 +1879,62 @@ export default function Dashboard() {
                   </CardContent>
                 </Card>
               )}
+
+              {/* Clinical Decision Support Recommendations */}
+              {result !== null && (() => {
+                const recKey = getRecommendationKey(selectedCalculator.id, typeof result === 'number' ? result : 0);
+                const rec = recKey ? getRecommendations(selectedCalculator.id, recKey) : null;
+                
+                if (!rec) return null;
+                
+                const urgencyColorMap = {
+                  routine: "border-blue-500/50 bg-blue-500/5",
+                  urgent: "border-orange-500/50 bg-orange-500/5",
+                  emergent: "border-red-500/50 bg-red-500/5"
+                };
+                
+                const getUrgencyIcon = (urgency: string) => {
+                  switch(urgency) {
+                    case 'urgent':
+                      return <AlertTriangle className="w-4 h-4 text-orange-500" />;
+                    case 'emergent':
+                      return <AlertTriangle className="w-4 h-4 text-red-500" />;
+                    default:
+                      return <Info className="w-4 h-4 text-blue-500" />;
+                  }
+                };
+                
+                return (
+                  <Card className={`border ${urgencyColorMap[rec.urgency || 'routine']}`}>
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-base flex items-center gap-2">
+                        {getUrgencyIcon(rec.urgency || 'routine')}
+                        Clinical Decision Support
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div>
+                        <p className="font-semibold text-sm mb-1">{rec.condition}</p>
+                        <p className="text-sm text-muted-foreground">{rec.recommendation}</p>
+                      </div>
+                      
+                      {rec.actionItems.length > 0 && (
+                        <div>
+                          <p className="font-semibold text-sm mb-2">Recommended Actions:</p>
+                          <ul className="space-y-1">
+                            {rec.actionItems.map((item, idx) => (
+                              <li key={idx} className="flex gap-2 text-sm text-muted-foreground">
+                                <span className="text-primary flex-shrink-0">→</span>
+                                <span>{item}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                );
+              })()}
 
               {/* Clinical Pearls */}
               {selectedCalculator.clinicalPearls.length > 0 && (
