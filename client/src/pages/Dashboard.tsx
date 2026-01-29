@@ -1324,7 +1324,7 @@ export default function Dashboard() {
                 {calculators
                   .filter(c => c.category === viewingCategoryList)
                   .map((calc) => (
-                    <button
+                    <div
                       key={calc.id}
                       onClick={() => {
                         setSelectedCalculatorId(calc.id);
@@ -1334,7 +1334,7 @@ export default function Dashboard() {
                         setResult(null);
                         setCalculatorState({});
                       }}
-                      className="p-4 rounded-xl border border-border bg-card hover:bg-accent hover:border-primary/50 transition-all text-left group"
+                      className="p-4 rounded-xl border border-border bg-card hover:bg-accent hover:border-primary/50 transition-all text-left group cursor-pointer"
                     >
                       <div className="flex items-start justify-between gap-2">
                         <div className="flex-1">
@@ -1346,9 +1346,16 @@ export default function Dashboard() {
                           </p>
                         </div>
                         <div className="flex items-center gap-2">
-                          <button
+                          <span
+                            role="button"
+                            tabIndex={0}
                             onClick={(e) => toggleFavorite(calc.id, e)}
-                            className="p-1 rounded hover:bg-background/50 transition-colors"
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') {
+                                e.stopPropagation();
+                              }
+                            }}
+                            className="p-1 rounded hover:bg-background/50 transition-colors cursor-pointer"
                           >
                             <Star
                               className={cn(
@@ -1358,11 +1365,11 @@ export default function Dashboard() {
                                   : "text-muted-foreground hover:text-yellow-500"
                               )}
                             />
-                          </button>
+                          </span>
                           <ChevronRight className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors" />
                         </div>
                       </div>
-                    </button>
+                    </div>
                   ))}
               </div>
             </div>
