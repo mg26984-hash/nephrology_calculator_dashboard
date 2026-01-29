@@ -122,6 +122,22 @@ export default function Dashboard() {
   const [result, setResult] = useState<number | null>(null);
   const [resultInterpretation, setResultInterpretation] = useState<string>("");
   const [searchQuery, setSearchQuery] = useState("");
+  const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  
+  // Debounced search handler - updates filter after user stops typing
+  const handleSearchInput = useCallback(() => {
+    const value = searchInputRef.current?.value || "";
+    
+    // Clear existing timeout
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current);
+    }
+    
+    // Debounce the search query update to prevent re-renders while typing
+    searchTimeoutRef.current = setTimeout(() => {
+      setSearchQuery(value);
+    }, 300); // 300ms delay after user stops typing
+  }, []);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [viewingCategoryList, setViewingCategoryList] = useState<string | null>(null);
   const [showAllCategories, setShowAllCategories] = useState(false);
@@ -978,9 +994,15 @@ export default function Dashboard() {
   }, [addToRecent]);
 
   const clearSearch = useCallback(() => {
+    if (searchInputRef.current) {
+      searchInputRef.current.value = "";
+    }
     setSearchQuery("");
     setSelectedCategory(null);
     setFocusedIndex(-1);
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current);
+    }
   }, []);
 
   // Keyboard navigation disabled to prevent search input focus loss on mobile
@@ -1013,19 +1035,14 @@ export default function Dashboard() {
       <div className="sticky top-0 z-10 p-4 border-b border-border bg-background">
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-          <Input
+          <input
             ref={searchInputRef}
-            placeholder="Search calculators... (↑↓ to navigate)"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-9 pr-8 bg-secondary border-border"
+            type="text"
+            placeholder="Search calculators..."
+            defaultValue=""
+            onInput={handleSearchInput}
+            className="flex h-9 w-full rounded-md border border-input bg-secondary px-3 py-1 pl-9 pr-8 text-base shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 md:text-sm border-border"
             autoComplete="off"
-            onBlur={(e) => {
-              // Prevent blur on mobile when typing
-              if (searchQuery.length > 0) {
-                e.target.focus();
-              }
-            }}
           />
           {searchQuery && (
             <button
