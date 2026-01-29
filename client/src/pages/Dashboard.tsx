@@ -1108,9 +1108,9 @@ export default function Dashboard() {
 
   // Sidebar content (shared between desktop and mobile)
   const SidebarContent = () => (
-    <div className="h-full flex flex-col">
-      {/* Search */}
-      <div className="p-4 border-b border-border">
+      <div className="h-full flex flex-col">
+      {/* Search - Sticky for mobile keyboard */}
+      <div className="sticky top-0 z-10 p-4 border-b border-border bg-background">
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <Input
@@ -1119,6 +1119,7 @@ export default function Dashboard() {
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="pl-9 pr-8 bg-secondary border-border"
+            autoComplete="off"
           />
           {searchQuery && (
             <button
@@ -1375,7 +1376,7 @@ export default function Dashboard() {
                   <Menu className="w-5 h-5" />
                 </Button>
               </SheetTrigger>
-              <SheetContent side="left" className="w-80 p-0">
+              <SheetContent side="left" className="w-80 p-0 max-h-screen overflow-y-auto">
                 <SheetHeader className="sr-only">
                   <SheetTitle>Calculator Navigation</SheetTitle>
                   <SheetDescription>Browse and select nephrology calculators by category</SheetDescription>
