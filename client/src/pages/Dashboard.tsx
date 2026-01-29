@@ -46,6 +46,7 @@ import * as calc from "@/lib/calculators";
 import { getRecommendations } from '@/lib/clinicalRecommendations';
 import { useTheme } from "@/contexts/ThemeContext";
 import { cn } from "@/lib/utils";
+import SearchInput from "@/components/SearchInput";
 
 interface CalculatorState {
   [key: string]: string | number | boolean;
@@ -122,22 +123,6 @@ export default function Dashboard() {
   const [result, setResult] = useState<number | null>(null);
   const [resultInterpretation, setResultInterpretation] = useState<string>("");
   const [searchQuery, setSearchQuery] = useState("");
-  const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  
-  // Debounced search handler - updates filter after user stops typing
-  const handleSearchInput = useCallback(() => {
-    const value = searchInputRef.current?.value || "";
-    
-    // Clear existing timeout
-    if (searchTimeoutRef.current) {
-      clearTimeout(searchTimeoutRef.current);
-    }
-    
-    // Debounce the search query update to prevent re-renders while typing
-    searchTimeoutRef.current = setTimeout(() => {
-      setSearchQuery(value);
-    }, 300); // 300ms delay after user stops typing
-  }, []);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [viewingCategoryList, setViewingCategoryList] = useState<string | null>(null);
   const [showAllCategories, setShowAllCategories] = useState(false);
@@ -994,15 +979,9 @@ export default function Dashboard() {
   }, [addToRecent]);
 
   const clearSearch = useCallback(() => {
-    if (searchInputRef.current) {
-      searchInputRef.current.value = "";
-    }
     setSearchQuery("");
     setSelectedCategory(null);
     setFocusedIndex(-1);
-    if (searchTimeoutRef.current) {
-      clearTimeout(searchTimeoutRef.current);
-    }
   }, []);
 
   // Keyboard navigation disabled to prevent search input focus loss on mobile
@@ -1028,31 +1007,12 @@ export default function Dashboard() {
         })
     : false;
 
-  // Sidebar content (shared between desktop and mobile)
-  const SidebarContent = () => (
+  // Sidebar content - using useMemo to prevent recreation on every render
+  const sidebarContent = useMemo(() => (
       <div className="h-full flex flex-col">
-      {/* Search - Sticky for mobile keyboard */}
+      {/* Search - Using separate memoized component to prevent iOS focus loss */}
       <div className="sticky top-0 z-10 p-4 border-b border-border bg-background">
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-          <input
-            ref={searchInputRef}
-            type="text"
-            placeholder="Search calculators..."
-            defaultValue=""
-            onInput={handleSearchInput}
-            className="flex h-9 w-full rounded-md border border-input bg-secondary px-3 py-1 pl-9 pr-8 text-base shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 md:text-sm border-border"
-            autoComplete="off"
-          />
-          {searchQuery && (
-            <button
-              onClick={clearSearch}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-            >
-              <X className="w-4 h-4" />
-            </button>
-          )}
-        </div>
+        <SearchInput onSearchChange={setSearchQuery} placeholder="Search calculators..." />
       </div>
 
       {/* Category Filter */}
@@ -1247,7 +1207,7 @@ export default function Dashboard() {
         </p>
       </div>
     </div>
-  );
+  ), [selectedCategory, categories, favoriteCalculators, recentCalculators, groupedCalculators, filteredCalculators, selectedCalculatorId, focusedIndex, favorites, handleSelectCalculator, toggleFavorite]);
 
   // Inline Unit Toggle Component
   const InlineUnitToggle = ({ inputId }: { inputId: string }) => {
@@ -1304,7 +1264,7 @@ export default function Dashboard() {
                   <SheetTitle>Calculator Navigation</SheetTitle>
                   <SheetDescription>Browse and select nephrology calculators by category</SheetDescription>
                 </SheetHeader>
-                <SidebarContent />
+                {sidebarContent}
               </SheetContent>
             </Sheet>
 
@@ -1342,7 +1302,7 @@ export default function Dashboard() {
       <div className="flex">
         {/* Desktop Sidebar */}
         <aside className="hidden lg:block w-72 xl:w-80 border-r border-border h-[calc(100vh-4rem)] sticky top-16">
-          <SidebarContent />
+          {sidebarContent}
         </aside>
 
         {/* Main Content */}
