@@ -624,8 +624,8 @@ export const calculators: Calculator[] = [
     inputs: [
       { id: "urineAlbumin", label: "Urine Albumin", type: "number", unit: "mg or μg", placeholder: "150", required: true },
       { id: "urineCreatinine", label: "Urine Creatinine", type: "number", unit: "g or mg", placeholder: "1.0", required: true },
-      { id: "albuminUnit", label: "Albumin Unit", type: "select", options: [{ value: "mg", label: "mg" }, { value: "μg", label: "μg" }], required: true },
-      { id: "creatinineUnit", label: "Creatinine Unit", type: "select", options: [{ value: "g", label: "g" }, { value: "mg", label: "mg" }], required: true },
+      { id: "urineAlbuminUnit", label: "Albumin Unit", type: "select", options: [{ value: "mg", label: "mg" }, { value: "μg", label: "μg" }], required: true },
+      { id: "urineCreatinineUnit", label: "Creatinine Unit", type: "select", options: [{ value: "g", label: "g" }, { value: "mg", label: "mg" }], required: true },
     ],
     resultLabel: "uACR",
     resultUnit: "mg/g",
@@ -652,8 +652,8 @@ export const calculators: Calculator[] = [
     inputs: [
       { id: "urineProtein", label: "Urine Total Protein", type: "number", unit: "mg or g", placeholder: "500", required: true },
       { id: "urineCreatinine", label: "Urine Creatinine", type: "number", unit: "mg or g", placeholder: "100", required: true },
-      { id: "proteinUnit", label: "Protein Unit", type: "select", options: [{ value: "mg", label: "mg" }, { value: "g", label: "g" }], required: true },
-      { id: "creatinineUnit", label: "Creatinine Unit", type: "select", options: [{ value: "mg", label: "mg" }, { value: "g", label: "g" }], required: true },
+      { id: "urineProteinUnit", label: "Protein Unit", type: "select", options: [{ value: "mg", label: "mg" }, { value: "g", label: "g" }], required: true },
+      { id: "urineCreatinineUnit", label: "Creatinine Unit", type: "select", options: [{ value: "mg", label: "mg" }, { value: "g", label: "g" }], required: true },
     ],
     resultLabel: "UPCR",
     resultUnit: "g/g",
