@@ -38,7 +38,8 @@ import {
   Clock,
   ArrowLeft,
   Copy,
-  Check
+  Check,
+  ArrowLeftRight
 } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { calculators, getCategories, getCalculatorById, CalculatorInput } from "@/lib/calculatorData";
@@ -47,6 +48,7 @@ import { getRecommendations } from '@/lib/clinicalRecommendations';
 import { useTheme } from "@/contexts/ThemeContext";
 import { cn } from "@/lib/utils";
 import SearchInput from "@/components/SearchInput";
+import { EGFRComparison } from "@/components/EGFRComparison";
 
 interface CalculatorState {
   [key: string]: string | number | boolean;
@@ -138,6 +140,7 @@ export default function Dashboard() {
   const [clinicalRecommendation, setClinicalRecommendation] = useState<any>(null);
   const [focusedIndex, setFocusedIndex] = useState<number>(-1);
   const [copied, setCopied] = useState(false);
+  const [showComparison, setShowComparison] = useState(false);
   const searchInputRef = useRef<HTMLInputElement>(null);
   
   // Favorites state with localStorage persistence
@@ -1481,10 +1484,25 @@ export default function Dashboard() {
                   />
                 </div>
                 <h2 className="text-2xl font-bold mb-3">Welcome to ASNRT Calculator</h2>
-                <p className="text-muted-foreground max-w-md mx-auto mb-8">
+                <p className="text-muted-foreground max-w-md mx-auto mb-6">
                   Select a calculator from the sidebar to begin. This dashboard includes {calculators.length} clinical calculators organized by category for nephrology practice.
                 </p>
+                <Button 
+                  onClick={() => setShowComparison(!showComparison)}
+                  variant={showComparison ? "default" : "outline"}
+                  className="mb-8"
+                >
+                  <ArrowLeftRight className="w-4 h-4 mr-2" />
+                  {showComparison ? "Hide eGFR Comparison" : "Compare eGFR Equations"}
+                </Button>
               </div>
+
+              {/* eGFR Comparison Mode */}
+              {showComparison && (
+                <div className="mb-8">
+                  <EGFRComparison onClose={() => setShowComparison(false)} />
+                </div>
+              )}
 
               {/* Category Quick Access Header */}
               <div className="flex items-center justify-between mb-4">

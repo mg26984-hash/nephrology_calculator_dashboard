@@ -70,6 +70,27 @@ export function ckdEpiCreatinine(
   return Math.round(eGFR);
 }
 
+export function mdrdGfr(
+  creatinine: number,
+  age: number,
+  sex: "M" | "F",
+  race: "Black" | "Other" = "Other",
+  creatinineUnit: "mg/dL" | "μmol/L" = "mg/dL"
+): number {
+  // MDRD-4 (Modification of Diet in Renal Disease) Study Equation
+  // eGFR = 175 × (SCr)^-1.154 × (Age)^-0.203 × 0.742 (if female) × 1.212 (if Black)
+  // Reference: Levey AS et al. Ann Intern Med. 2006;145(4):247-254
+  
+  let scr = creatinineUnit === "μmol/L" ? creatinine / 88.4 : creatinine;
+  
+  const sexMultiplier = sex === "F" ? 0.742 : 1.0;
+  const raceMultiplier = race === "Black" ? 1.212 : 1.0;
+  
+  const eGFR = 175 * Math.pow(scr, -1.154) * Math.pow(age, -0.203) * sexMultiplier * raceMultiplier;
+  
+  return Math.round(eGFR);
+}
+
 export function cockcrofGault(
   creatinine: number,
   age: number,
