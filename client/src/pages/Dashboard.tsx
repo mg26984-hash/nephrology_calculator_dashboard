@@ -989,7 +989,7 @@ export default function Dashboard() {
   // Reset focused index when filtered calculators change
   useEffect(() => {
     setFocusedIndex(-1);
-  }, [searchQuery, selectedCategory]);
+  }, [selectedCategory]);
 
   // Check if input supports unit toggle
   const hasUnitToggle = (inputId: string): boolean => {
@@ -1020,6 +1020,12 @@ export default function Dashboard() {
             onChange={(e) => setSearchQuery(e.target.value)}
             className="pl-9 pr-8 bg-secondary border-border"
             autoComplete="off"
+            onBlur={(e) => {
+              // Prevent blur on mobile when typing
+              if (searchQuery.length > 0) {
+                e.target.focus();
+              }
+            }}
           />
           {searchQuery && (
             <button
