@@ -521,11 +521,11 @@ export default function Dashboard() {
             (calculatorState.testType as "pcr" | "acr") || "pcr",
             calculatorState.inputMode as "ratio" | "raw",
             calculatorState.ratioValue as number | undefined,
-            calculatorState.ratioUnit as "mg_mg" | "mg_mmol" | "mg_g" | undefined,
+            calculatorState.ratioValueUnit as "mg_mg" | "mg_mmol" | "mg_g" | undefined,
             calculatorState.proteinValue as number | undefined,
-            calculatorState.proteinUnit as "mg_dL" | "g_L" | "mg_L" | undefined,
+            calculatorState.proteinValueUnit as "mg_dL" | "g_L" | "mg_L" | undefined,
             calculatorState.creatinineValue as number | undefined,
-            calculatorState.creatinineUnit as "mg_dL" | "mmol_L" | undefined
+            calculatorState.creatinineValueUnit as "mg_dL" | "mmol_L" | undefined
           );
           break;
 
@@ -1525,8 +1525,38 @@ export default function Dashboard() {
                 <CardContent>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     {selectedCalculator.inputs
-                      .filter((input) => !input.id.endsWith("Unit")) // Skip unit selector inputs
-                      .map((input) => (
+                      .filter((input) => {
+                        // Skip unit selector inputs except for the 24h protein calculator
+                        if (input.id.endsWith("Unit")) {
+                          // For 24h protein calculator, we'll render unit selects inline with their inputs
+                          return false;
+                        }
+                        return true;
+                      })
+                      .map((input) => {
+                        // Check if this input has a corresponding unit selector for 24h protein calculator
+                        const unitInputId = input.id + "Unit";
+                        const unitInput = selectedCalculator.inputs.find(i => i.id === unitInputId);
+                        const isProteinCalc = selectedCalculator.id === "estimated-24h-protein";
+                        
+                        // For 24h protein calculator, check if this input should be hidden based on inputMode
+                        const inputMode = calculatorState.inputMode as string;
+                        if (isProteinCalc) {
+                          // Hide ratio inputs when in raw mode
+                          if (inputMode === "raw" && (input.id === "ratioValue")) {
+                            return null;
+                          }
+                          // Hide raw inputs when in ratio mode
+                          if (inputMode === "ratio" && (input.id === "proteinValue" || input.id === "creatinineValue")) {
+                            return null;
+                          }
+                          // Default to ratio mode if not set
+                          if (!inputMode && (input.id === "proteinValue" || input.id === "creatinineValue")) {
+                            return null;
+                          }
+                        }
+                        
+                        return (
                       <div key={input.id} className="space-y-2">
                         <div className="flex items-center justify-between gap-2">
                           <Label className="text-sm font-medium flex items-center gap-1">
@@ -1539,7 +1569,7 @@ export default function Dashboard() {
                         </div>
                         
                         {input.type === "number" && (
-                          <div className="relative">
+                          <div className="flex gap-2">
                             <Input
                               type="number"
                               placeholder={getDynamicPlaceholder(input)}
@@ -1548,13 +1578,29 @@ export default function Dashboard() {
                               min={input.min}
                               max={input.max}
                               step={input.step}
-                              className={hasUnitToggle(input.id) ? "" : "pr-16"}
+                              className={unitInput ? "flex-1" : hasUnitToggle(input.id) ? "" : "pr-16"}
                             />
-                            {!hasUnitToggle(input.id) && input.unit && (
-                              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">
+                            {unitInput && unitInput.options ? (
+                              <Select
+                                value={String(calculatorState[unitInputId] ?? unitInput.options[0]?.value ?? "")}
+                                onValueChange={(value) => handleInputChange(unitInputId, value)}
+                              >
+                                <SelectTrigger className="w-[120px]">
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {unitInput.options.map((opt) => (
+                                    <SelectItem key={opt.value} value={opt.value}>
+                                      {opt.label}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            ) : !hasUnitToggle(input.id) && input.unit ? (
+                              <span className="flex items-center text-xs text-muted-foreground px-2">
                                 {input.unit}
                               </span>
-                            )}
+                            ) : null}
                           </div>
                         )}
 
@@ -1606,7 +1652,8 @@ export default function Dashboard() {
                           </div>
                         )}
                       </div>
-                    ))}
+                    );
+                    })}
                   </div>
 
                   <Separator className="my-6" />
