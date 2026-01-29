@@ -1036,35 +1036,41 @@ export default function Dashboard() {
               </div>
               <div className="space-y-1">
                 {favoriteCalculators.map((calc) => (
-                  <button
+                  <div
                     key={`fav-${calc.id}`}
                     data-calculator-id={calc.id}
                     onClick={() => handleSelectCalculator(calc.id)}
                     className={cn(
-                      "w-full text-left px-3 py-2 rounded-md text-sm transition-colors group",
+                      "w-full text-left px-3 py-2 rounded-md text-sm transition-colors group cursor-pointer",
                       "hover:bg-accent hover:text-accent-foreground",
                       selectedCalculatorId === calc.id
                         ? "bg-primary text-primary-foreground"
                         : "text-foreground"
                     )}
+                    role="button"
+                    tabIndex={0}
+                    onKeyDown={(e) => e.key === 'Enter' && handleSelectCalculator(calc.id)}
                   >
                     <div className="flex items-center justify-between">
                       <span className="break-words hyphens-auto pr-2" style={{ wordBreak: 'break-word' }}>{calc.name}</span>
                       <div className="flex items-center gap-1">
-                        <button
-                          onClick={(e) => toggleFavorite(calc.id, e)}
+                        <span
+                          onClick={(e) => { e.stopPropagation(); toggleFavorite(calc.id, e); }}
                           className={cn(
-                            "p-0.5 rounded hover:bg-background/50 transition-colors",
+                            "p-0.5 rounded hover:bg-background/50 transition-colors cursor-pointer",
                             selectedCalculatorId === calc.id ? "text-primary-foreground" : "text-amber-500"
                           )}
                           title="Remove from favorites"
+                          role="button"
+                          tabIndex={0}
+                          onKeyDown={(e) => { if (e.key === 'Enter') { e.stopPropagation(); toggleFavorite(calc.id, e as unknown as React.MouseEvent); } }}
                         >
                           <Star className="w-3 h-3 fill-current" />
-                        </button>
+                        </span>
                         <ChevronRight className="w-3 h-3 flex-shrink-0 opacity-50" />
                       </div>
                     </div>
-                  </button>
+                  </div>
                 ))}
               </div>
               <Separator className="my-3" />
@@ -1081,37 +1087,43 @@ export default function Dashboard() {
               </div>
               <div className="space-y-1">
                 {recentCalculators.map((calc) => (
-                  <button
+                  <div
                     key={`recent-${calc.id}`}
                     data-calculator-id={calc.id}
                     onClick={() => handleSelectCalculator(calc.id)}
                     className={cn(
-                      "w-full text-left px-3 py-2 rounded-md text-sm transition-colors group",
+                      "w-full text-left px-3 py-2 rounded-md text-sm transition-colors group cursor-pointer",
                       "hover:bg-accent hover:text-accent-foreground",
                       selectedCalculatorId === calc.id
                         ? "bg-primary text-primary-foreground"
                         : "text-foreground"
                     )}
+                    role="button"
+                    tabIndex={0}
+                    onKeyDown={(e) => e.key === 'Enter' && handleSelectCalculator(calc.id)}
                   >
                     <div className="flex items-center justify-between">
                       <span className="break-words hyphens-auto pr-2" style={{ wordBreak: 'break-word' }}>{calc.name}</span>
                       <div className="flex items-center gap-1">
-                        <button
-                          onClick={(e) => toggleFavorite(calc.id, e)}
+                        <span
+                          onClick={(e) => { e.stopPropagation(); toggleFavorite(calc.id, e); }}
                           className={cn(
-                            "p-0.5 rounded transition-colors",
+                            "p-0.5 rounded transition-colors cursor-pointer",
                             favorites.includes(calc.id)
                               ? "text-amber-500" 
                               : "text-muted-foreground/50 hover:text-amber-500 sm:opacity-0 sm:group-hover:opacity-100"
                           )}
                           title={favorites.includes(calc.id) ? "Remove from favorites" : "Add to favorites"}
+                          role="button"
+                          tabIndex={0}
+                          onKeyDown={(e) => { if (e.key === 'Enter') { e.stopPropagation(); toggleFavorite(calc.id, e as unknown as React.MouseEvent); } }}
                         >
                           <Star className={cn("w-3 h-3", favorites.includes(calc.id) && "fill-current")} />
-                        </button>
+                        </span>
                         <ChevronRight className="w-3 h-3 flex-shrink-0 opacity-50" />
                       </div>
                     </div>
-                  </button>
+                  </div>
                 ))}
               </div>
               <Separator className="my-3" />
@@ -1134,13 +1146,13 @@ export default function Dashboard() {
                     const isFocused = focusedIndex === currentIndex;
                     const isFavorite = favorites.includes(calc.id);
                     return (
-                      <button
+                      <div
                         key={calc.id}
                         data-calculator-id={calc.id}
                         data-calculator-index={currentIndex}
                         onClick={() => handleSelectCalculator(calc.id)}
                         className={cn(
-                          "w-full text-left px-3 py-2 rounded-md text-sm transition-colors group",
+                          "w-full text-left px-3 py-2 rounded-md text-sm transition-colors group cursor-pointer",
                           "hover:bg-accent hover:text-accent-foreground",
                           selectedCalculatorId === calc.id
                             ? "bg-primary text-primary-foreground"
@@ -1148,26 +1160,32 @@ export default function Dashboard() {
                             ? "bg-accent text-accent-foreground ring-2 ring-primary ring-offset-1"
                             : "text-foreground"
                         )}
+                        role="button"
+                        tabIndex={0}
+                        onKeyDown={(e) => e.key === 'Enter' && handleSelectCalculator(calc.id)}
                       >
                         <div className="flex items-center justify-between">
                           <span className="break-words hyphens-auto pr-2" style={{ wordBreak: 'break-word' }}>{calc.name}</span>
                           <div className="flex items-center gap-1">
-                            <button
-                              onClick={(e) => toggleFavorite(calc.id, e)}
+                            <span
+                              onClick={(e) => { e.stopPropagation(); toggleFavorite(calc.id, e); }}
                               className={cn(
-                                "p-0.5 rounded transition-colors",
+                                "p-0.5 rounded transition-colors cursor-pointer",
                                 isFavorite 
                                   ? "text-amber-500" 
                                   : "text-muted-foreground/50 hover:text-amber-500 sm:opacity-0 sm:group-hover:opacity-100"
                               )}
                               title={isFavorite ? "Remove from favorites" : "Add to favorites"}
+                              role="button"
+                              tabIndex={0}
+                              onKeyDown={(e) => { if (e.key === 'Enter') { e.stopPropagation(); toggleFavorite(calc.id, e as unknown as React.MouseEvent); } }}
                             >
                               <Star className={cn("w-3 h-3", isFavorite && "fill-current")} />
-                            </button>
+                            </span>
                             <ChevronRight className="w-3 h-3 flex-shrink-0 opacity-50" />
                           </div>
                         </div>
-                      </button>
+                      </div>
                     );
                   })}
                 </div>
