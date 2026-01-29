@@ -118,6 +118,7 @@ export default function Dashboard() {
   const [calculatorState, setCalculatorState] = useState<CalculatorState>({});
   const [unitState, setUnitState] = useState<UnitState>({});
   const [result, setResult] = useState<number | null>(null);
+  const [secondaryResult, setSecondaryResult] = useState<{ value: number; unit: string } | null>(null);
   const [resultInterpretation, setResultInterpretation] = useState<string>("");
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
@@ -469,6 +470,10 @@ export default function Dashboard() {
             getValue("albumin"),
             "g/dL"
           );
+          // Also calculate in mmol/L (conversion factor: mg/dL * 0.25 = mmol/L)
+          if (typeof calculationResult === 'number') {
+            setSecondaryResult({ value: Math.round(calculationResult * 0.25 * 100) / 100, unit: 'mmol/L' });
+          }
           break;
 
         case "qtc-bazett":
@@ -910,11 +915,16 @@ export default function Dashboard() {
       if (calculationResult !== undefined) {
         const numResult = typeof calculationResult === "number" ? calculationResult : 0;
         setResult(numResult);
+        // Clear secondary result for calculators that don't set it (corrected-calcium sets it in its case block)
+        if (selectedCalculator.id !== 'corrected-calcium') {
+          setSecondaryResult(null);
+        }
         setResultInterpretation(selectedCalculator.interpretation(numResult));
       }
     } catch (error) {
       console.error("Calculation error:", error);
       setResult(null);
+      setSecondaryResult(null);
       setResultInterpretation("Error in calculation. Please check your inputs.");
     }
   }, [selectedCalculator, calculatorState, normalizeValue]);
@@ -924,6 +934,7 @@ export default function Dashboard() {
     setCalculatorState({});
     setUnitState({});
     setResult(null);
+    setSecondaryResult(null);
     setResultInterpretation("");
     setMobileMenuOpen(false);
     // Track recent calculator usage
@@ -1435,6 +1446,7 @@ export default function Dashboard() {
                         setSelectedCategory(viewingCategoryList);
                         addToRecent(calc.id);
                         setResult(null);
+                        setSecondaryResult(null);
                         setCalculatorState({});
                       }}
                       className="p-4 rounded-xl border border-border bg-card hover:bg-accent hover:border-primary/50 transition-all text-left group cursor-pointer"
@@ -1746,7 +1758,7 @@ export default function Dashboard() {
                       size="sm"
                       className="h-8 px-2 text-muted-foreground hover:text-foreground"
                       onClick={() => {
-                        const resultText = `${selectedCalculator.name}\nResult: ${typeof result === "number" ? result.toFixed(2) : result}${selectedCalculator.resultUnit ? " " + selectedCalculator.resultUnit : ""}\nInterpretation: ${resultInterpretation}`;
+                        const resultText = `${selectedCalculator.name}\nResult: ${typeof result === "number" ? result.toFixed(2) : result}${selectedCalculator.resultUnit ? " " + selectedCalculator.resultUnit : ""}${secondaryResult ? ` (${secondaryResult.value.toFixed(2)} ${secondaryResult.unit})` : ""}\nInterpretation: ${resultInterpretation}`;
                         navigator.clipboard.writeText(resultText);
                         setCopied(true);
                         setTimeout(() => setCopied(false), 2000);
@@ -1766,6 +1778,11 @@ export default function Dashboard() {
                       </p>
                       {selectedCalculator.resultUnit && (
                         <p className="text-sm text-muted-foreground mt-1">{selectedCalculator.resultUnit}</p>
+                      )}
+                      {secondaryResult && (
+                        <p className="text-lg font-semibold text-primary/80 mt-2">
+                          {secondaryResult.value.toFixed(2)} <span className="text-sm text-muted-foreground">{secondaryResult.unit}</span>
+                        </p>
                       )}
                     </div>
 
