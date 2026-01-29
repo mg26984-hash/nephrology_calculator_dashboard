@@ -857,7 +857,7 @@ export default function Dashboard() {
           calculationResult = calculatorState.indication as any;
           break;
 
-        case "frax":
+        case "frax-simplified":
           const fraxResult = calc.fraxSimplified(
             calculatorState.age as number,
             calculatorState.sex as "M" | "F",
