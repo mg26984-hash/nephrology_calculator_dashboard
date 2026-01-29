@@ -14,6 +14,10 @@ export interface CalculatorInput {
   min?: number;
   max?: number;
   step?: number;
+  unitToggle?: {
+    units: string[];
+    conversionFactor: number;
+  };
 }
 
 export interface ReferenceRange {
@@ -236,7 +240,7 @@ export const calculators: Calculator[] = [
       { id: "age", label: "Age", type: "number", unit: "years", placeholder: "55", required: true },
       { id: "sex", label: "Sex", type: "select", options: [{ value: "M", label: "Male" }, { value: "F", label: "Female" }], required: true },
       { id: "eGFR", label: "eGFR", type: "number", unit: "mL/min/1.73m²", placeholder: "35", required: true },
-      { id: "acr", label: "Albumin-Creatinine Ratio", type: "number", unit: "mg/g", placeholder: "150", required: true },
+      { id: "acr", label: "Albumin-Creatinine Ratio", type: "number", unit: "mg/g", placeholder: "150", required: true, unitToggle: { units: ["mg/g", "mg/mmol"], conversionFactor: 8.84 } },
       { id: "years", label: "Prediction Timeframe", type: "select", options: [{ value: "2", label: "2-year risk" }, { value: "5", label: "5-year risk" }], required: true },
     ],
     resultLabel: "Kidney Failure Risk",

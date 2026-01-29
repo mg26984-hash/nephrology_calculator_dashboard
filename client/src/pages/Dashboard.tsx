@@ -111,6 +111,7 @@ const unitOptions: { [inputId: string]: { conventional: string; si: string; conv
   hemoglobin: { conventional: "g/dL", si: "g/L", conversionFactor: 10 },
   targetHemoglobin: { conventional: "g/dL", si: "g/L", conversionFactor: 10 },
   currentHemoglobin: { conventional: "g/dL", si: "g/L", conversionFactor: 10 },
+  acr: { conventional: "mg/g", si: "mg/mmol", conversionFactor: 0.113 },
 };
 
 export default function Dashboard() {
@@ -831,7 +832,7 @@ export default function Dashboard() {
           );
           break;
 
-        case "frax":
+        case "frax-simplified":
           const fraxResult = calc.fraxSimplified(
             calculatorState.age as number,
             calculatorState.sex as "M" | "F",
