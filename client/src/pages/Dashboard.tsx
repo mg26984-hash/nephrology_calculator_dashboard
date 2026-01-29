@@ -1080,11 +1080,18 @@ export default function Dashboard() {
     }
   }, [filteredCalculators, focusedIndex, searchQuery, selectedCalculatorId, handleSelectCalculator, clearSearch]);
 
-  // Add keyboard event listener
+  // Add keyboard event listener - use ref to avoid re-attaching on every render
+  const keyboardHandlerRef = useRef(handleKeyboardNavigation);
+  
   useEffect(() => {
-    document.addEventListener('keydown', handleKeyboardNavigation);
-    return () => document.removeEventListener('keydown', handleKeyboardNavigation);
+    keyboardHandlerRef.current = handleKeyboardNavigation;
   }, [handleKeyboardNavigation]);
+  
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => keyboardHandlerRef.current(e);
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, []);
 
   // Reset focused index when filtered calculators change
   useEffect(() => {
