@@ -623,6 +623,8 @@ export default function Dashboard() {
               ratioMgPerMg = rawRatio / 1000; // mg/g to mg/mg
             } else if (ratioUnit === "mg/mmol") {
               ratioMgPerMg = rawRatio / 113.12; // mg/mmol to mg/mg
+            } else if (ratioUnit === "mg/L") {
+              ratioMgPerMg = rawRatio; // mg/L ratio is same as mg/mg (both in mg/L)
             }
             console.log("Using ratio mode, rawRatio:", rawRatio, "unit:", ratioUnit, "ratioMgPerMg:", ratioMgPerMg);
           } else {
@@ -1354,7 +1356,7 @@ export default function Dashboard() {
   // Inline Unit Toggle Component
   // Multi-option unit definitions for 24-hour-protein calculator
   const multiUnitOptions: { [inputId: string]: string[] } = {
-    ratioValue: ["mg/mg", "mg/g", "mg/mmol"],
+    ratioValue: ["mg/mg", "mg/g", "mg/mmol", "mg/L"],
     proteinValue: ["mg/dL", "g/L", "mg/L"],
     creatinineValue: ["mg/dL", "mmol/L"],
   };
