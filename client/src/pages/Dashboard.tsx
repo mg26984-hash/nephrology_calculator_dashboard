@@ -125,7 +125,7 @@ const unitOptions: { [inputId: string]: { conventional: string; si: string; conv
   // 24-Hour Protein Excretion Estimator inputs
   ratioValue: { conventional: "mg/mg", si: "mg/g", conversionFactor: 1000 },
   proteinValue: { conventional: "mg/dL", si: "g/L", conversionFactor: 0.01 },
-  creatinineValue: { conventional: "mg/dL", si: "mmol/L", conversionFactor: 88.4 },
+  creatinineValue: { conventional: "mg/dL", si: "mmol/L", conversionFactor: 0.0884 },
 };
 
 export default function Dashboard() {
@@ -603,18 +603,23 @@ export default function Dashboard() {
           );
           break;
 
-        case "24-hour-protein":
-          calculationResult = calc.estimated24HourProtein(
-            (calculatorState.testType as "pcr" | "acr") || "pcr",
-            (calculatorState.inputMode as "ratio" | "raw") || "ratio",
-            calculatorState.ratioValue as number | undefined,
-            (calculatorState.ratioValueUnit as "mg_mg" | "mg_mmol" | "mg_g") || "mg_mg",
-            calculatorState.proteinValue as number | undefined,
-            (calculatorState.proteinValueUnit as "mg_dL" | "g_L" | "mg_L") || "mg_dL",
-            calculatorState.creatinineValue as number | undefined,
-            (calculatorState.creatinineValueUnit as "mg_dL" | "mmol_L") || "mg_dL"
-          );
+        case "24-hour-protein": {
+          const inputMode = (calculatorState.inputMode as string) || "ratio";
+          console.log("24-hour-protein debug:", { inputMode, calculatorState });
+          if (inputMode === "ratio") {
+            // PCR in g/g or mg/g equals estimated 24-hour protein in g/day
+            // If using mg/g (SI), divide by 1000 to get g/g
+            calculationResult = getValue("ratioValue") || 0;
+            console.log("Using ratio mode, result:", calculationResult);
+          } else {
+            // Calculate from raw values: protein (mg/dL) / creatinine (mg/dL) = g/day
+            const protein = getValue("proteinValue") || 0;
+            const creatinine = getValue("creatinineValue") || 0;
+            calculationResult = creatinine > 0 ? protein / creatinine : 0;
+            console.log("Using raw mode, protein:", protein, "creatinine:", creatinine, "result:", calculationResult);
+          }
           break;
+        }
 
         case "ktv-hemodialysis":
           calculationResult = calc.ktv(

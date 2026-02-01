@@ -2,7 +2,6 @@
  * Calculator Data Definitions
  * All 52 calculators with metadata, inputs, and interpretation guides
  */
-
 export interface CalculatorInput {
   id: string;
   label: string;
@@ -19,7 +18,6 @@ export interface CalculatorInput {
     conversionFactor: number;
   };
 }
-
 export interface ReferenceRange {
   label: string;
   min?: number;
@@ -29,7 +27,6 @@ export interface ReferenceRange {
   sex?: "M" | "F" | "all";
   note?: string;
 }
-
 export interface Calculator {
   id: string;
   name: string;
@@ -43,12 +40,10 @@ export interface Calculator {
   clinicalPearls: string[];
   references: string[];
 }
-
 export const calculators: Calculator[] = [
   // ============================================================================
   // KIDNEY FUNCTION & CKD RISK
   // ============================================================================
-
   {
     id: "ckd-epi-creatinine",
     name: "CKD-EPI Creatinine (2021)",
@@ -87,7 +82,6 @@ export const calculators: Calculator[] = [
     ],
     references: ["Inker LA et al. N Engl J Med. 2021;385(19):1737-1749"],
   },
-
   {
     id: "cockcroft-gault",
     name: "Cockcroft-Gault Creatinine Clearance",
@@ -121,7 +115,6 @@ export const calculators: Calculator[] = [
     ],
     references: ["Cockcroft DW, Gault MH. Nephron. 1976;16(1):31-41"],
   },
-
   {
     id: "schwartz-pediatric",
     name: "Schwartz Pediatric eGFR",
@@ -147,7 +140,6 @@ export const calculators: Calculator[] = [
     ],
     references: ["Schwartz GJ et al. Kidney Int. 2009;76(2):159-166"],
   },
-
   {
     id: "kinetic-egfr",
     name: "Kinetic eGFR",
@@ -176,7 +168,6 @@ export const calculators: Calculator[] = [
     ],
     references: ["KDIGO 2024 CKD Guideline"],
   },
-
   {
     id: "ckd-epi-cystatin-c",
     name: "CKD-EPI Creatinine-Cystatin C Combined",
@@ -204,7 +195,6 @@ export const calculators: Calculator[] = [
     ],
     references: ["Inker LA et al. N Engl J Med. 2021;385(19):1737-1749"],
   },
-
   {
     id: "egfr-slope",
     name: "Annual eGFR Decline (Slope)",
@@ -230,7 +220,6 @@ export const calculators: Calculator[] = [
     ],
     references: ["KDIGO 2024 CKD Guideline, Practice Point 2.1.3"],
   },
-
   {
     id: "kfre",
     name: "Kidney Failure Risk Equation (KFRE)",
@@ -259,11 +248,9 @@ export const calculators: Calculator[] = [
     ],
     references: ["Tangri N et al. JAMA. 2016;315(2):164-174"],
   },
-
   // ============================================================================
   // ACUTE KIDNEY INJURY (AKI) WORKUP
   // ============================================================================
-
   {
     id: "fena",
     name: "Fractional Excretion of Sodium (FENa)",
@@ -294,7 +281,6 @@ export const calculators: Calculator[] = [
     ],
     references: ["Steiner RW. Am J Med. 1984;77(4):699-702"],
   },
-
   {
     id: "feurea",
     name: "Fractional Excretion of Urea (FEUrea)",
@@ -321,7 +307,6 @@ export const calculators: Calculator[] = [
     ],
     references: ["Carvounis CP et al. Kidney Int. 2002;62(6):2223-2229"],
   },
-
   {
     id: "anion-gap",
     name: "Serum Anion Gap",
@@ -351,7 +336,6 @@ export const calculators: Calculator[] = [
     ],
     references: ["Kraut JA, Madias NE. Clin J Am Soc Nephrol. 2007;2(1):162-174"],
   },
-
   {
     id: "delta-gap",
     name: "Delta Gap (Delta-Delta Ratio)",
@@ -377,7 +361,6 @@ export const calculators: Calculator[] = [
     ],
     references: ["Rastegar A. J Am Soc Nephrol. 2007;18(9):2429-2431"],
   },
-
   {
     id: "osmolal-gap",
     name: "Serum Osmolal Gap",
@@ -406,7 +389,6 @@ export const calculators: Calculator[] = [
     ],
     references: ["Kraut JA, Kurtz I. Clin J Am Soc Nephrol. 2008;3(1):208-225"],
   },
-
   {
     id: "urine-anion-gap",
     name: "Urine Anion Gap (for RTA diagnosis)",
@@ -431,11 +413,9 @@ export const calculators: Calculator[] = [
     ],
     references: ["Batlle DC et al. N Engl J Med. 1988;318(10):594-599"],
   },
-
   // ============================================================================
   // ELECTROLYTES & ACID-BASE
   // ============================================================================
-
   {
     id: "ttkg",
     name: "Transtubular Potassium Gradient (TTKG)",
@@ -462,7 +442,6 @@ export const calculators: Calculator[] = [
     ],
     references: ["Ethier JH et al. Am J Kidney Dis. 1990;15(4):309-315"],
   },
-
   {
     id: "water-deficit-hypernatremia",
     name: "Water Deficit in Hypernatremia",
@@ -487,7 +466,6 @@ export const calculators: Calculator[] = [
     ],
     references: ["Adrogue HJ, Madias NE. N Engl J Med. 2000;342(20):1493-1499"],
   },
-
   {
     id: "corrected-sodium-hyperglycemia",
     name: "Corrected Sodium in Hyperglycemia",
@@ -512,7 +490,6 @@ export const calculators: Calculator[] = [
     ],
     references: ["Katz MA. N Engl J Med. 1973;289(16):843-844"],
   },
-
   {
     id: "sodium-correction-rate",
     name: "Sodium Correction Rate in Hyponatremia",
@@ -540,7 +517,6 @@ export const calculators: Calculator[] = [
     ],
     references: ["Adrogue HJ, Madias NE. N Engl J Med. 2000;342(20):1493-1499"],
   },
-
   {
     id: "sodium-deficit",
     name: "Sodium Deficit in Hyponatremia",
@@ -565,7 +541,6 @@ export const calculators: Calculator[] = [
     ],
     references: ["Adrogue HJ, Madias NE. N Engl J Med. 2000;342(20):1493-1499"],
   },
-
   {
     id: "corrected-calcium",
     name: "Corrected Calcium for Albumin",
@@ -590,7 +565,6 @@ export const calculators: Calculator[] = [
     ],
     references: ["Payne RB et al. Br Med J. 1973;4(5893):643-646"],
   },
-
   {
     id: "qtc-bazett",
     name: "Corrected QT Interval (QTc - Bazett)",
@@ -615,11 +589,9 @@ export const calculators: Calculator[] = [
     ],
     references: ["Rautaharju PM et al. Circulation. 2009;119(10):e241-e250"],
   },
-
   // ============================================================================
   // PROTEINURIA & GLOMERULAR DISEASE
   // ============================================================================
-
   {
     id: "uacr",
     name: "Urine Albumin-to-Creatinine Ratio (uACR)",
@@ -645,7 +617,6 @@ export const calculators: Calculator[] = [
     ],
     references: ["KDIGO 2024 Clinical Practice Guideline for the Evaluation and Management of CKD"],
   },
-
   {
     id: "upcr",
     name: "Urine Protein-to-Creatinine Ratio (UPCR)",
@@ -672,7 +643,6 @@ export const calculators: Calculator[] = [
     ],
     references: ["Levey AS et al. UpToDate 2024"],
   },
-
   {
     id: "acr-from-pcr",
     name: "Estimated ACR from PCR (conversion)",
@@ -695,7 +665,6 @@ export const calculators: Calculator[] = [
     ],
     references: ["Sumida K et al. Ann Intern Med. 2020;173(6):426-435"],
   },
-
   {
     id: "24-hour-protein",
     name: "24-Hour Protein Excretion Estimator",
@@ -703,15 +672,9 @@ export const calculators: Calculator[] = [
     category: "Proteinuria & Glomerular Disease",
     inputs: [
       { id: "inputMode", label: "Input Method", type: "select", options: [{ value: "ratio", label: "I have the ratio value" }, { value: "raw", label: "I have protein and creatinine values" }], required: true },
-      { id: "ratioValue", label: "Ratio Value", type: "number", placeholder: "0.5", required: false },
-      { id: "ratioValue-mg_mg", label: "mg/mg", type: "toggle" },
-      { id: "ratioValue-mg_g", label: "mg/g", type: "toggle" },
-      { id: "proteinValue", label: "Urine Protein Concentration", type: "number", placeholder: "50", required: false },
-      { id: "proteinValue-mg_dL", label: "mg/dL", type: "toggle" },
-      { id: "proteinValue-g_L", label: "g/L", type: "toggle" },
-      { id: "creatinineValue", label: "Urine Creatinine Concentration", type: "number", placeholder: "100", required: false },
-      { id: "creatinineValue-mg_dL", label: "mg/dL", type: "toggle" },
-      { id: "creatinineValue-mmol_L", label: "mmol/L", type: "toggle" },
+      { id: "ratioValue", label: "Protein-to-Creatinine Ratio (PCR)", type: "number", unit: "g/g", placeholder: "0.5", required: false },
+      { id: "proteinValue", label: "Urine Protein Concentration", type: "number", unit: "mg/dL", placeholder: "50", required: false },
+      { id: "creatinineValue", label: "Urine Creatinine Concentration", type: "number", unit: "mg/dL", placeholder: "100", required: false },
     ],
     resultLabel: "Estimated 24-Hour Protein Excretion",
     resultUnit: "g/day",
@@ -735,7 +698,6 @@ export const calculators: Calculator[] = [
     ],
     references: ["KDIGO 2024 Clinical Practice Guideline for the Evaluation and Management of CKD"],
   },
-
   {
     id: "igan-prediction",
     name: "International IgA Nephropathy (IgAN) Prediction Tool",
@@ -763,11 +725,9 @@ export const calculators: Calculator[] = [
     ],
     references: ["Barbour SJ et al. JAMA Intern Med. 2019;179(7):942-952"],
   },
-
   // ============================================================================
   // DIALYSIS ADEQUACY
   // ============================================================================
-
   {
     id: "ktv-hemodialysis",
     name: "Kt/V (Hemodialysis Adequacy)",
@@ -801,7 +761,6 @@ export const calculators: Calculator[] = [
     ],
     references: ["KDOQI Hemodialysis Adequacy Guidelines 2015"],
   },
-
   {
     id: "total-body-water",
     name: "Total Body Water (Watson Formula)",
@@ -827,7 +786,6 @@ export const calculators: Calculator[] = [
     ],
     references: ["Watson PE et al. Am J Clin Nutr. 1980;33(12):2641-2645"],
   },
-
   {
     id: "hd-session-duration",
     name: "Hemodialysis Session Duration from Target Kt/V",
@@ -854,7 +812,6 @@ export const calculators: Calculator[] = [
     ],
     references: ["Daugirdas JT. Adv Ren Replace Ther. 1995;2(4):295-304", "KDOQI Clinical Practice Guideline for Hemodialysis Adequacy: 2015 Update"],
   },
-
   {
     id: "pd-weekly-ktv",
     name: "Peritoneal Dialysis Weekly Kt/V",
@@ -882,7 +839,6 @@ export const calculators: Calculator[] = [
     ],
     references: ["ISPD Guidelines 2020: Peritoneal Dialysis Adequacy"],
   },
-
   {
     id: "residual-rkf-ktv",
     name: "Residual Kidney Function (RKF) Kt/V Component",
@@ -908,7 +864,6 @@ export const calculators: Calculator[] = [
     ],
     references: ["Bargman JM et al. J Am Soc Nephrol. 2001;12(10):2158-2162"],
   },
-
   {
     id: "equilibrated-ktv",
     name: "Equilibrated Kt/V (eKt/V) for Hemodialysis",
@@ -933,7 +888,6 @@ export const calculators: Calculator[] = [
     ],
     references: ["Daugirdas JT. Adv Ren Replace Ther. 1995;2(4):295-304"],
   },
-
   {
     id: "standard-ktv",
     name: "Standard Kt/V (stdKt/V) - Weekly Normalized Dose",
@@ -958,7 +912,6 @@ export const calculators: Calculator[] = [
     ],
     references: ["KDOQI Clinical Practice Guideline for Hemodialysis Adequacy: 2015 Update"],
   },
-
   {
     id: "urr",
     name: "Urea Reduction Ratio (URR)",
@@ -984,7 +937,6 @@ export const calculators: Calculator[] = [
     ],
     references: ["KDOQI Hemodialysis Adequacy Guidelines 2015"],
   },
-
   {
     id: "iron-deficit",
     name: "Iron Deficit (Ganzoni Formula)",
@@ -1011,11 +963,9 @@ export const calculators: Calculator[] = [
     ],
     references: ["Ganzoni AM. Schweiz Med Wochenschr. 1970;100(7):301-303"],
   },
-
   // ============================================================================
   // TRANSPLANTATION
   // ============================================================================
-
   {
     id: "kdpi",
     name: "Kidney Donor Profile Index (KDPI)",
@@ -1065,7 +1015,6 @@ export const calculators: Calculator[] = [
     ],
     references: ["Rao PS et al. Transplantation. 2009;88(2):231-236"],
   },
-
   {
     id: "epts",
     name: "Estimated Post-Transplant Survival (EPTS)",
@@ -1091,7 +1040,6 @@ export const calculators: Calculator[] = [
     ],
     references: ["OPTN/UNOS Kidney Allocation System. Final Rule 2014"],
   },
-
   {
     id: "banff-classification",
     name: "Banff Classification for Kidney Transplant Rejection",
@@ -1195,7 +1143,6 @@ export const calculators: Calculator[] = [
     ],
     references: ["Loupy A et al. Am J Transplant. 2020;20(9):2305-2331", "Haas M et al. Am J Transplant. 2018;18(2):293-307"],
   },
-
   {
     id: "tacrolimus-monitoring",
     name: "Tacrolimus Therapeutic Monitoring",
@@ -1220,11 +1167,9 @@ export const calculators: Calculator[] = [
     ],
     references: ["Thölking G et al. Sci Rep. 2016;6:32273"],
   },
-
   // ============================================================================
   // CARDIOVASCULAR RISK
   // ============================================================================
-
   {
     id: "ascvd-risk",
     name: "ASCVD Risk Calculator (with CKD Considerations)",
@@ -1257,12 +1202,9 @@ export const calculators: Calculator[] = [
     ],
     references: ["Goff DC Jr et al. Circulation. 2014;129(25 Suppl 2):S49-73"],
   },
-
-
   // ============================================================================
   // ANTHROPOMETRIC & BODY COMPOSITION
   // ============================================================================
-
   {
     id: "bmi",
     name: "Body Mass Index (BMI)",
@@ -1299,7 +1241,6 @@ export const calculators: Calculator[] = [
     ],
     references: ["WHO BMI Classification"],
   },
-
   {
     id: "bsa-dubois",
     name: "BSA – Du Bois & Du Bois Formula",
@@ -1325,7 +1266,6 @@ export const calculators: Calculator[] = [
     ],
     references: ["Du Bois D, Du Bois EF. Arch Intern Med. 1916;17(6):863-871"],
   },
-
   {
     id: "bsa-mosteller",
     name: "Body Surface Area - Mosteller Formula",
@@ -1350,7 +1290,6 @@ export const calculators: Calculator[] = [
     ],
     references: ["Mosteller RD. N Engl J Med. 1987;317(17):1098"],
   },
-
   {
     id: "devine-ibw",
     name: "Devine Ideal Body Weight",
@@ -1375,7 +1314,6 @@ export const calculators: Calculator[] = [
     ],
     references: ["Devine BJ. Drug Intell Clin Pharm. 1974;8(7):470-471"],
   },
-
   {
     id: "lean-body-weight",
     name: "Lean Body Weight (Janmahasatian)",
@@ -1400,7 +1338,6 @@ export const calculators: Calculator[] = [
     ],
     references: ["Janmahasatian S et al. Clin Pharmacokinet. 2005;44(10):1051-1065"],
   },
-
   {
     id: "adjusted-body-weight",
     name: "Adjusted Body Weight (for Obese Patients)",
@@ -1424,11 +1361,9 @@ export const calculators: Calculator[] = [
     ],
     references: ["Pai MP, Paloucek FP. Ann Pharmacother. 2000;34(9):1066-1069"],
   },
-
   // ============================================================================
   // CKD-MINERAL BONE DISEASE
   // ============================================================================
-
   {
     id: "ca-pho-product",
     name: "Calcium-Phosphate Product (CKD-MBD)",
@@ -1455,11 +1390,9 @@ export const calculators: Calculator[] = [
     ],
     references: ["KDIGO 2017 Clinical Practice Guideline Update for CKD-MBD"],
   },
-
   // ============================================================================
   // SYSTEMIC DISEASES & SCORES
   // ============================================================================
-
   {
     id: "sledai-2k",
     name: "SLEDAI-2K Disease-Activity Score",
@@ -1505,7 +1438,6 @@ export const calculators: Calculator[] = [
     ],
     references: ["Gladman DD et al. Lupus. 2011;20(5):453-462"],
   },
-
   {
     id: "slicc-2012",
     name: "SLICC 2012 SLE Classification Criteria",
@@ -1547,7 +1479,6 @@ export const calculators: Calculator[] = [
     ],
     references: ["Petri M et al. Arthritis Care Res (Hoboken). 2012;64(8):1246-1255"],
   },
-
   {
     id: "frail-scale",
     name: "FRAIL Scale",
@@ -1576,7 +1507,6 @@ export const calculators: Calculator[] = [
     ],
     references: ["Fried LP et al. J Gerontol A Biol Sci Med Sci. 2001;56(3):M146-M156"],
   },
-
   {
     id: "prisma-7",
     name: "PRISMA-7 Frailty Score",
@@ -1607,7 +1537,6 @@ export const calculators: Calculator[] = [
     ],
     references: ["Hébert R et al. J Clin Epidemiol. 2003;56(12):1236-1242"],
   },
-
   {
     id: "curb-65",
     name: "CURB-65 Pneumonia Severity Score",
@@ -1639,7 +1568,6 @@ export const calculators: Calculator[] = [
     ],
     references: ["Lim WS et al. Thorax. 2003;58(5):377-382"],
   },
-
   {
     id: "roks",
     name: "ROKS (Recurrence Of Kidney Stone) Nomogram",
@@ -1667,11 +1595,9 @@ export const calculators: Calculator[] = [
     ],
     references: ["Siener R, Hesse A. Urol Res. 2003;31(3):169-173"],
   },
-
   // ============================================================================
   // BONE & FRACTURE RISK
   // ============================================================================
-
   {
     id: "frax-simplified",
     name: "FRAX Fracture Risk Assessment",
@@ -1712,11 +1638,9 @@ export const calculators: Calculator[] = [
       "Naylor KL et al. Am J Kidney Dis. 2014;63(4):612-622",
     ],
   },
-
   // ============================================================================
   // CONTRAST-INDUCED NEPHROPATHY RISK
   // ============================================================================
-
   {
     id: "cin-mehran-score",
     name: "Contrast-Induced Nephropathy (CIN) Risk - Mehran Score",
@@ -1740,7 +1664,6 @@ export const calculators: Calculator[] = [
       let riskCategory = "";
       let cinRisk = "";
       let dialysisRisk = "";
-      
       if (value <= 5) {
         riskCategory = "Low Risk";
         cinRisk = "7.5%";
@@ -1758,7 +1681,6 @@ export const calculators: Calculator[] = [
         cinRisk = "57.3%";
         dialysisRisk = "12.6%";
       }
-      
       return `**${riskCategory}**\n\n` +
         `**Risk of CIN (SCr rise ≥25% or ≥0.5 mg/dL):** ${cinRisk}\n` +
         `**Risk of requiring dialysis:** ${dialysisRisk}\n\n` +
@@ -1787,18 +1709,14 @@ export const calculators: Calculator[] = [
       "Weisbord SD et al. N Engl J Med. 2018;378(7):603-614 (PRESERVE trial)",
     ],
   },
-
 ];
-
 export function getCalculatorsByCategory(category: string): Calculator[] {
   return calculators.filter((calc) => calc.category === category);
 }
-
 export function getCategories(): string[] {
   const categories = new Set(calculators.map((calc) => calc.category));
   return Array.from(categories).sort();
 }
-
 export function getCalculatorById(id: string): Calculator | undefined {
   return calculators.find((calc) => calc.id === id);
 }
