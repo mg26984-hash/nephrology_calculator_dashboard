@@ -123,7 +123,8 @@ const unitOptions: { [inputId: string]: { conventional: string; si: string; conv
   // ACR from PCR calculator - PCR: 1 g/g = 113 mg/mmol (1000 mg/g ÷ 8.84 mmol/g creatinine)
   pcr: { conventional: "g/g", si: "mg/mmol", conversionFactor: 113 },
   // 24-Hour Protein Excretion Estimator inputs
-  ratioValue: { conventional: "mg/mg", si: "mg/g", conversionFactor: 1000 },
+  // ratioValue: mg/mg is base unit, mg/g = mg/mg * 1000, mg/mmol = mg/mg * 113.12
+  ratioValue: { conventional: "mg/mg", si: "mg/mmol", conversionFactor: 113.12 },
   proteinValue: { conventional: "mg/dL", si: "g/L", conversionFactor: 0.01 },
   creatinineValue: { conventional: "mg/dL", si: "mmol/L", conversionFactor: 0.0884 },
 };
@@ -605,19 +606,56 @@ export default function Dashboard() {
 
         case "24-hour-protein": {
           const inputMode = (calculatorState.inputMode as string) || "ratio";
-          console.log("24-hour-protein debug:", { inputMode, calculatorState });
+          const testType = (calculatorState.testType as string) || "pcr";
+          console.log("24-hour-protein debug:", { inputMode, testType, calculatorState, unitState });
+          
+          let ratioMgPerMg = 0;
+          
           if (inputMode === "ratio") {
-            // PCR in g/g or mg/g equals estimated 24-hour protein in g/day
-            // If using mg/g (SI), divide by 1000 to get g/g
-            calculationResult = getValue("ratioValue") || 0;
-            console.log("Using ratio mode, result:", calculationResult);
+            // Get ratio value and convert to mg/mg base unit
+            const rawRatio = parseFloat(String(calculatorState.ratioValue)) || 0;
+            const ratioUnit = unitState.ratioValue || "mg/mg";
+            
+            // Convert to mg/mg (base unit)
+            if (ratioUnit === "mg/mg") {
+              ratioMgPerMg = rawRatio;
+            } else if (ratioUnit === "mg/g") {
+              ratioMgPerMg = rawRatio / 1000; // mg/g to mg/mg
+            } else if (ratioUnit === "mg/mmol") {
+              ratioMgPerMg = rawRatio / 113.12; // mg/mmol to mg/mg
+            }
+            console.log("Using ratio mode, rawRatio:", rawRatio, "unit:", ratioUnit, "ratioMgPerMg:", ratioMgPerMg);
           } else {
-            // Calculate from raw values: protein (mg/dL) / creatinine (mg/dL) = g/day
-            const protein = getValue("proteinValue") || 0;
-            const creatinine = getValue("creatinineValue") || 0;
-            calculationResult = creatinine > 0 ? protein / creatinine : 0;
-            console.log("Using raw mode, protein:", protein, "creatinine:", creatinine, "result:", calculationResult);
+            // Calculate from raw values
+            // First convert protein to mg/L
+            const rawProtein = parseFloat(String(calculatorState.proteinValue)) || 0;
+            const proteinUnit = unitState.proteinValue || "mg/dL";
+            let proteinMgL = rawProtein;
+            if (proteinUnit === "mg/dL") {
+              proteinMgL = rawProtein * 10; // mg/dL to mg/L
+            } else if (proteinUnit === "g/L") {
+              proteinMgL = rawProtein * 1000; // g/L to mg/L
+            }
+            // proteinUnit === "mg/L" stays as is
+            
+            // Convert creatinine to mg/L
+            const rawCreatinine = parseFloat(String(calculatorState.creatinineValue)) || 0;
+            const creatinineUnit = unitState.creatinineValue || "mg/dL";
+            let creatinineMgL = rawCreatinine;
+            if (creatinineUnit === "mg/dL") {
+              creatinineMgL = rawCreatinine * 10; // mg/dL to mg/L
+            } else if (creatinineUnit === "mmol/L") {
+              creatinineMgL = rawCreatinine * 113.12; // mmol/L to mg/L (MW creatinine = 113.12)
+            }
+            
+            // Calculate ratio in mg/mg (which equals mg/L / mg/L)
+            ratioMgPerMg = creatinineMgL > 0 ? proteinMgL / creatinineMgL : 0;
+            console.log("Using raw mode, protein:", proteinMgL, "mg/L, creatinine:", creatinineMgL, "mg/L, ratioMgPerMg:", ratioMgPerMg);
           }
+          
+          // PCR/ACR in mg/mg equals estimated 24-hour protein/albumin excretion in g/day
+          calculationResult = ratioMgPerMg;
+          console.log("Final result:", calculationResult, "g/day, testType:", testType);
           break;
         }
 
@@ -1093,6 +1131,11 @@ export default function Dashboard() {
 
   // Check if input supports unit toggle
   const hasUnitToggle = (inputId: string): boolean => {
+    // For 24-hour-protein calculator, check multi-unit options
+    if (selectedCalculatorId === "24-hour-protein") {
+      const multiUnitIds = ["ratioValue", "proteinValue", "creatinineValue"];
+      if (multiUnitIds.includes(inputId)) return true;
+    }
     return inputId in unitOptions;
   };
 
@@ -1309,7 +1352,41 @@ export default function Dashboard() {
   ), [selectedCategory, categories, favoriteCalculators, recentCalculators, groupedCalculators, filteredCalculators, selectedCalculatorId, focusedIndex, favorites, handleSelectCalculator, toggleFavorite]);
 
   // Inline Unit Toggle Component
+  // Multi-option unit definitions for 24-hour-protein calculator
+  const multiUnitOptions: { [inputId: string]: string[] } = {
+    ratioValue: ["mg/mg", "mg/g", "mg/mmol"],
+    proteinValue: ["mg/dL", "g/L", "mg/L"],
+    creatinineValue: ["mg/dL", "mmol/L"],
+  };
+
   const InlineUnitToggle = ({ inputId }: { inputId: string }) => {
+    // Check if this input has multi-unit options (for 24-hour-protein calculator)
+    if (selectedCalculatorId === "24-hour-protein" && multiUnitOptions[inputId]) {
+      const options = multiUnitOptions[inputId];
+      const currentUnit = unitState[inputId] || options[0];
+      
+      return (
+        <div className="flex items-center gap-0.5 bg-muted rounded p-0.5">
+          {options.map((unit) => (
+            <button
+              key={unit}
+              type="button"
+              onClick={() => setUnitState(prev => ({ ...prev, [inputId]: unit }))}
+              className={cn(
+                "px-2 py-0.5 text-xs font-medium rounded transition-colors",
+                currentUnit === unit
+                  ? "bg-primary text-primary-foreground"
+                  : "text-muted-foreground hover:text-foreground"
+              )}
+            >
+              {unit}
+            </button>
+          ))}
+        </div>
+      );
+    }
+
+    // Default 2-option toggle for other calculators
     const options = unitOptions[inputId];
     if (!options) return null;
 
@@ -1731,6 +1808,20 @@ export default function Dashboard() {
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     {selectedCalculator.inputs
                       .filter((input) => !input.id.endsWith("Unit")) // Skip unit selector inputs
+                      .filter((input) => {
+                        // For 24-hour-protein calculator, show/hide inputs based on inputMode
+                        if (selectedCalculator.id === "24-hour-protein") {
+                          const inputMode = calculatorState.inputMode || "ratio";
+                          if (inputMode === "ratio") {
+                            // In ratio mode, hide proteinValue and creatinineValue
+                            if (input.id === "proteinValue" || input.id === "creatinineValue") return false;
+                          } else {
+                            // In raw mode, hide ratioValue
+                            if (input.id === "ratioValue") return false;
+                          }
+                        }
+                        return true;
+                      })
                       .map((input) => (
                       <div key={input.id} className="space-y-2">
                         <div className="flex items-center justify-between gap-2">

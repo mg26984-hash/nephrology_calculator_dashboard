@@ -671,9 +671,10 @@ export const calculators: Calculator[] = [
     description: "Converts spot urine PCR/ACR to estimated 24-hour protein excretion",
     category: "Proteinuria & Glomerular Disease",
     inputs: [
-      { id: "inputMode", label: "Input Method", type: "select", options: [{ value: "ratio", label: "I have the ratio value" }, { value: "raw", label: "I have protein and creatinine values" }], required: true },
-      { id: "ratioValue", label: "Protein-to-Creatinine Ratio (PCR)", type: "number", unit: "g/g", placeholder: "0.5", required: false },
-      { id: "proteinValue", label: "Urine Protein Concentration", type: "number", unit: "mg/dL", placeholder: "50", required: false },
+      { id: "testType", label: "Test Type", type: "select", options: [{ value: "pcr", label: "Protein/Creatinine Ratio (PCR)" }, { value: "acr", label: "Albumin/Creatinine Ratio (ACR)" }], required: true },
+      { id: "inputMode", label: "Input Method", type: "select", options: [{ value: "ratio", label: "I have the ratio value" }, { value: "raw", label: "I have protein/albumin and creatinine values" }], required: true },
+      { id: "ratioValue", label: "Ratio Value", type: "number", unit: "mg/mg", placeholder: "0.5", required: false },
+      { id: "proteinValue", label: "Urine Protein/Albumin Concentration", type: "number", unit: "mg/dL", placeholder: "50", required: false },
       { id: "creatinineValue", label: "Urine Creatinine Concentration", type: "number", unit: "mg/dL", placeholder: "100", required: false },
     ],
     resultLabel: "Estimated 24-Hour Protein Excretion",

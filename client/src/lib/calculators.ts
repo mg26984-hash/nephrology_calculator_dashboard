@@ -448,6 +448,24 @@ export function acrFromPcr(pcr: number): number {
   return Math.round(acr * 10) / 10;
 }
 
+export function uacrTo24HourAlbumin(
+  uacr: number,
+  uacrUnit: "mg/g" | "mg/mmol" = "mg/g"
+): number {
+  // UACR to 24-hour albumin excretion estimation
+  // ACR in mg/g approximates albumin excretion in mg/24h (1:1 relationship)
+  // Reference: KDIGO 2012 Clinical Practice Guideline for CKD
+  // https://www.scymed.com/en/smnxps/psdjb222.htm
+  
+  // Convert to mg/g if needed (mg/mmol × 8.84 = mg/g)
+  let acrMgG = uacrUnit === "mg/mmol" ? uacr * 8.84 : uacr;
+  
+  // ACR in mg/g ≈ 24-hour albumin excretion in mg/day
+  const albumin24h = acrMgG;
+  
+  return Math.round(albumin24h * 10) / 10;
+}
+
 export function iganPredictionTool(
   age: number,
   eGFR: number,
