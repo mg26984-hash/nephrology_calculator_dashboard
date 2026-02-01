@@ -1528,3 +1528,81 @@ export function getBanffScoreDescription(score: string, value: number): string {
   
   return descriptions[score]?.[value] || "Unknown";
 }
+
+
+// ============================================================================
+// 24-HOUR PROTEIN EXCRETION ESTIMATOR
+// ============================================================================
+
+export function estimated24HourProtein(
+  testType: "pcr" | "acr",
+  inputMode: "ratio" | "raw",
+  ratioValue?: number,
+  ratioUnit?: "mg_mg" | "mg_mmol" | "mg_g",
+  proteinValue?: number,
+  proteinUnit?: "mg_dL" | "g_L" | "mg_L",
+  creatinineValue?: number,
+  creatinineUnit?: "mg_dL" | "mmol_L"
+): number {
+  // 24-Hour Urinary Protein Excretion Estimator
+  // Supports both PCR (Protein/Creatinine Ratio) and ACR (Albumin/Creatinine Ratio)
+  // Exact implementation matching the original HTML calculator
+  // Formula: ratio in mg/mg = g/day
+
+  let ratioMgPerMg: number;
+
+  if (inputMode === "ratio") {
+    // Convert ratio to mg/mg using the exact same logic as original HTML
+    if (ratioValue === undefined || isNaN(ratioValue)) return 0;
+
+    const unit = ratioUnit || "mg_mg";
+
+    if (unit === "mg_mg") {
+      ratioMgPerMg = ratioValue;
+    } else if (unit === "mg_g") {
+      // Original: r / 1000.0
+      ratioMgPerMg = ratioValue / 1000.0;
+    } else if (unit === "mg_mmol") {
+      // Original: r / 113.12
+      ratioMgPerMg = ratioValue / 113.12;
+    } else {
+      ratioMgPerMg = ratioValue;
+    }
+  } else {
+    // Calculate from raw values using exact same logic as original HTML
+    if (proteinValue === undefined || creatinineValue === undefined ||
+        isNaN(proteinValue) || isNaN(creatinineValue) || creatinineValue <= 0) return 0;
+
+    let protein = proteinValue;
+    let creat = creatinineValue;
+
+    // Default units to mg_dL if not specified
+    const pUnit = proteinUnit || "mg_dL";
+    const cUnit = creatinineUnit || "mg_dL";
+
+    // Convert protein/albumin to mg/L (exact same as original HTML)
+    if (pUnit === "mg_dL") {
+      protein = protein * 10;
+    } else if (pUnit === "g_L") {
+      protein = protein * 1000;
+    }
+    // mg_L stays as is
+
+    // Convert creatinine to mg/L (exact same as original HTML)
+    if (cUnit === "mg_dL") {
+      creat = creat * 10;
+    } else if (cUnit === "mmol_L") {
+      creat = creat * 113.12;
+    }
+
+    // Calculate ratio: protein (mg/L) / creatinine (mg/L) = mg/mg = g/day
+    ratioMgPerMg = protein / creat;
+  }
+
+  // The ratio in mg/mg equals g/day (standard approximation)
+  // This applies to both PCR and ACR - the formula is the same
+  // The difference is in the interpretation (albumin vs total protein)
+  const gPerDay = ratioMgPerMg;
+
+  return Math.round(gPerDay * 1000) / 1000;
+}

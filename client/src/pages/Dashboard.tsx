@@ -122,6 +122,10 @@ const unitOptions: { [inputId: string]: { conventional: string; si: string; conv
   acr: { conventional: "mg/g", si: "mg/mmol", conversionFactor: 0.113 },
   // ACR from PCR calculator - PCR: 1 g/g = 113 mg/mmol (1000 mg/g ÷ 8.84 mmol/g creatinine)
   pcr: { conventional: "g/g", si: "mg/mmol", conversionFactor: 113 },
+  // 24-Hour Protein Excretion Estimator inputs
+  ratioValue: { conventional: "mg/mg", si: "mg/g", conversionFactor: 1000 },
+  proteinValue: { conventional: "mg/dL", si: "g/L", conversionFactor: 0.01 },
+  creatinineValue: { conventional: "mg/dL", si: "mmol/L", conversionFactor: 88.4 },
 };
 
 export default function Dashboard() {
@@ -596,6 +600,19 @@ export default function Dashboard() {
         case "acr-from-pcr":
           calculationResult = calc.acrFromPcr(
             getValue("pcr")
+          );
+          break;
+
+        case "24-hour-protein":
+          calculationResult = calc.estimated24HourProtein(
+            (calculatorState.testType as "pcr" | "acr") || "pcr",
+            (calculatorState.inputMode as "ratio" | "raw") || "ratio",
+            calculatorState.ratioValue as number | undefined,
+            (calculatorState.ratioValueUnit as "mg_mg" | "mg_mmol" | "mg_g") || "mg_mg",
+            calculatorState.proteinValue as number | undefined,
+            (calculatorState.proteinValueUnit as "mg_dL" | "g_L" | "mg_L") || "mg_dL",
+            calculatorState.creatinineValue as number | undefined,
+            (calculatorState.creatinineValueUnit as "mg_dL" | "mmol_L") || "mg_dL"
           );
           break;
 
