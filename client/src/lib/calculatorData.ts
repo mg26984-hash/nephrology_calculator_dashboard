@@ -18,6 +18,7 @@ export interface CalculatorInput {
     units: string[];
     conversionFactor: number;
   };
+  default?: number | string;
 }
 export interface ReferenceRange {
   label: string;

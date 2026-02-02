@@ -137,6 +137,7 @@ export default function Dashboard() {
   const [result, setResult] = useState<number | null>(null);
   const [resultInterpretation, setResultInterpretation] = useState<string>("");
   const [banffResult, setBanffResult] = useState<calc.BanffResult | null>(null);
+  const [kdpiResult, setKdpiResult] = useState<{ kdri: number; kdpi: number } | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [viewingCategoryList, setViewingCategoryList] = useState<string | null>(null);
@@ -776,8 +777,8 @@ export default function Dashboard() {
           );
           break;
 
-        case "kdpi":
-          const kdpiResult = calc.kdpi(
+        case "kdpi": {
+          const kdpiCalcResult = calc.kdpi(
             calculatorState.donorAge as number,
             calculatorState.donorHeight as number,
             calculatorState.donorWeight as number,
@@ -788,8 +789,20 @@ export default function Dashboard() {
             calculatorState.isDCD === "YES",
             getInputUnit("donorCreatinine") === "SI" ? "μmol/L" : "mg/dL"
           );
-          calculationResult = kdpiResult.kdpi;
-          break;
+          setKdpiResult(kdpiCalcResult);
+          setResult(kdpiCalcResult.kdpi);
+          // Generate interpretation based on KDPI value
+          let kdpiInterpretation = "";
+          if (kdpiCalcResult.kdpi <= 20) {
+            kdpiInterpretation = "Low risk donor kidney. Expected to have better long-term graft survival.";
+          } else if (kdpiCalcResult.kdpi <= 85) {
+            kdpiInterpretation = "Standard criteria donor kidney. Acceptable for most recipients.";
+          } else {
+            kdpiInterpretation = "High KDPI (≥85%). Consider for expanded criteria donor (ECD) allocation. May be suitable for older recipients or those with limited life expectancy.";
+          }
+          setResultInterpretation(kdpiInterpretation);
+          return;
+        }
 
         case "epts":
           calculationResult = calc.epts(
@@ -1013,7 +1026,7 @@ export default function Dashboard() {
           };
           const banffResultData = calc.banffClassification(banffScores);
           setBanffResult(banffResultData);
-          setResult(banffResultData.diagnoses[0]?.title || 'Normal');
+          setResult(null); // Banff uses custom display, not numeric result
           setResultInterpretation('');
           return; // Skip the default interpretation handling
 
@@ -1101,6 +1114,7 @@ export default function Dashboard() {
     setResult(null);
     setResultInterpretation("");
     setBanffResult(null);
+    setKdpiResult(null);
     setMobileMenuOpen(false);
     // Track recent calculator usage
     addToRecent(calcId);
@@ -2014,6 +2028,117 @@ export default function Dashboard() {
                         <Info className="h-4 w-4" />
                         <AlertDescription>{resultInterpretation}</AlertDescription>
                       </Alert>
+                    )}
+
+                    {/* Custom KDPI/KDRI Result Display */}
+                    {selectedCalculator.id === 'kdpi' && kdpiResult && (
+                      <div className="mt-4 space-y-4">
+                        {/* KDPI and KDRI Display */}
+                        <div className="grid grid-cols-2 gap-4">
+                          {/* KDPI Box */}
+                          <div className={`p-4 rounded-lg border-l-4 ${
+                            kdpiResult.kdpi <= 20 
+                              ? 'bg-emerald-500/10 border-emerald-500' 
+                              : kdpiResult.kdpi <= 85 
+                                ? 'bg-amber-500/10 border-amber-500' 
+                                : 'bg-red-500/10 border-red-500'
+                          }`}>
+                            <p className="text-sm font-medium text-muted-foreground">KDPI</p>
+                            <p className={`text-3xl font-bold ${
+                              kdpiResult.kdpi <= 20 
+                                ? 'text-emerald-600 dark:text-emerald-400' 
+                                : kdpiResult.kdpi <= 85 
+                                  ? 'text-amber-600 dark:text-amber-400' 
+                                  : 'text-red-600 dark:text-red-400'
+                            }`}>
+                              {kdpiResult.kdpi}%
+                            </p>
+                            <p className="text-xs text-muted-foreground mt-1">
+                              Kidney Donor Profile Index
+                            </p>
+                          </div>
+                          {/* KDRI Box */}
+                          <div className="p-4 rounded-lg bg-blue-500/10 border-l-4 border-blue-500">
+                            <p className="text-sm font-medium text-muted-foreground">KDRI</p>
+                            <p className="text-3xl font-bold text-blue-600 dark:text-blue-400">
+                              {kdpiResult.kdri.toFixed(2)}
+                            </p>
+                            <p className="text-xs text-muted-foreground mt-1">
+                              Kidney Donor Risk Index
+                            </p>
+                          </div>
+                        </div>
+
+                        {/* Risk Category */}
+                        <div className={`p-4 rounded-lg ${
+                          kdpiResult.kdpi <= 20 
+                            ? 'bg-emerald-500/10 border border-emerald-500/30' 
+                            : kdpiResult.kdpi <= 85 
+                              ? 'bg-amber-500/10 border border-amber-500/30' 
+                              : 'bg-red-500/10 border border-red-500/30'
+                        }`}>
+                          <div className="flex items-center gap-2">
+                            {kdpiResult.kdpi <= 20 ? (
+                              <Check className={`w-5 h-5 text-emerald-600 dark:text-emerald-400`} />
+                            ) : kdpiResult.kdpi <= 85 ? (
+                              <Info className={`w-5 h-5 text-amber-600 dark:text-amber-400`} />
+                            ) : (
+                              <AlertTriangle className={`w-5 h-5 text-red-600 dark:text-red-400`} />
+                            )}
+                            <span className={`font-semibold ${
+                              kdpiResult.kdpi <= 20 
+                                ? 'text-emerald-600 dark:text-emerald-400' 
+                                : kdpiResult.kdpi <= 85 
+                                  ? 'text-amber-600 dark:text-amber-400' 
+                                  : 'text-red-600 dark:text-red-400'
+                            }`}>
+                              {kdpiResult.kdpi <= 20 
+                                ? 'Low Risk Donor' 
+                                : kdpiResult.kdpi <= 85 
+                                  ? 'Standard Criteria Donor' 
+                                  : 'High Risk / Expanded Criteria Donor'}
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Reference Ranges */}
+                        <div className="p-4 rounded-lg bg-muted/50">
+                          <p className="text-sm font-semibold mb-3">KDPI Reference Ranges</p>
+                          <div className="space-y-2">
+                            <div className={`flex items-center justify-between p-2 rounded ${
+                              kdpiResult.kdpi <= 20 ? 'bg-emerald-500/20 ring-2 ring-emerald-500' : 'bg-muted'
+                            }`}>
+                              <span className="text-sm">Low Risk</span>
+                              <span className="text-sm font-medium">0-20%</span>
+                            </div>
+                            <div className={`flex items-center justify-between p-2 rounded ${
+                              kdpiResult.kdpi > 20 && kdpiResult.kdpi <= 85 ? 'bg-amber-500/20 ring-2 ring-amber-500' : 'bg-muted'
+                            }`}>
+                              <span className="text-sm">Standard Criteria</span>
+                              <span className="text-sm font-medium">21-85%</span>
+                            </div>
+                            <div className={`flex items-center justify-between p-2 rounded ${
+                              kdpiResult.kdpi > 85 ? 'bg-red-500/20 ring-2 ring-red-500' : 'bg-muted'
+                            }`}>
+                              <span className="text-sm">High Risk / ECD</span>
+                              <span className="text-sm font-medium">&gt;85%</span>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Info Note */}
+                        <div className="p-4 rounded-lg bg-blue-500/10 border border-blue-500/30">
+                          <div className="flex items-start gap-2">
+                            <Info className="w-5 h-5 text-blue-600 dark:text-blue-400 mt-0.5" />
+                            <div>
+                              <p className="text-sm text-blue-600 dark:text-blue-400">
+                                <strong>Note:</strong> KDPI represents the percentage of donors in a reference population with a KDRI less than or equal to this donor's KDRI. 
+                                Higher KDPI indicates higher relative risk of graft failure. Based on OPTN 2024 mapping table.
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
                     )}
 
                     {/* Custom Banff Result Display */}
