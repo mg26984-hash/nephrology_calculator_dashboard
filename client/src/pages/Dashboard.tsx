@@ -49,6 +49,7 @@ import { useTheme } from "@/contexts/ThemeContext";
 import { cn } from "@/lib/utils";
 import SearchInput from "@/components/SearchInput";
 import { EGFRComparison } from "@/components/EGFRComparison";
+import { getResultColorCoding } from "@/lib/resultColorCoding";
 
 interface CalculatorState {
   [key: string]: string | number | boolean;
@@ -1991,10 +1992,29 @@ export default function Dashboard() {
               </Card>
 
               {/* Result Card */}
-              {result !== null && (
-                <Card className="border-primary/50 bg-primary/5">
+              {result !== null && (() => {
+                const colorCoding = typeof result === 'number' 
+                  ? getResultColorCoding(selectedCalculator.id, result, calculatorState as Record<string, unknown>) 
+                  : null;
+                
+                return (
+                <Card className={cn(
+                  "border-l-4",
+                  colorCoding ? `${colorCoding.bgClass} ${colorCoding.borderClass}` : "border-primary/50 bg-primary/5"
+                )}>
                   <CardHeader className="pb-2 flex flex-row items-center justify-between">
-                    <CardTitle className="text-base">Result</CardTitle>
+                    <div className="flex items-center gap-2">
+                      <CardTitle className="text-base">Result</CardTitle>
+                      {colorCoding && (
+                        <span className={cn(
+                          "text-xs font-medium px-2 py-0.5 rounded-full",
+                          colorCoding.bgClass,
+                          colorCoding.textClass
+                        )}>
+                          {colorCoding.label}
+                        </span>
+                      )}
+                    </div>
                     <Button
                       variant="ghost"
                       size="sm"
@@ -2015,7 +2035,10 @@ export default function Dashboard() {
                   </CardHeader>
                   <CardContent>
                     <div className="text-center py-4">
-                      <p className="text-4xl font-bold text-primary">
+                      <p className={cn(
+                        "text-4xl font-bold",
+                        colorCoding ? colorCoding.textClass : "text-primary"
+                      )}>
                         {typeof result === "number" ? result.toFixed(2) : result}
                       </p>
                       {selectedCalculator.resultUnit && (
@@ -2024,9 +2047,26 @@ export default function Dashboard() {
                     </div>
 
                     {resultInterpretation && (
-                      <Alert className="mt-4">
-                        <Info className="h-4 w-4" />
-                        <AlertDescription>{resultInterpretation}</AlertDescription>
+                      <Alert className={cn(
+                        "mt-4",
+                        colorCoding && colorCoding.severity === 'danger' && "border-red-500/50 bg-red-500/5",
+                        colorCoding && colorCoding.severity === 'warning' && "border-yellow-500/50 bg-yellow-500/5",
+                        colorCoding && colorCoding.severity === 'success' && "border-emerald-500/50 bg-emerald-500/5",
+                        colorCoding && colorCoding.severity === 'info' && "border-blue-500/50 bg-blue-500/5"
+                      )}>
+                        <Info className={cn(
+                          "h-4 w-4",
+                          colorCoding && colorCoding.severity === 'danger' && "text-red-500",
+                          colorCoding && colorCoding.severity === 'warning' && "text-yellow-600",
+                          colorCoding && colorCoding.severity === 'success' && "text-emerald-500",
+                          colorCoding && colorCoding.severity === 'info' && "text-blue-500"
+                        )} />
+                        <AlertDescription className={cn(
+                          colorCoding && colorCoding.severity === 'danger' && "text-red-700 dark:text-red-400",
+                          colorCoding && colorCoding.severity === 'warning' && "text-yellow-700 dark:text-yellow-400",
+                          colorCoding && colorCoding.severity === 'success' && "text-emerald-700 dark:text-emerald-400",
+                          colorCoding && colorCoding.severity === 'info' && "text-blue-700 dark:text-blue-400"
+                        )}>{resultInterpretation}</AlertDescription>
                       </Alert>
                     )}
 
@@ -2293,7 +2333,8 @@ export default function Dashboard() {
                     )}
                   </CardContent>
                 </Card>
-              )}
+              );
+              })()}
 
               {/* Clinical Decision Support Recommendations */}
               {result !== null && (() => {
