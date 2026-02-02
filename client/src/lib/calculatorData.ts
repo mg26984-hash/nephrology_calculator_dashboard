@@ -5,9 +5,10 @@
 export interface CalculatorInput {
   id: string;
   label: string;
-  type: "number" | "select" | "checkbox" | "radio" | "toggle";
+  type: "number" | "select" | "checkbox" | "radio" | "toggle" | "score";
   unit?: string;
   placeholder?: string;
+  description?: string;
   options?: { value: string; label: string }[];
   required?: boolean;
   min?: number;
@@ -1044,86 +1045,42 @@ export const calculators: Calculator[] = [
   {
     id: "banff-classification",
     name: "Banff Classification for Kidney Transplant Rejection",
-    description: "Comprehensive histological scoring for kidney transplant biopsy interpretation (Banff 2022)",
+    description: "Banff 2022 Renal Allograft Biopsy Analyzer - Comprehensive diagnostic tool based on updated Banff classification criteria",
     category: "Transplantation",
     inputs: [
-      // Acute lesion scores
-      { id: "i", label: "i - Interstitial Inflammation", type: "select", options: [
-        { value: "0", label: "0: No inflammation (<10%)" },
-        { value: "1", label: "1: 10-25% of cortex inflamed" },
-        { value: "2", label: "2: 26-50% of cortex inflamed" },
-        { value: "3", label: "3: >50% of cortex inflamed" },
-      ], required: true },
-      { id: "t", label: "t - Tubulitis", type: "select", options: [
-        { value: "0", label: "0: No tubulitis" },
-        { value: "1", label: "1: 1-4 cells/tubular cross-section" },
-        { value: "2", label: "2: 5-10 cells/tubular cross-section" },
-        { value: "3", label: "3: >10 cells/tubular cross-section" },
-      ], required: true },
-      { id: "v", label: "v - Intimal Arteritis", type: "select", options: [
-        { value: "0", label: "0: No arteritis" },
-        { value: "1", label: "1: Mild-moderate intimal arteritis" },
-        { value: "2", label: "2: Severe (>25% luminal loss)" },
-        { value: "3", label: "3: Transmural arteritis/fibrinoid necrosis" },
-      ], required: true },
-      { id: "g", label: "g - Glomerulitis", type: "select", options: [
-        { value: "0", label: "0: No glomerulitis" },
-        { value: "1", label: "1: <25% of glomeruli" },
-        { value: "2", label: "2: 25-75% of glomeruli" },
-        { value: "3", label: "3: >75% of glomeruli" },
-      ], required: true },
-      { id: "ptc", label: "ptc - Peritubular Capillaritis", type: "select", options: [
-        { value: "0", label: "0: No PTC inflammation" },
-        { value: "1", label: "1: <10% of cortical PTCs" },
-        { value: "2", label: "2: 10-50% of cortical PTCs" },
-        { value: "3", label: "3: >50% of cortical PTCs" },
-      ], required: true },
-      // Chronic lesion scores
-      { id: "ci", label: "ci - Interstitial Fibrosis", type: "select", options: [
-        { value: "0", label: "0: ≤5% of cortex fibrosed" },
-        { value: "1", label: "1: 6-25% of cortex fibrosed" },
-        { value: "2", label: "2: 26-50% of cortex fibrosed" },
-        { value: "3", label: "3: >50% of cortex fibrosed" },
-      ], required: true },
-      { id: "ct", label: "ct - Tubular Atrophy", type: "select", options: [
-        { value: "0", label: "0: No tubular atrophy" },
-        { value: "1", label: "1: ≤25% of tubules atrophic" },
-        { value: "2", label: "2: 26-50% of tubules atrophic" },
-        { value: "3", label: "3: >50% of tubules atrophic" },
-      ], required: true },
-      { id: "cv", label: "cv - Vascular Fibrous Intimal Thickening", type: "select", options: [
-        { value: "0", label: "0: No intimal thickening" },
-        { value: "1", label: "1: ≤25% luminal narrowing" },
-        { value: "2", label: "2: 26-50% luminal narrowing" },
-        { value: "3", label: "3: >50% luminal narrowing" },
-      ], required: true },
-      { id: "cg", label: "cg - Transplant Glomerulopathy", type: "select", options: [
-        { value: "0", label: "0: No TG changes" },
-        { value: "1", label: "1: GBM double contours in 1-25%" },
-        { value: "2", label: "2: GBM double contours in 26-50%" },
-        { value: "3", label: "3: GBM double contours in >50%" },
-      ], required: true },
-      // Antibody-mediated markers
-      { id: "c4d", label: "C4d Staining (PTC)", type: "select", options: [
-        { value: "0", label: "0: Negative" },
-        { value: "1", label: "1: Minimal (<10%)" },
-        { value: "2", label: "2: Focal (10-50%)" },
-        { value: "3", label: "3: Diffuse (>50%)" },
-      ], required: true },
-      { id: "dsaPositive", label: "Donor-Specific Antibody (DSA) Positive", type: "checkbox" },
-      // Additional scores
-      { id: "mm", label: "mm - Mesangial Matrix Expansion", type: "select", options: [
-        { value: "0", label: "0: No expansion" },
-        { value: "1", label: "1: Mild expansion" },
-        { value: "2", label: "2: Moderate expansion" },
-        { value: "3", label: "3: Severe expansion" },
-      ], required: false },
-      { id: "ah", label: "ah - Arteriolar Hyalinosis", type: "select", options: [
-        { value: "0", label: "0: No hyalinosis" },
-        { value: "1", label: "1: Mild-moderate" },
-        { value: "2", label: "2: Moderate-severe" },
-        { value: "3", label: "3: Severe" },
-      ], required: false },
+      // Biopsy Adequacy
+      { id: "glomeruli", label: "Glomeruli Count", type: "number", placeholder: "10", required: false, default: 10 },
+      { id: "arteries", label: "Arteries Count", type: "number", placeholder: "2", required: false, default: 2 },
+      // Acute lesion scores - Interstitial & Tubular
+      { id: "i", label: "i - Interstitial Inflammation", type: "score", description: "In non-scarred cortex", placeholder: "0", required: false, default: 0, min: 0, max: 3 },
+      { id: "t", label: "t - Tubulitis", type: "score", description: "Mononuclear cells/tubular section", placeholder: "0", required: false, default: 0, min: 0, max: 3 },
+      // Acute lesion scores - Vascular
+      { id: "v", label: "v - Intimal Arteritis", type: "score", description: "Arterial inflammation", placeholder: "0", required: false, default: 0, min: 0, max: 3 },
+      { id: "g", label: "g - Glomerulitis", type: "score", description: "Glomerular inflammation", placeholder: "0", required: false, default: 0, min: 0, max: 3 },
+      { id: "ptc", label: "ptc - Peritubular Capillaritis", type: "score", description: "PTC inflammation", placeholder: "0", required: false, default: 0, min: 0, max: 3 },
+      // Antibody markers
+      { id: "c4d", label: "C4d - C4d Staining", type: "select", options: [
+        { value: "0", label: "0 - Negative" },
+        { value: "1", label: "1 - Minimal (<10%)" },
+        { value: "2", label: "2 - Focal (10-50%)" },
+        { value: "3", label: "3 - Diffuse (>50%)" },
+      ], required: false, default: "0" },
+      { id: "dsa", label: "DSA - Donor Specific Antibody", type: "select", options: [
+        { value: "negative", label: "Negative" },
+        { value: "positive", label: "Positive" },
+        { value: "unknown", label: "Unknown" },
+      ], required: false, default: "negative" },
+      // Chronic lesion scores - Chronic Changes
+      { id: "ci", label: "ci - Interstitial Fibrosis", type: "score", description: "Cortical fibrosis", placeholder: "0", required: false, default: 0, min: 0, max: 3 },
+      { id: "ct", label: "ct - Tubular Atrophy", type: "score", description: "Tubular atrophy", placeholder: "0", required: false, default: 0, min: 0, max: 3 },
+      { id: "cv", label: "cv - Vascular Fibrosis", type: "score", description: "Vascular fibrous intimal thickening", placeholder: "0", required: false, default: 0, min: 0, max: 3 },
+      { id: "cg", label: "cg - Transplant Glomerulopathy", type: "score", description: "GBM duplication", placeholder: "0", required: false, default: 0, min: 0, max: 3 },
+      // Chronic Active Inflammation
+      { id: "ti", label: "ti - Total Inflammation", type: "score", description: "Total cortical inflammation", placeholder: "0", required: false, default: 0, min: 0, max: 3 },
+      { id: "iIfta", label: "i-IFTA - Inflammation in IFTA", type: "score", description: "Inflammation in areas of IFTA", placeholder: "0", required: false, default: 0, min: 0, max: 3 },
+      { id: "tIfta", label: "t-IFTA - Tubulitis in Atrophic Tubules", type: "score", description: "Tubulitis in atrophic tubules", placeholder: "0", required: false, default: 0, min: 0, max: 3 },
+      // Other scores
+      { id: "ah", label: "ah - Arteriolar Hyalinosis", type: "score", description: "PAS-positive hyaline thickening", placeholder: "0", required: false, default: 0, min: 0, max: 3 },
     ],
     resultLabel: "Banff Classification",
     resultUnit: "category",
@@ -1133,16 +1090,18 @@ export const calculators: Calculator[] = [
     },
     clinicalPearls: [
       "•Banff 2022 classification from the Banff Foundation",
-      "•Acute TCMR Grade IA: i≥1, t≥1, v=0 (minimal inflammation)",
-      "•Acute TCMR Grade IB: i≥1, t≥1, v=0 (more extensive involvement)",
-      "•Acute TCMR Grade IIA: v=1 (mild-moderate intimal arteritis)",
-      "•Acute TCMR Grade IIB: v≥2 (moderate-severe intimal arteritis)",
-      "•Acute TCMR Grade III: Transmural arteritis and/or fibrinoid necrosis",
-      "•Active ABMR: MVI (g≥1 or ptc≥1) + C4d≥2 + DSA positive",
-      "•Chronic Active ABMR: Chronic lesions (cg≥1, cv≥1, ci≥1, ct≥1) + C4d≥2 + DSA positive",
-      "•Borderline: i≥1, t=0 OR i=0, t≥1 (without v involvement)",
+      "•Adequate specimen: ≥10 glomeruli + ≥2 arteries",
+      "•Marginal specimen: ≥7 glomeruli + ≥1 artery",
+      "•Acute TCMR Grade IA: i≥2 with t2",
+      "•Acute TCMR Grade IB: i≥2 with t3",
+      "•Acute TCMR Grade IIA: v1 (mild-moderate intimal arteritis)",
+      "•Acute TCMR Grade IIB: v2 (severe intimal arteritis)",
+      "•Acute TCMR Grade III: v3 (transmural arteritis)",
+      "•Active ABMR: MVI (g>0 or ptc>0) + C4d≥2 or DSA positive",
+      "•Chronic Active ABMR: cg>0 or cv>0 + C4d≥2 or DSA positive",
+      "•Borderline: t≥1 with i=1 OR t=1 with i≥2 (without v)",
     ],
-    references: ["Loupy A et al. Am J Transplant. 2020;20(9):2305-2331", "Haas M et al. Am J Transplant. 2018;18(2):293-307"],
+    references: ["Loupy A et al. Am J Transplant. 2020;20(9):2305-2331", "Haas M et al. Am J Transplant. 2018;18(2):293-307", "Banff 2022 Classification"],
   },
   {
     id: "tacrolimus-monitoring",

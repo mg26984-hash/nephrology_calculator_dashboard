@@ -1324,6 +1324,9 @@ export function fraxSimplified(
 // ============================================================================
 
 export interface BanffScores {
+  // Biopsy adequacy
+  glomeruli: number;  // Number of glomeruli in sample
+  arteries: number;   // Number of arteries in sample
   // Acute lesions
   i: number;      // Interstitial inflammation (0-3)
   t: number;      // Tubulitis (0-3)
@@ -1335,198 +1338,304 @@ export interface BanffScores {
   ct: number;     // Tubular atrophy (0-3)
   cv: number;     // Vascular fibrous intimal thickening (0-3)
   cg: number;     // Transplant glomerulopathy (0-3)
-  mm: number;     // Mesangial matrix expansion (0-3)
+  // Chronic active inflammation
+  ti: number;     // Total inflammation (0-3)
+  iIfta: number;  // Inflammation in IFTA (0-3)
+  tIfta: number;  // Tubulitis in atrophic tubules (0-3)
+  // Other
   ah: number;     // Arteriolar hyalinosis (0-3)
   // Antibody-mediated markers
   c4d: number;    // C4d staining (0=negative, 1=minimal, 2=focal, 3=diffuse)
-  dsaPositive: boolean;  // Donor-specific antibody
+  dsa: string;    // Donor-specific antibody (negative/positive/unknown)
+}
+
+export interface BanffDiagnosis {
+  diagnosed: boolean;
+  type: 'normal' | 'borderline' | 'tcmr' | 'abmr';
+  category: string;
+  title: string;
+  description: string;
+  criteria: { met: boolean; text: string }[];
+  interpretation?: string;
 }
 
 export interface BanffResult {
-  category: number;
-  diagnosis: string;
-  subtype: string;
-  severity: string;
-  recommendations: string[];
-  tcmrGrade?: string;
-  abmrType?: string;
+  diagnoses: BanffDiagnosis[];
+  isAdequate: boolean;
+  adequacyStatus: 'Adequate' | 'Marginal' | 'Unsatisfactory';
+  scoreSummary: {
+    acute: string;
+    chronic: string;
+    chronicActive: string;
+    other: string;
+  };
 }
 
 export function banffClassification(scores: BanffScores): BanffResult {
-  const { i, t, v, g, ptc, ci, ct, cv, cg, c4d, dsaPositive } = scores;
+  const { glomeruli, arteries, i, t, v, g, ptc, ci, ct, cv, cg, ti, iIfta, tIfta, ah, c4d, dsa } = scores;
   
-  // Banff 2022 Classification Criteria
-  // Reference: https://banfffoundation.org/central-repository-for-banff-classification-resources-3/
+  // Check biopsy adequacy
+  let adequacyStatus: 'Adequate' | 'Marginal' | 'Unsatisfactory';
+  let isAdequate = true;
   
-  // Calculate microvascular inflammation (MVI)
-  const microvascularInflammation = g + ptc;
-  const hasC4dPositive = c4d >= 2;
-  const hasDSA = dsaPositive;
+  if (glomeruli >= 10 && arteries >= 2) {
+    adequacyStatus = 'Adequate';
+  } else if (glomeruli >= 7 && arteries >= 1) {
+    adequacyStatus = 'Marginal';
+    isAdequate = false;
+  } else {
+    adequacyStatus = 'Unsatisfactory';
+    isAdequate = false;
+  }
   
-  // Check for ABMR criteria (Banff 2022)
-  // Active AMR: MVI (g≥1 and/or ptc≥1) + C4d≥2 + DSA positive
-  // Chronic Active AMR: Chronic lesions (cg≥1, cv≥1, ci≥1, ct≥1) + C4d≥2 + DSA positive
+  const diagnoses: BanffDiagnosis[] = [];
   
-  const hasMVI = g >= 1 || ptc >= 1;
-  const hasABMRHistology = hasMVI || (cg > 0 && (g > 0 || ptc > 0));
-  const hasABMREvidence = hasC4dPositive || (hasDSA && hasMVI);
+  // Check for ABMR
+  const abmrResult = checkABMR(scores);
+  if (abmrResult.diagnosed) {
+    diagnoses.push(abmrResult);
+  }
   
-  // Check for TCMR criteria (Banff 2022)
-  // Acute TCMR: i≥1, t≥1, v=0 (IA/IB) OR v≥1 (IIA/IIB/III)
-  // Borderline: i≥1, t=0 OR i=0, t≥1 (without v)
+  // Check for TCMR
+  const tcmrResult = checkTCMR(scores);
+  if (tcmrResult.diagnosed) {
+    diagnoses.push(tcmrResult);
+  }
   
-  const hasTCMR = (i >= 1 && t >= 1) || v > 0;
-  const hasBorderline = ((i >= 1 && t === 0) || (i === 0 && t >= 1)) && v === 0;
+  // Check for Borderline
+  const borderlineResult = checkBorderline(scores);
+  if (borderlineResult.diagnosed) {
+    diagnoses.push(borderlineResult);
+  }
   
-  // Check for chronic changes
-  const hasChronicChanges = ci >= 1 || ct >= 1;
-  const chronicSeverity = Math.max(ci, ct);
+  // If no diagnoses, add normal
+  if (diagnoses.length === 0) {
+    diagnoses.push({
+      diagnosed: true,
+      type: 'normal',
+      category: 'Category 1',
+      title: 'Normal or Non-Specific Changes',
+      description: 'No evidence of acute or chronic rejection based on Banff 2022 criteria.',
+      criteria: []
+    });
+  }
   
-  // Determine primary diagnosis
-  let result: BanffResult;
+  // Build score summary
+  const scoreSummary = {
+    acute: `i${i} t${t} v${v} g${g} ptc${ptc}`,
+    chronic: `ci${ci} ct${ct} cv${cv} cg${cg}`,
+    chronicActive: `ti${ti} i-IFTA${iIfta} t-IFTA${tIfta}`,
+    other: `C4d${c4d} ah${ah}`
+  };
   
-  // Category 2: Antibody-Mediated Rejection
-  if (hasABMRHistology && (hasC4dPositive || hasDSA)) {
-    let abmrType = "";
-    let severity = "";
-    
-    if (cg > 0 || (ci >= 2 && ct >= 2)) {
-      // Chronic active ABMR
-      abmrType = "Chronic Active ABMR";
-      if (cg >= 2) severity = "Severe (cg ≥2)";
-      else if (cg === 1) severity = "Moderate (cg = 1)";
-      else severity = "With chronic changes";
-    } else if (microvascularInflammation >= 2 || v > 0) {
-      // Active ABMR
-      abmrType = "Active ABMR";
-      if (v >= 2) severity = "Severe (v ≥2)";
-      else if (microvascularInflammation >= 3) severity = "Moderate-Severe (g+ptc ≥3)";
-      else severity = "Mild-Moderate";
+  return {
+    diagnoses,
+    isAdequate,
+    adequacyStatus,
+    scoreSummary
+  };
+}
+
+function checkABMR(scores: BanffScores): BanffDiagnosis {
+  const { g, ptc, c4d, dsa, cg, cv } = scores;
+  
+  const mvi = g > 0 || ptc > 0;
+  const c4dPositive = c4d >= 2;
+  const dsaPositive = dsa === 'positive';
+  
+  // Active ABMR criteria
+  const acuteInjury = g > 0 || ptc > 0;
+  const antibodyInteraction = c4dPositive || dsaPositive;
+  const dsaCriteria = dsaPositive || c4dPositive;
+  
+  // Chronic active ABMR criteria
+  const chronicInjury = cg > 0 || cv > 0;
+  
+  if (acuteInjury && antibodyInteraction && dsaCriteria) {
+    return {
+      diagnosed: true,
+      type: 'abmr',
+      category: 'Category 2',
+      title: 'Active Antibody-Mediated Rejection (ABMR)',
+      description: 'All three criteria for active ABMR are met per Banff 2022.',
+      criteria: [
+        { met: true, text: `Acute tissue injury: g=${g}, ptc=${ptc}` },
+        { met: true, text: `Antibody interaction: C4d=${c4d}, DSA=${dsa}` },
+        { met: true, text: 'Serologic evidence present' }
+      ],
+      interpretation: 'Immediate immunosuppression adjustment recommended. Consider plasma exchange, IVIG, rituximab, or complement inhibition based on severity.'
+    };
+  }
+  
+  if (chronicInjury && antibodyInteraction && dsaCriteria) {
+    return {
+      diagnosed: true,
+      type: 'abmr',
+      category: 'Category 2',
+      title: 'Chronic Active Antibody-Mediated Rejection',
+      description: 'Criteria for chronic active ABMR are met.',
+      criteria: [
+        { met: true, text: `Chronic injury: cg=${cg}, cv=${cv}` },
+        { met: true, text: `Antibody interaction: C4d=${c4d}, DSA=${dsa}` },
+        { met: true, text: 'Serologic evidence present' }
+      ],
+      interpretation: 'Indicates ongoing chronic antibody-mediated damage. Optimize immunosuppression and consider DSA monitoring.'
+    };
+  }
+  
+  return { diagnosed: false, type: 'normal', category: '', title: '', description: '', criteria: [] };
+}
+
+function checkTCMR(scores: BanffScores): BanffDiagnosis {
+  const { i, t, v, ti, iIfta, tIfta, cv } = scores;
+  
+  // Acute TCMR - Grade III (v3)
+  if (v === 3) {
+    return {
+      diagnosed: true,
+      type: 'tcmr',
+      category: 'Category 4',
+      title: 'Acute TCMR - Grade III',
+      description: 'Transmural arteritis with severe vascular involvement.',
+      criteria: [
+        { met: true, text: `v3 - Transmural arteritis (v=${v})` }
+      ],
+      interpretation: 'Severe acute rejection. High-dose corticosteroids and potentially ATG required. Poor prognosis if treatment delayed.'
+    };
+  }
+  
+  // Acute TCMR - Grade IIB (v2)
+  if (v === 2) {
+    return {
+      diagnosed: true,
+      type: 'tcmr',
+      category: 'Category 4',
+      title: 'Acute TCMR - Grade IIB',
+      description: 'Severe intimal arteritis.',
+      criteria: [
+        { met: true, text: `v2 - Severe intimal arteritis (v=${v})` }
+      ],
+      interpretation: 'Severe vascular rejection. High-dose corticosteroids recommended, consider ATG.'
+    };
+  }
+  
+  // Acute TCMR - Grade IIA (v1)
+  if (v === 1) {
+    return {
+      diagnosed: true,
+      type: 'tcmr',
+      category: 'Category 4',
+      title: 'Acute TCMR - Grade IIA',
+      description: 'Mild to moderate intimal arteritis.',
+      criteria: [
+        { met: true, text: `v1 - Intimal arteritis (v=${v})` }
+      ],
+      interpretation: 'Vascular rejection present. Corticosteroid pulse therapy typically effective.'
+    };
+  }
+  
+  // Acute TCMR - Grade IB (i≥2 with t3)
+  if ((i >= 2) && t === 3) {
+    return {
+      diagnosed: true,
+      type: 'tcmr',
+      category: 'Category 4',
+      title: 'Acute TCMR - Grade IB',
+      description: 'Significant interstitial inflammation with severe tubulitis.',
+      criteria: [
+        { met: true, text: `i≥2 with t3 (i=${i}, t=${t})` }
+      ],
+      interpretation: 'Moderate to severe acute cellular rejection. Corticosteroid pulse therapy recommended.'
+    };
+  }
+  
+  // Acute TCMR - Grade IA (i≥2 with t2)
+  if ((i >= 2) && t === 2) {
+    return {
+      diagnosed: true,
+      type: 'tcmr',
+      category: 'Category 4',
+      title: 'Acute TCMR - Grade IA',
+      description: 'Interstitial inflammation with moderate tubulitis.',
+      criteria: [
+        { met: true, text: `i≥2 with t2 (i=${i}, t=${t})` }
+      ],
+      interpretation: 'Acute cellular rejection. Corticosteroid pulse therapy typically effective.'
+    };
+  }
+  
+  // Chronic Active TCMR - Grade IB
+  if (ti >= 2 && iIfta >= 2 && (tIfta === 3 || t === 3)) {
+    return {
+      diagnosed: true,
+      type: 'tcmr',
+      category: 'Category 4',
+      title: 'Chronic Active TCMR - Grade IB',
+      description: 'Inflammation in IFTA areas with severe tubulitis.',
+      criteria: [
+        { met: true, text: `ti≥2 and i-IFTA≥2 (ti=${ti}, i-IFTA=${iIfta})` },
+        { met: true, text: `t-IFTA3 or t3 (t-IFTA=${tIfta}, t=${t})` }
+      ],
+      interpretation: 'Chronic active cellular rejection. May require immunosuppression optimization.'
+    };
+  }
+  
+  // Chronic Active TCMR - Grade IA
+  if (ti >= 2 && iIfta >= 2 && (tIfta === 2 || t === 2)) {
+    return {
+      diagnosed: true,
+      type: 'tcmr',
+      category: 'Category 4',
+      title: 'Chronic Active TCMR - Grade IA',
+      description: 'Inflammation in IFTA areas with moderate tubulitis.',
+      criteria: [
+        { met: true, text: `ti≥2 and i-IFTA≥2 (ti=${ti}, i-IFTA=${iIfta})` },
+        { met: true, text: `t-IFTA2 or t2 (t-IFTA=${tIfta}, t=${t})` }
+      ],
+      interpretation: 'Chronic active rejection present. Consider immunosuppression adjustment.'
+    };
+  }
+  
+  // Chronic Active TCMR - Grade II (cv>0 with mononuclear inflammation)
+  if (cv > 0) {
+    return {
+      diagnosed: true,
+      type: 'tcmr',
+      category: 'Category 4',
+      title: 'Chronic Active TCMR - Grade II',
+      description: 'Chronic allograft arteriopathy with inflammation.',
+      criteria: [
+        { met: true, text: `cv>0 with mononuclear inflammation (cv=${cv})` }
+      ],
+      interpretation: 'Chronic vascular rejection. Poor prognostic indicator. Optimize immunosuppression.'
+    };
+  }
+  
+  return { diagnosed: false, type: 'normal', category: '', title: '', description: '', criteria: [] };
+}
+
+function checkBorderline(scores: BanffScores): BanffDiagnosis {
+  const { i, t, v } = scores;
+  
+  if (v === 0) {
+    if ((t >= 1 && i === 1) || (t === 1 && i >= 2)) {
+      return {
+        diagnosed: true,
+        type: 'borderline',
+        category: 'Category 3',
+        title: 'Borderline Changes (Suspicious for Acute TCMR)',
+        description: 'Findings suspicious but not diagnostic for acute T-cell mediated rejection.',
+        criteria: [
+          { met: true, text: `Tubulitis present (t=${t})` },
+          { met: true, text: `Mild inflammation (i=${i})` },
+          { met: true, text: 'No arteritis (v=0)' }
+        ],
+        interpretation: 'Clinical correlation required. Consider repeat biopsy if graft dysfunction. May not require treatment if stable function.'
+      };
     }
-    
-    result = {
-      category: 2,
-      diagnosis: "Antibody-Mediated Rejection (ABMR)",
-      subtype: abmrType,
-      severity: severity,
-      abmrType: abmrType,
-      recommendations: [
-        "Consider plasmapheresis/plasma exchange",
-        "IVIG therapy (2g/kg divided over 2-5 days)",
-        "Consider rituximab if DSA persists",
-        "Consider bortezomib for refractory cases",
-        "Optimize baseline immunosuppression",
-        "Close monitoring of DSA levels",
-      ],
-    };
-  }
-  // Category 2/4: T-Cell Mediated Rejection (Banff 2022)
-  else if (hasTCMR) {
-    let tcmrGrade = "";
-    let severity = "";
-    
-    if (v >= 3) {
-      tcmrGrade = "Grade III";
-      severity = "Severe - Transmural arteritis and/or fibrinoid necrosis";
-    } else if (v >= 2) {
-      tcmrGrade = "Grade IIB";
-      severity = "Moderate-Severe - Moderate to severe intimal arteritis";
-    } else if (v === 1) {
-      tcmrGrade = "Grade IIA";
-      severity = "Moderate - Mild to moderate intimal arteritis";
-    } else if (i >= 2 && t >= 2) {
-      tcmrGrade = "Grade IB";
-      severity = "Moderate - Extensive interstitial inflammation and tubulitis";
-    } else if (i >= 1 && t >= 1) {
-      tcmrGrade = "Grade IA";
-      severity = "Mild - Minimal interstitial inflammation and tubulitis";
-    }
-    
-    result = {
-      category: 4,
-      diagnosis: "T-Cell Mediated Rejection (TCMR)",
-      subtype: tcmrGrade,
-      severity: severity,
-      tcmrGrade: tcmrGrade,
-      recommendations: [
-        "Pulse methylprednisolone 500-1000mg IV x 3 days",
-        "Consider thymoglobulin for Grade IIA or higher",
-        "Increase maintenance immunosuppression",
-        "Check tacrolimus/cyclosporine levels",
-        "Follow-up biopsy in 2-4 weeks if Grade II or higher",
-      ],
-    };
-  }
-  // Category 3: Borderline Changes
-  else if (hasBorderline) {
-    result = {
-      category: 3,
-      diagnosis: "Borderline Changes",
-      subtype: "Suspicious for TCMR",
-      severity: `i${i}t${t} - Does not meet full TCMR criteria`,
-      recommendations: [
-        "Consider pulse steroids if clinical deterioration",
-        "Optimize tacrolimus/cyclosporine levels",
-        "Close monitoring of renal function",
-        "Repeat biopsy if no improvement",
-        "Rule out other causes (BK virus, drug toxicity)",
-      ],
-    };
-  }
-  // Category 5: Interstitial Fibrosis and Tubular Atrophy (IF/TA)
-  else if (hasChronicChanges && !hasABMRHistology && !hasTCMR) {
-    let severity = "";
-    if (chronicSeverity === 3) severity = "Grade III (Severe, >50%)";
-    else if (chronicSeverity === 2) severity = "Grade II (Moderate, 26-50%)";
-    else severity = "Grade I (Mild, 6-25%)";
-    
-    result = {
-      category: 5,
-      diagnosis: "Interstitial Fibrosis and Tubular Atrophy (IF/TA)",
-      subtype: `ci${ci}/ct${ct}`,
-      severity: severity,
-      recommendations: [
-        "Evaluate for treatable causes",
-        "Consider CNI minimization if CNI toxicity suspected",
-        "Blood pressure optimization",
-        "Proteinuria management with ACEi/ARB",
-        "Monitor for progression",
-        "Consider re-transplant evaluation if severe",
-      ],
-    };
-  }
-  // Category 6: Other
-  else if (scores.mm >= 2 || scores.ah >= 2) {
-    result = {
-      category: 6,
-      diagnosis: "Other Changes",
-      subtype: scores.mm >= 2 ? "Recurrent/de novo glomerulonephritis" : "CNI toxicity",
-      severity: "Requires specific evaluation",
-      recommendations: [
-        "Consider native kidney disease recurrence",
-        "Evaluate for CNI toxicity if ah elevated",
-        "Check for BK nephropathy",
-        "Assess for drug toxicity",
-        "Consider electron microscopy if GN suspected",
-      ],
-    };
-  }
-  // Category 1: Normal or Nonspecific Changes
-  else {
-    result = {
-      category: 1,
-      diagnosis: "Normal or Nonspecific Changes",
-      subtype: "No rejection",
-      severity: "None",
-      recommendations: [
-        "Continue current immunosuppression",
-        "Routine monitoring",
-        "Investigate other causes if clinical concern persists",
-      ],
-    };
   }
   
-  return result;
+  return { diagnosed: false, type: 'normal', category: '', title: '', description: '', criteria: [] };
 }
 
 // Helper to get Banff score interpretation

@@ -136,6 +136,7 @@ export default function Dashboard() {
   const [unitState, setUnitState] = useState<UnitState>({});
   const [result, setResult] = useState<number | null>(null);
   const [resultInterpretation, setResultInterpretation] = useState<string>("");
+  const [banffResult, setBanffResult] = useState<calc.BanffResult | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [viewingCategoryList, setViewingCategoryList] = useState<string | null>(null);
@@ -992,30 +993,28 @@ export default function Dashboard() {
 
         case "banff-classification":
           const banffScores: calc.BanffScores = {
-            i: parseInt(calculatorState.i as string) || 0,
-            t: parseInt(calculatorState.t as string) || 0,
-            v: parseInt(calculatorState.v as string) || 0,
-            g: parseInt(calculatorState.g as string) || 0,
-            ptc: parseInt(calculatorState.ptc as string) || 0,
-            ci: parseInt(calculatorState.ci as string) || 0,
-            ct: parseInt(calculatorState.ct as string) || 0,
-            cv: parseInt(calculatorState.cv as string) || 0,
-            cg: parseInt(calculatorState.cg as string) || 0,
-            mm: parseInt(calculatorState.mm as string) || 0,
-            ah: parseInt(calculatorState.ah as string) || 0,
+            glomeruli: parseFloat(calculatorState.glomeruli as string) || 10,
+            arteries: parseFloat(calculatorState.arteries as string) || 2,
+            i: parseFloat(calculatorState.i as string) || 0,
+            t: parseFloat(calculatorState.t as string) || 0,
+            v: parseFloat(calculatorState.v as string) || 0,
+            g: parseFloat(calculatorState.g as string) || 0,
+            ptc: parseFloat(calculatorState.ptc as string) || 0,
+            ci: parseFloat(calculatorState.ci as string) || 0,
+            ct: parseFloat(calculatorState.ct as string) || 0,
+            cv: parseFloat(calculatorState.cv as string) || 0,
+            cg: parseFloat(calculatorState.cg as string) || 0,
+            ti: parseFloat(calculatorState.ti as string) || 0,
+            iIfta: parseFloat(calculatorState.iIfta as string) || 0,
+            tIfta: parseFloat(calculatorState.tIfta as string) || 0,
+            ah: parseFloat(calculatorState.ah as string) || 0,
             c4d: parseInt(calculatorState.c4d as string) || 0,
-            dsaPositive: Boolean(calculatorState.dsaPositive),
+            dsa: (calculatorState.dsa as string) || 'negative',
           };
-          const banffResult = calc.banffClassification(banffScores);
-          calculationResult = banffResult.category;
-          // Set a more detailed interpretation
-          setResultInterpretation(
-            `**Category ${banffResult.category}: ${banffResult.diagnosis}**\n\n` +
-            `**Subtype:** ${banffResult.subtype}\n` +
-            `**Severity:** ${banffResult.severity}\n\n` +
-            `**Recommendations:**\n${banffResult.recommendations.map(r => "• " + r).join("\n")}`
-          );
-          setResult(banffResult.category);
+          const banffResultData = calc.banffClassification(banffScores);
+          setBanffResult(banffResultData);
+          setResult(banffResultData.diagnoses[0]?.title || 'Normal');
+          setResultInterpretation('');
           return; // Skip the default interpretation handling
 
 
@@ -1085,10 +1084,23 @@ export default function Dashboard() {
 
   const handleSelectCalculator = useCallback((calcId: string) => {
     setSelectedCalculatorId(calcId);
-    setCalculatorState({});
+    // Initialize calculator state with default values for score inputs
+    const calc = calculators.find(c => c.id === calcId);
+    const initialState: CalculatorState = {};
+    if (calc) {
+      calc.inputs.forEach(input => {
+        if (input.type === 'score') {
+          initialState[input.id] = input.default ?? 0;
+        } else if (input.default !== undefined) {
+          initialState[input.id] = input.default;
+        }
+      });
+    }
+    setCalculatorState(initialState);
     setUnitState({});
     setResult(null);
     setResultInterpretation("");
+    setBanffResult(null);
     setMobileMenuOpen(false);
     // Track recent calculator usage
     addToRecent(calcId);
@@ -1205,16 +1217,16 @@ export default function Dashboard() {
                     <div className="flex items-center justify-between">
                       <span className="break-words hyphens-auto pr-2" style={{ wordBreak: 'break-word' }}>{calc.name}</span>
                       <div className="flex items-center gap-1">
-                        <button
+                        <span
                           onClick={(e) => toggleFavorite(calc.id, e)}
                           className={cn(
-                            "p-0.5 rounded hover:bg-background/50 transition-colors",
+                            "p-0.5 rounded hover:bg-background/50 transition-colors cursor-pointer",
                             selectedCalculatorId === calc.id ? "text-primary-foreground" : "text-amber-500"
                           )}
                           title="Remove from favorites"
                         >
                           <Star className="w-3 h-3 fill-current" />
-                        </button>
+                        </span>
                         <ChevronRight className="w-3 h-3 flex-shrink-0 opacity-50" />
                       </div>
                     </div>
@@ -1250,10 +1262,10 @@ export default function Dashboard() {
                     <div className="flex items-center justify-between">
                       <span className="break-words hyphens-auto pr-2" style={{ wordBreak: 'break-word' }}>{calc.name}</span>
                       <div className="flex items-center gap-1">
-                        <button
+                        <span
                           onClick={(e) => toggleFavorite(calc.id, e)}
                           className={cn(
-                            "p-0.5 rounded transition-colors",
+                            "p-0.5 rounded transition-colors cursor-pointer",
                             favorites.includes(calc.id)
                               ? "text-amber-500" 
                               : "text-muted-foreground/50 hover:text-amber-500 sm:opacity-0 sm:group-hover:opacity-100"
@@ -1261,7 +1273,7 @@ export default function Dashboard() {
                           title={favorites.includes(calc.id) ? "Remove from favorites" : "Add to favorites"}
                         >
                           <Star className={cn("w-3 h-3", favorites.includes(calc.id) && "fill-current")} />
-                        </button>
+                        </span>
                         <ChevronRight className="w-3 h-3 flex-shrink-0 opacity-50" />
                       </div>
                     </div>
@@ -1306,10 +1318,10 @@ export default function Dashboard() {
                         <div className="flex items-center justify-between">
                           <span className="break-words hyphens-auto pr-2" style={{ wordBreak: 'break-word' }}>{calc.name}</span>
                           <div className="flex items-center gap-1">
-                            <button
+                            <span
                               onClick={(e) => toggleFavorite(calc.id, e)}
                               className={cn(
-                                "p-0.5 rounded transition-colors",
+                                "p-0.5 rounded transition-colors cursor-pointer",
                                 isFavorite 
                                   ? "text-amber-500" 
                                   : "text-muted-foreground/50 hover:text-amber-500 sm:opacity-0 sm:group-hover:opacity-100"
@@ -1317,7 +1329,7 @@ export default function Dashboard() {
                               title={isFavorite ? "Remove from favorites" : "Add to favorites"}
                             >
                               <Star className={cn("w-3 h-3", isFavorite && "fill-current")} />
-                            </button>
+                            </span>
                             <ChevronRight className="w-3 h-3 flex-shrink-0 opacity-50" />
                           </div>
                         </div>
@@ -1903,6 +1915,49 @@ export default function Dashboard() {
                             ))}
                           </div>
                         )}
+
+                        {input.type === "score" && (
+                          <div className="flex items-center justify-between p-3 bg-muted/30 rounded-lg border">
+                            <div className="flex-1">
+                              {input.description && (
+                                <span className="text-xs text-muted-foreground">{input.description}</span>
+                              )}
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                className="w-8 h-8 p-0 font-semibold text-lg"
+                                onClick={() => {
+                                  const currentVal = parseInt(String(calculatorState[input.id] ?? 0));
+                                  if (currentVal > (input.min ?? 0)) {
+                                    handleInputChange(input.id, currentVal - 1);
+                                  }
+                                }}
+                              >
+                                −
+                              </Button>
+                              <span className="w-10 text-center font-semibold text-lg text-primary">
+                                {calculatorState[input.id] ?? 0}
+                              </span>
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                className="w-8 h-8 p-0 font-semibold text-lg"
+                                onClick={() => {
+                                  const currentVal = parseInt(String(calculatorState[input.id] ?? 0));
+                                  if (currentVal < (input.max ?? 3)) {
+                                    handleInputChange(input.id, currentVal + 1);
+                                  }
+                                }}
+                              >
+                                +
+                              </Button>
+                            </div>
+                          </div>
+                        )}
                       </div>
                     ))}
                   </div>
@@ -1959,6 +2014,113 @@ export default function Dashboard() {
                         <Info className="h-4 w-4" />
                         <AlertDescription>{resultInterpretation}</AlertDescription>
                       </Alert>
+                    )}
+
+                    {/* Custom Banff Result Display */}
+                    {selectedCalculator.id === 'banff-classification' && banffResult && (
+                      <div className="mt-4 space-y-4">
+                        {/* Adequacy Warning/Success */}
+                        {!banffResult.isAdequate ? (
+                          <div className="p-4 rounded-lg bg-amber-500/10 border border-amber-500/30">
+                            <div className="flex items-center gap-2 text-amber-600 dark:text-amber-400">
+                              <AlertTriangle className="w-5 h-5" />
+                              <span className="font-semibold">Specimen adequacy is suboptimal ({banffResult.adequacyStatus}).</span>
+                            </div>
+                            <p className="text-sm text-amber-600/80 dark:text-amber-400/80 mt-1">
+                              Diagnostic accuracy may be limited. Consider repeat biopsy if clinically indicated.
+                            </p>
+                          </div>
+                        ) : (
+                          <div className="p-4 rounded-lg bg-emerald-500/10 border border-emerald-500/30">
+                            <div className="flex items-center gap-2 text-emerald-600 dark:text-emerald-400">
+                              <Check className="w-5 h-5" />
+                              <span className="font-semibold">Specimen Adequacy: {banffResult.adequacyStatus}</span>
+                            </div>
+                            <p className="text-sm text-emerald-600/80 dark:text-emerald-400/80 mt-1">
+                              Glomeruli: {calculatorState.glomeruli || 10}, Arteries: {calculatorState.arteries || 2}
+                            </p>
+                          </div>
+                        )}
+
+                        {/* Diagnosis Boxes */}
+                        {banffResult.diagnoses.map((diagnosis, idx) => {
+                          const diagnosisColors = {
+                            tcmr: 'border-l-orange-500 bg-orange-500/5',
+                            abmr: 'border-l-red-500 bg-red-500/5',
+                            borderline: 'border-l-slate-400 bg-slate-400/5',
+                            normal: 'border-l-emerald-500 bg-emerald-500/5'
+                          };
+                          const colorClass = diagnosisColors[diagnosis.type as keyof typeof diagnosisColors] || diagnosisColors.normal;
+                          
+                          return (
+                            <div key={idx} className={`p-4 rounded-lg border-l-4 ${colorClass}`}>
+                              <div className="flex items-center justify-between mb-2">
+                                <h3 className="text-lg font-bold text-foreground">{diagnosis.title}</h3>
+                                <span className="text-xs font-medium px-2 py-1 rounded bg-muted text-muted-foreground">
+                                  {diagnosis.category}
+                                </span>
+                              </div>
+                              <p className="text-sm text-muted-foreground mb-3">{diagnosis.description}</p>
+                              
+                              {/* Diagnostic Criteria */}
+                              {diagnosis.criteria.length > 0 && (
+                                <div className="mb-3">
+                                  <p className="text-sm font-semibold mb-2">Diagnostic Criteria:</p>
+                                  <div className="space-y-1">
+                                    {diagnosis.criteria.map((c, cIdx) => (
+                                      <div key={cIdx} className={`flex items-center gap-2 text-sm ${c.met ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-500'}`}>
+                                        <span className="font-bold">{c.met ? '✓' : '✗'}</span>
+                                        <span>{c.text}</span>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+                              
+                              {/* Clinical Interpretation */}
+                              {diagnosis.interpretation && (
+                                <div className="pt-3 border-t border-border/50">
+                                  <p className="text-sm font-semibold mb-1">Clinical Interpretation</p>
+                                  <p className="text-sm text-muted-foreground">{diagnosis.interpretation}</p>
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
+
+                        {/* Banff Score Summary */}
+                        <div className="p-4 rounded-lg bg-muted/30 border border-border">
+                          <h3 className="text-sm font-semibold mb-3">Banff Score Summary</h3>
+                          <div className="grid grid-cols-2 gap-2">
+                            <div className="p-2 rounded bg-background border border-border/50">
+                              <p className="text-xs text-muted-foreground">Acute Scores</p>
+                              <p className="text-sm font-mono font-medium">{banffResult.scoreSummary.acute}</p>
+                            </div>
+                            <div className="p-2 rounded bg-background border border-border/50">
+                              <p className="text-xs text-muted-foreground">Chronic Scores</p>
+                              <p className="text-sm font-mono font-medium">{banffResult.scoreSummary.chronic}</p>
+                            </div>
+                            <div className="p-2 rounded bg-background border border-border/50">
+                              <p className="text-xs text-muted-foreground">Chronic Active</p>
+                              <p className="text-sm font-mono font-medium">{banffResult.scoreSummary.chronicActive}</p>
+                            </div>
+                            <div className="p-2 rounded bg-background border border-border/50">
+                              <p className="text-xs text-muted-foreground">Other</p>
+                              <p className="text-sm font-mono font-medium">{banffResult.scoreSummary.other}</p>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Info Note */}
+                        <div className="p-4 rounded-lg bg-blue-500/10 border border-blue-500/30">
+                          <div className="flex items-start gap-2">
+                            <Info className="w-4 h-4 text-blue-500 mt-0.5 flex-shrink-0" />
+                            <p className="text-sm text-blue-600 dark:text-blue-400">
+                              <strong>Note:</strong> This tool is based on Banff 2022 classification criteria. Clinical context, including graft function, time post-transplant, immunosuppression regimen, and prior rejection episodes should be considered. Molecular diagnostics may provide additional diagnostic information when available.
+                            </p>
+                          </div>
+                        </div>
+                      </div>
                     )}
 
                     {/* Reference Ranges */}
