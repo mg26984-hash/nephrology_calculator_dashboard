@@ -100,6 +100,7 @@ const unitOptions: { [inputId: string]: { conventional: string; si: string; conv
   urineCr: { conventional: "mg/dL", si: "μmol/L", conversionFactor: 88.4 },
   donorCreatinine: { conventional: "mg/dL", si: "μmol/L", conversionFactor: 88.4 },
   bun: { conventional: "mg/dL", si: "mmol/L", conversionFactor: 0.357 },
+  bunValue: { conventional: "mg/dL", si: "mmol/L", conversionFactor: 0.357 },
   preBUN: { conventional: "mg/dL", si: "mmol/L", conversionFactor: 0.357 },
   postBUN: { conventional: "mg/dL", si: "mmol/L", conversionFactor: 0.357 },
   plasmaUrea: { conventional: "mg/dL", si: "mmol/L", conversionFactor: 0.357 },
