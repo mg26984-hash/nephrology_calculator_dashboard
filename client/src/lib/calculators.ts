@@ -1756,48 +1756,60 @@ export function bunCreatinineRatio(
   creatinineUnit: "mg/dL" | "μmol/L" = "mg/dL",
   ureaUnit: "mg/dL" | "mmol/L" = "mg/dL"
 ): BUNCrRatioResult {
-  // Convert all values to mg/dL for calculation
-  let bun = bunInput;
-  let creatinine = creatinineInput;
-
-  // Handle BUN vs Urea input
-  if (inputType === "bun") {
-    // BUN input - convert if needed
-    if (bunUnit === "mmol/L") {
-      bun = bunInput * 2.8; // mmol/L to mg/dL
-    }
-  } else if (inputType === "urea") {
-    // Urea input - convert to BUN
-    if (ureaUnit === "mmol/L") {
-      // mmol/L urea to mg/dL urea first
-      const ureaInMgDl = bunInput * 2.8;
-      // Then convert urea to BUN: BUN = urea / 2.14
-      bun = ureaInMgDl / 2.14;
-    } else {
-      // mg/dL urea to BUN: BUN = urea / 2.14
-      bun = bunInput / 2.14;
-    }
-  }
-
-  // Convert creatinine to mg/dL if needed
-  if (creatinineUnit === "μmol/L") {
-    creatinine = creatinineInput / 88.4; // μmol/L to mg/dL
-  }
-
-  // Validate inputs
+  // Validate inputs first
   if (bunInput <= 0 || creatinineInput <= 0) {
     return {
       ratio: 0,
-      bunValue: bun,
-      creatinineValue: creatinine,
+      bunValue: 0,
+      creatinineValue: 0,
       interpretation: "Invalid input: Both BUN/Urea and Creatinine must be > 0",
       category: "Error",
       clinicalSignificance: "Unable to calculate ratio",
     };
   }
 
+  // Convert all values to mg/dL for calculation
+  let bunMgDl = 0;
+  let creatinineMgDl = 0;
+
+  // Handle BUN vs Urea input - convert to BUN in mg/dL
+  if (inputType === "bun") {
+    // BUN input - convert if needed
+    // Conversion factor: BUN (mg/dL) × 0.357 = Urea (mmol/L)
+    // Therefore: BUN (mmol/L) / 0.357 = BUN (mg/dL)
+    if (bunUnit === "mmol/L") {
+      bunMgDl = bunInput / 0.357;
+    } else {
+      bunMgDl = bunInput; // Already in mg/dL
+    }
+  } else if (inputType === "urea") {
+    // Urea input - convert to BUN in mg/dL
+    // Conversion factor: Urea (mg/dL) × 0.467 = BUN (mg/dL)
+    if (ureaUnit === "mg/dL") {
+      bunMgDl = bunInput * 0.467;
+    } else {
+      // ureaUnit === "mmol/L"
+      // First convert mmol/L to mg/dL: Urea (mmol/L) / 0.357 = Urea (mg/dL)
+      // Then convert urea to BUN: Urea (mg/dL) × 0.467 = BUN (mg/dL)
+      const ureaMgDl = bunInput / 0.357;
+      bunMgDl = ureaMgDl * 0.467;
+    }
+  }
+
+  // Convert creatinine to mg/dL if needed
+  // Conversion factor: Creatinine (mg/dL) × 88.4 = Creatinine (µmol/L)
+  if (creatinineUnit === "μmol/L") {
+    creatinineMgDl = creatinineInput / 88.4;
+  } else {
+    creatinineMgDl = creatinineInput; // Already in mg/dL
+  }
+
   // Calculate BUN/Creatinine Ratio
-  const ratio = bun / creatinine;
+  const ratio = bunMgDl / creatinineMgDl;
+
+  // Calculate urea in mmol/L for display
+  // Conversion factor: BUN (mg/dL) × 0.357 = Urea (mmol/L)
+  const ureaMmol = bunMgDl * 0.357;
 
   // Determine category and interpretation
   let category = "";
@@ -1824,8 +1836,8 @@ export function bunCreatinineRatio(
 
   return {
     ratio: Math.round(ratio * 10) / 10,
-    bunValue: Math.round(bun * 10) / 10,
-    creatinineValue: Math.round(creatinine * 100) / 100,
+    bunValue: Math.round(bunMgDl * 10) / 10,
+    creatinineValue: Math.round(creatinineMgDl * 100) / 100,
     interpretation,
     category,
     clinicalSignificance,

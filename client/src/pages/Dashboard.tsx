@@ -515,9 +515,9 @@ export default function Dashboard() {
             calculatorState.bunValue as number,
             calculatorState.creatinine as number,
             calculatorState.inputType as "bun" | "urea",
-            calculatorState.bunUnit as "mg/dL" | "mmol/L",
-            calculatorState.creatinineUnit as "mg/dL" | "μmol/L",
-            calculatorState.ureaUnit as "mg/dL" | "mmol/L"
+            unitState.bunValue === "si" ? "mmol/L" : "mg/dL",
+            unitState.creatinine === "si" ? "μmol/L" : "mg/dL",
+            unitState.urineUrea === "si" ? "mmol/L" : "mg/dL"
           );
           setBunCrResult(bunCrResult);
           setResult(null);
