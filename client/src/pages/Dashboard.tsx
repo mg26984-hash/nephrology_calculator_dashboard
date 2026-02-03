@@ -49,6 +49,7 @@ import { useTheme } from "@/contexts/ThemeContext";
 import { cn } from "@/lib/utils";
 import SearchInput from "@/components/SearchInput";
 import { EGFRComparison } from "@/components/EGFRComparison";
+import ConversionReferenceCard from "@/components/ConversionReferenceCard";
 import { getResultColorCoding } from "@/lib/resultColorCoding";
 import { UnitConversionTooltip, hasUnitConversion } from "@/components/UnitConversionTooltip";
 
@@ -144,7 +145,11 @@ export default function Dashboard() {
   const { theme, toggleTheme } = useTheme();
   const [selectedCalculatorId, setSelectedCalculatorId] = useState<string | null>(null);
   const [calculatorState, setCalculatorState] = useState<CalculatorState>({});
-  const [unitState, setUnitState] = useState<UnitState>({});
+  // Unit state with localStorage persistence for user preferences
+  const [unitState, setUnitState] = useState<UnitState>(() => {
+    const saved = localStorage.getItem('nephrology-calculator-unit-preferences');
+    return saved ? JSON.parse(saved) : {};
+  });
   const [result, setResult] = useState<number | null>(null);
   const [resultInterpretation, setResultInterpretation] = useState<string>("");
   const [banffResult, setBanffResult] = useState<calc.BanffResult | null>(null);
@@ -168,6 +173,7 @@ export default function Dashboard() {
   const [focusedIndex, setFocusedIndex] = useState<number>(-1);
   const [copied, setCopied] = useState(false);
   const [showComparison, setShowComparison] = useState(false);
+  const [showConversionCard, setShowConversionCard] = useState(false);
   const searchInputRef = useRef<HTMLInputElement>(null);
   
   // Favorites state with localStorage persistence
@@ -180,6 +186,11 @@ export default function Dashboard() {
   useEffect(() => {
     localStorage.setItem('nephrology-calculator-favorites', JSON.stringify(favorites));
   }, [favorites]);
+
+  // Save unit preferences to localStorage when they change
+  useEffect(() => {
+    localStorage.setItem('nephrology-calculator-unit-preferences', JSON.stringify(unitState));
+  }, [unitState]);
 
   // Toggle favorite status for a calculator
   const toggleFavorite = useCallback((calcId: string, e?: React.MouseEvent) => {
@@ -737,18 +748,45 @@ export default function Dashboard() {
           break;
         }
 
-        case "ktv-hemodialysis":
-          // Convert UI unit flag to canonical unit string
-          const ktvBunUnit = unitState.preBUN === "si" ? "mmol/L" : "mg/dL";
+        case "ktv-hemodialysis": {
+          // Handle BUN/Urea auto-converter with multi-option support
+          const ktvPreBunUnit = unitState.preBunValue || "BUN (mg/dL)";
+          const ktvPostBunUnit = unitState.postBunValue || "BUN (mg/dL)";
+          
+          // Convert pre-dialysis BUN/Urea to mg/dL
+          const ktvPreIsBUN = ktvPreBunUnit.includes("BUN");
+          const ktvPreIsSI = ktvPreBunUnit.includes("mmol/L");
+          const ktvPreBunRaw = calculatorState.preBunValue as number;
+          let ktvPreBunInMgDl = ktvPreBunRaw;
+          if (ktvPreIsBUN) {
+            ktvPreBunInMgDl = ktvPreIsSI ? ktvPreBunRaw / 0.357 : ktvPreBunRaw;
+          } else {
+            const ureaInMgDl = ktvPreIsSI ? ktvPreBunRaw / 0.357 : ktvPreBunRaw;
+            ktvPreBunInMgDl = ureaInMgDl * 0.467;
+          }
+          
+          // Convert post-dialysis BUN/Urea to mg/dL
+          const ktvPostIsBUN = ktvPostBunUnit.includes("BUN");
+          const ktvPostIsSI = ktvPostBunUnit.includes("mmol/L");
+          const ktvPostBunRaw = calculatorState.postBunValue as number;
+          let ktvPostBunInMgDl = ktvPostBunRaw;
+          if (ktvPostIsBUN) {
+            ktvPostBunInMgDl = ktvPostIsSI ? ktvPostBunRaw / 0.357 : ktvPostBunRaw;
+          } else {
+            const ureaInMgDl = ktvPostIsSI ? ktvPostBunRaw / 0.357 : ktvPostBunRaw;
+            ktvPostBunInMgDl = ureaInMgDl * 0.467;
+          }
+          
           calculationResult = calc.ktv(
-            getValue("preBUN"),
-            getValue("postBUN"),
+            ktvPreBunInMgDl,
+            ktvPostBunInMgDl,
             calculatorState.postWeight as number,
             calculatorState.sessionTime as number,
             calculatorState.ultrafiltration as number || 0,
-            ktvBunUnit
+            "mg/dL"
           );
           break;
+        }
 
         case "hd-session-duration":
           calculationResult = calc.hemodialysisSessionDuration(
@@ -836,13 +874,42 @@ export default function Dashboard() {
           );
           break;
 
-        case "urr":
+        case "urr": {
+          // Handle BUN/Urea auto-converter with multi-option support
+          const urrPreBunUnit = unitState.preBunValue || "BUN (mg/dL)";
+          const urrPostBunUnit = unitState.postBunValue || "BUN (mg/dL)";
+          
+          // Convert pre-dialysis BUN/Urea to mg/dL
+          const urrPreIsBUN = urrPreBunUnit.includes("BUN");
+          const urrPreIsSI = urrPreBunUnit.includes("mmol/L");
+          const urrPreBunRaw = calculatorState.preBunValue as number;
+          let urrPreBunInMgDl = urrPreBunRaw;
+          if (urrPreIsBUN) {
+            urrPreBunInMgDl = urrPreIsSI ? urrPreBunRaw / 0.357 : urrPreBunRaw;
+          } else {
+            const ureaInMgDl = urrPreIsSI ? urrPreBunRaw / 0.357 : urrPreBunRaw;
+            urrPreBunInMgDl = ureaInMgDl * 0.467;
+          }
+          
+          // Convert post-dialysis BUN/Urea to mg/dL
+          const urrPostIsBUN = urrPostBunUnit.includes("BUN");
+          const urrPostIsSI = urrPostBunUnit.includes("mmol/L");
+          const urrPostBunRaw = calculatorState.postBunValue as number;
+          let urrPostBunInMgDl = urrPostBunRaw;
+          if (urrPostIsBUN) {
+            urrPostBunInMgDl = urrPostIsSI ? urrPostBunRaw / 0.357 : urrPostBunRaw;
+          } else {
+            const ureaInMgDl = urrPostIsSI ? urrPostBunRaw / 0.357 : urrPostBunRaw;
+            urrPostBunInMgDl = ureaInMgDl * 0.467;
+          }
+          
           calculationResult = calc.urrHemodialysis(
-            getValue("preBUN"),
-            getValue("postBUN"),
+            urrPreBunInMgDl,
+            urrPostBunInMgDl,
             "mg/dL"
           );
           break;
+        }
 
         case "iron-deficit":
           calculationResult = calc.ironDeficitGanzoni(
@@ -1544,7 +1611,7 @@ export default function Dashboard() {
 
   const InlineUnitToggle = ({ inputId }: { inputId: string }) => {
     // Check if this input has multi-unit options (for 24-hour-protein calculator or BUN/Urea converters)
-    if ((selectedCalculatorId === "24-hour-protein" || selectedCalculatorId === "osmolal-gap" || selectedCalculatorId === "curb-65" || selectedCalculatorId === "kinetic-egfr") && multiUnitOptions[inputId]) {
+    if ((selectedCalculatorId === "24-hour-protein" || selectedCalculatorId === "osmolal-gap" || selectedCalculatorId === "curb-65" || selectedCalculatorId === "kinetic-egfr" || selectedCalculatorId === "ktv-hemodialysis" || selectedCalculatorId === "urr") && multiUnitOptions[inputId]) {
       const options = multiUnitOptions[inputId];
       const currentUnit = unitState[inputId] || options[0];
       
@@ -1769,20 +1836,35 @@ export default function Dashboard() {
                 <p className="text-muted-foreground max-w-md mx-auto mb-6">
                   Select a calculator from the sidebar to begin. This dashboard includes {calculators.length} clinical calculators organized by category for nephrology practice.
                 </p>
-                <Button 
-                  onClick={() => setShowComparison(!showComparison)}
-                  variant={showComparison ? "default" : "outline"}
-                  className="mb-8"
-                >
-                  <ArrowLeftRight className="w-4 h-4 mr-2" />
-                  {showComparison ? "Hide eGFR Comparison" : "Compare eGFR Equations"}
-                </Button>
+                <div className="flex flex-wrap gap-2 justify-center mb-8">
+                  <Button 
+                    onClick={() => setShowComparison(!showComparison)}
+                    variant={showComparison ? "default" : "outline"}
+                  >
+                    <ArrowLeftRight className="w-4 h-4 mr-2" />
+                    {showComparison ? "Hide eGFR Comparison" : "Compare eGFR Equations"}
+                  </Button>
+                  <Button 
+                    onClick={() => setShowConversionCard(!showConversionCard)}
+                    variant={showConversionCard ? "default" : "outline"}
+                  >
+                    <Calculator className="w-4 h-4 mr-2" />
+                    {showConversionCard ? "Hide Unit Converter" : "Unit Conversion Reference"}
+                  </Button>
+                </div>
               </div>
 
               {/* eGFR Comparison Mode */}
               {showComparison && (
                 <div className="mb-8">
                   <EGFRComparison onClose={() => setShowComparison(false)} />
+                </div>
+              )}
+
+              {/* Unit Conversion Reference Card */}
+              {showConversionCard && (
+                <div className="mb-8">
+                  <ConversionReferenceCard onClose={() => setShowConversionCard(false)} />
                 </div>
               )}
 
