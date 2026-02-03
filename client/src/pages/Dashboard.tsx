@@ -50,6 +50,7 @@ import { cn } from "@/lib/utils";
 import SearchInput from "@/components/SearchInput";
 import { EGFRComparison } from "@/components/EGFRComparison";
 import { getResultColorCoding } from "@/lib/resultColorCoding";
+import { UnitConversionTooltip, hasUnitConversion } from "@/components/UnitConversionTooltip";
 
 interface CalculatorState {
   [key: string]: string | number | boolean;
@@ -1943,13 +1944,22 @@ export default function Dashboard() {
                               min={input.min}
                               max={input.max}
                               step={input.step}
-                              className={hasUnitToggle(input.id) ? "" : "pr-16"}
+                              className={hasUnitToggle(input.id) ? "" : hasUnitConversion(input.id) ? "pr-20" : "pr-16"}
                             />
-                            {!hasUnitToggle(input.id) && input.unit && (
-                              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">
-                                {input.unit}
-                              </span>
-                            )}
+                            <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1">
+                              {hasUnitConversion(input.id) && calculatorState[input.id] && (
+                                <UnitConversionTooltip
+                                  inputId={input.id}
+                                  value={calculatorState[input.id] as number}
+                                  currentUnit={unitState[input.id] === "si" ? "si" : "conventional"}
+                                />
+                              )}
+                              {!hasUnitToggle(input.id) && input.unit && (
+                                <span className="text-xs text-muted-foreground">
+                                  {input.unit}
+                                </span>
+                              )}
+                            </div>
                           </div>
                         )}
 
