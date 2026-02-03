@@ -139,6 +139,14 @@ export default function Dashboard() {
   const [resultInterpretation, setResultInterpretation] = useState<string>("");
   const [banffResult, setBanffResult] = useState<calc.BanffResult | null>(null);
   const [kdpiResult, setKdpiResult] = useState<{ kdri: number; kdpi: number } | null>(null);
+  const [mehranResult, setMehranResult] = useState<{
+    totalScore: number;
+    riskCategory: string;
+    cinRisk: number;
+    dialysisRisk: number;
+    breakdown: { factor: string; points: number; present: boolean }[];
+  } | null>(null);
+  const [fraxResult, setFraxResult] = useState<{ majorFracture: number; hipFracture: number } | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [viewingCategoryList, setViewingCategoryList] = useState<string | null>(null);
@@ -987,8 +995,8 @@ export default function Dashboard() {
           );
           break;
 
-        case "frax-simplified":
-          const fraxResult = calc.fraxSimplified(
+        case "frax-simplified": {
+          const fraxCalcResult = calc.fraxSimplified(
             calculatorState.age as number,
             calculatorState.sex as "M" | "F",
             calculatorState.weight as number,
@@ -1002,8 +1010,11 @@ export default function Dashboard() {
             Boolean(calculatorState.alcoholIntake),
             calculatorState.bmdTScore as number | undefined
           );
-          calculationResult = fraxResult.majorFracture;
-          break;
+          setFraxResult(fraxCalcResult);
+          setResult(fraxCalcResult.majorFracture);
+          setResultInterpretation('');
+          return;
+        }
 
         case "banff-classification":
           const banffScores: calc.BanffScores = {
@@ -1033,52 +1044,106 @@ export default function Dashboard() {
 
 
         // Contrast-Induced Nephropathy Risk Calculator
-        case "cin-mehran-score":
-          // Calculate Mehran score based on risk factors
+        case "cin-mehran-score": {
+          // Calculate Mehran score based on risk factors with detailed breakdown
+          const breakdown: { factor: string; points: number; present: boolean }[] = [];
           let mehranScore = 0;
           
           // Hypotension: 5 points
-          if (calculatorState.hypotension) mehranScore += 5;
+          const hasHypotension = Boolean(calculatorState.hypotension);
+          breakdown.push({ factor: 'Hypotension (SBP <80 mmHg for ≥1 hr requiring inotropes)', points: 5, present: hasHypotension });
+          if (hasHypotension) mehranScore += 5;
           
           // IABP: 5 points
-          if (calculatorState.iabp) mehranScore += 5;
+          const hasIABP = Boolean(calculatorState.iabp);
+          breakdown.push({ factor: 'Intra-aortic balloon pump (IABP)', points: 5, present: hasIABP });
+          if (hasIABP) mehranScore += 5;
           
           // CHF: 5 points
-          if (calculatorState.chf) mehranScore += 5;
+          const hasCHF = Boolean(calculatorState.chf);
+          breakdown.push({ factor: 'Congestive heart failure (NYHA III-IV or pulmonary edema)', points: 5, present: hasCHF });
+          if (hasCHF) mehranScore += 5;
           
           // Age >75: 4 points
-          if (calculatorState.age) mehranScore += 4;
+          const hasAge = Boolean(calculatorState.age);
+          breakdown.push({ factor: 'Age >75 years', points: 4, present: hasAge });
+          if (hasAge) mehranScore += 4;
           
           // Anemia: 3 points
-          if (calculatorState.anemia) mehranScore += 3;
+          const hasAnemia = Boolean(calculatorState.anemia);
+          breakdown.push({ factor: 'Anemia (Hct <39% for men, <36% for women)', points: 3, present: hasAnemia });
+          if (hasAnemia) mehranScore += 3;
           
           // Diabetes: 3 points
-          if (calculatorState.diabetes) mehranScore += 3;
+          const hasDiabetes = Boolean(calculatorState.diabetes);
+          breakdown.push({ factor: 'Diabetes mellitus', points: 3, present: hasDiabetes });
+          if (hasDiabetes) mehranScore += 3;
           
           // Contrast volume: 1 point per 100cc
           const contrastVol = calculatorState.contrastVolume as number || 0;
-          mehranScore += Math.floor(contrastVol / 100);
+          const contrastPoints = Math.floor(contrastVol / 100);
+          breakdown.push({ factor: `Contrast volume (${contrastVol} mL = ${contrastPoints} pts)`, points: contrastPoints, present: contrastPoints > 0 });
+          mehranScore += contrastPoints;
           
           // eGFR points: 2 points if 40-60, 4 points if 20-40, 6 points if <20
           const cinEgfr = calculatorState.egfr as number || 60;
+          let egfrPoints = 0;
+          let egfrLabel = '';
           if (cinEgfr < 20) {
-            mehranScore += 6;
+            egfrPoints = 6;
+            egfrLabel = `eGFR <20 mL/min (${cinEgfr})`;
           } else if (cinEgfr < 40) {
-            mehranScore += 4;
+            egfrPoints = 4;
+            egfrLabel = `eGFR 20-39 mL/min (${cinEgfr})`;
           } else if (cinEgfr < 60) {
-            mehranScore += 2;
+            egfrPoints = 2;
+            egfrLabel = `eGFR 40-59 mL/min (${cinEgfr})`;
+          } else {
+            egfrLabel = `eGFR ≥60 mL/min (${cinEgfr})`;
           }
+          breakdown.push({ factor: egfrLabel, points: egfrPoints, present: egfrPoints > 0 });
+          mehranScore += egfrPoints;
           
           // SCr >1.5: 4 points (only if eGFR not provided)
           const cinScr = calculatorState.creatinine as number || 1.0;
           if (!calculatorState.egfr && cinScr > 1.5) {
+            breakdown.push({ factor: `Serum Creatinine >1.5 mg/dL (${cinScr})`, points: 4, present: true });
             mehranScore += 4;
           }
           
-          calculationResult = mehranScore;
-          setResultInterpretation(selectedCalculator.interpretation(mehranScore, { egfr: cinEgfr, contrastVolume: contrastVol }));
+          // Determine risk category and CIN/dialysis risks
+          let riskCategory = '';
+          let cinRisk = 0;
+          let dialysisRisk = 0;
+          if (mehranScore <= 5) {
+            riskCategory = 'Low Risk';
+            cinRisk = 7.5;
+            dialysisRisk = 0.04;
+          } else if (mehranScore <= 10) {
+            riskCategory = 'Moderate Risk';
+            cinRisk = 14.0;
+            dialysisRisk = 0.12;
+          } else if (mehranScore <= 15) {
+            riskCategory = 'High Risk';
+            cinRisk = 26.1;
+            dialysisRisk = 1.09;
+          } else {
+            riskCategory = 'Very High Risk';
+            cinRisk = 57.3;
+            dialysisRisk = 12.6;
+          }
+          
+          setMehranResult({
+            totalScore: mehranScore,
+            riskCategory,
+            cinRisk,
+            dialysisRisk,
+            breakdown
+          });
           setResult(mehranScore);
+          setResultInterpretation('');
           return;
+        }
 
         default:
           calculationResult = undefined;
@@ -2282,6 +2347,387 @@ export default function Dashboard() {
                             <Info className="w-4 h-4 text-blue-500 mt-0.5 flex-shrink-0" />
                             <p className="text-sm text-blue-600 dark:text-blue-400">
                               <strong>Note:</strong> This tool is based on Banff 2022 classification criteria. Clinical context, including graft function, time post-transplant, immunosuppression regimen, and prior rejection episodes should be considered. Molecular diagnostics may provide additional diagnostic information when available.
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Custom Mehran CIN Risk Score Display */}
+                    {selectedCalculator.id === 'cin-mehran-score' && mehranResult && (
+                      <div className="mt-4 space-y-4">
+                        {/* Score and Risk Category Display */}
+                        <div className="grid grid-cols-2 gap-4">
+                          {/* Total Score Box */}
+                          <div className={`p-4 rounded-lg border-l-4 ${
+                            mehranResult.totalScore <= 5 
+                              ? 'bg-emerald-500/10 border-emerald-500' 
+                              : mehranResult.totalScore <= 10 
+                                ? 'bg-yellow-500/10 border-yellow-500' 
+                                : mehranResult.totalScore <= 15
+                                  ? 'bg-orange-500/10 border-orange-500'
+                                  : 'bg-red-500/10 border-red-500'
+                          }`}>
+                            <p className="text-sm font-medium text-muted-foreground">Mehran Score</p>
+                            <p className={`text-3xl font-bold ${
+                              mehranResult.totalScore <= 5 
+                                ? 'text-emerald-600 dark:text-emerald-400' 
+                                : mehranResult.totalScore <= 10 
+                                  ? 'text-yellow-600 dark:text-yellow-400' 
+                                  : mehranResult.totalScore <= 15
+                                    ? 'text-orange-600 dark:text-orange-400'
+                                    : 'text-red-600 dark:text-red-400'
+                            }`}>
+                              {mehranResult.totalScore}
+                            </p>
+                            <p className="text-xs text-muted-foreground mt-1">points</p>
+                          </div>
+                          {/* Risk Category Box */}
+                          <div className={`p-4 rounded-lg border-l-4 ${
+                            mehranResult.totalScore <= 5 
+                              ? 'bg-emerald-500/10 border-emerald-500' 
+                              : mehranResult.totalScore <= 10 
+                                ? 'bg-yellow-500/10 border-yellow-500' 
+                                : mehranResult.totalScore <= 15
+                                  ? 'bg-orange-500/10 border-orange-500'
+                                  : 'bg-red-500/10 border-red-500'
+                          }`}>
+                            <p className="text-sm font-medium text-muted-foreground">Risk Category</p>
+                            <p className={`text-xl font-bold ${
+                              mehranResult.totalScore <= 5 
+                                ? 'text-emerald-600 dark:text-emerald-400' 
+                                : mehranResult.totalScore <= 10 
+                                  ? 'text-yellow-600 dark:text-yellow-400' 
+                                  : mehranResult.totalScore <= 15
+                                    ? 'text-orange-600 dark:text-orange-400'
+                                    : 'text-red-600 dark:text-red-400'
+                            }`}>
+                              {mehranResult.riskCategory}
+                            </p>
+                          </div>
+                        </div>
+
+                        {/* CIN and Dialysis Risk Display */}
+                        <div className="grid grid-cols-2 gap-4">
+                          <div className="p-4 rounded-lg bg-blue-500/10 border-l-4 border-blue-500">
+                            <p className="text-sm font-medium text-muted-foreground">CIN Risk</p>
+                            <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">
+                              {mehranResult.cinRisk}%
+                            </p>
+                            <p className="text-xs text-muted-foreground mt-1">Contrast-induced nephropathy</p>
+                          </div>
+                          <div className="p-4 rounded-lg bg-purple-500/10 border-l-4 border-purple-500">
+                            <p className="text-sm font-medium text-muted-foreground">Dialysis Risk</p>
+                            <p className="text-2xl font-bold text-purple-600 dark:text-purple-400">
+                              {mehranResult.dialysisRisk}%
+                            </p>
+                            <p className="text-xs text-muted-foreground mt-1">Requiring dialysis</p>
+                          </div>
+                        </div>
+
+                        {/* Risk Factor Breakdown */}
+                        <div className="p-4 rounded-lg bg-muted/30 border border-border">
+                          <h3 className="text-sm font-semibold mb-3 flex items-center gap-2">
+                            <Activity className="w-4 h-4" />
+                            Risk Factor Breakdown
+                          </h3>
+                          <div className="space-y-2">
+                            {mehranResult.breakdown.map((item, idx) => (
+                              <div 
+                                key={idx} 
+                                className={`flex items-center justify-between p-2 rounded ${
+                                  item.present 
+                                    ? 'bg-primary/10 border border-primary/30' 
+                                    : 'bg-muted/50'
+                                }`}
+                              >
+                                <div className="flex items-center gap-2">
+                                  <span className={`font-bold text-sm ${
+                                    item.present 
+                                      ? 'text-primary' 
+                                      : 'text-muted-foreground'
+                                  }`}>
+                                    {item.present ? '✓' : '○'}
+                                  </span>
+                                  <span className={`text-sm ${
+                                    item.present 
+                                      ? 'text-foreground' 
+                                      : 'text-muted-foreground'
+                                  }`}>
+                                    {item.factor}
+                                  </span>
+                                </div>
+                                <span className={`text-sm font-medium ${
+                                  item.present && item.points > 0
+                                    ? 'text-primary' 
+                                    : 'text-muted-foreground'
+                                }`}>
+                                  +{item.points} pts
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+
+                        {/* Reference Ranges */}
+                        <div className="p-4 rounded-lg bg-muted/50">
+                          <p className="text-sm font-semibold mb-3">Risk Stratification</p>
+                          <div className="space-y-2">
+                            <div className={`flex items-center justify-between p-2 rounded ${
+                              mehranResult.totalScore <= 5 ? 'bg-emerald-500/20 ring-2 ring-emerald-500' : 'bg-muted'
+                            }`}>
+                              <span className="text-sm">Low Risk</span>
+                              <span className="text-sm font-medium">≤5 pts (CIN 7.5%, Dialysis 0.04%)</span>
+                            </div>
+                            <div className={`flex items-center justify-between p-2 rounded ${
+                              mehranResult.totalScore > 5 && mehranResult.totalScore <= 10 ? 'bg-yellow-500/20 ring-2 ring-yellow-500' : 'bg-muted'
+                            }`}>
+                              <span className="text-sm">Moderate Risk</span>
+                              <span className="text-sm font-medium">6-10 pts (CIN 14%, Dialysis 0.12%)</span>
+                            </div>
+                            <div className={`flex items-center justify-between p-2 rounded ${
+                              mehranResult.totalScore > 10 && mehranResult.totalScore <= 15 ? 'bg-orange-500/20 ring-2 ring-orange-500' : 'bg-muted'
+                            }`}>
+                              <span className="text-sm">High Risk</span>
+                              <span className="text-sm font-medium">11-15 pts (CIN 26.1%, Dialysis 1.09%)</span>
+                            </div>
+                            <div className={`flex items-center justify-between p-2 rounded ${
+                              mehranResult.totalScore > 15 ? 'bg-red-500/20 ring-2 ring-red-500' : 'bg-muted'
+                            }`}>
+                              <span className="text-sm">Very High Risk</span>
+                              <span className="text-sm font-medium">&gt;15 pts (CIN 57.3%, Dialysis 12.6%)</span>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Clinical Recommendations */}
+                        <div className={`p-4 rounded-lg border ${
+                          mehranResult.totalScore <= 5 
+                            ? 'bg-emerald-500/5 border-emerald-500/30' 
+                            : mehranResult.totalScore <= 10 
+                              ? 'bg-yellow-500/5 border-yellow-500/30' 
+                              : mehranResult.totalScore <= 15
+                                ? 'bg-orange-500/5 border-orange-500/30'
+                                : 'bg-red-500/5 border-red-500/30'
+                        }`}>
+                          <div className="flex items-start gap-2">
+                            <Info className="w-5 h-5 text-blue-500 mt-0.5 flex-shrink-0" />
+                            <div>
+                              <p className="text-sm font-semibold mb-2">Clinical Recommendations</p>
+                              <ul className="text-sm text-muted-foreground space-y-1">
+                                {mehranResult.totalScore <= 5 && (
+                                  <>
+                                    <li>• Standard hydration protocol</li>
+                                    <li>• Minimize contrast volume when possible</li>
+                                    <li>• Monitor creatinine at 48-72 hours post-procedure</li>
+                                  </>
+                                )}
+                                {mehranResult.totalScore > 5 && mehranResult.totalScore <= 10 && (
+                                  <>
+                                    <li>• Aggressive IV hydration (1 mL/kg/hr for 12 hrs pre/post)</li>
+                                    <li>• Use iso-osmolar or low-osmolar contrast</li>
+                                    <li>• Minimize contrast volume (&lt;3 × eGFR mL)</li>
+                                    <li>• Monitor creatinine at 24, 48, and 72 hours</li>
+                                  </>
+                                )}
+                                {mehranResult.totalScore > 10 && mehranResult.totalScore <= 15 && (
+                                  <>
+                                    <li>• Consider alternative imaging if possible</li>
+                                    <li>• Aggressive IV hydration with sodium bicarbonate</li>
+                                    <li>• Strict contrast volume limitation</li>
+                                    <li>• Hold nephrotoxic medications</li>
+                                    <li>• Close monitoring with daily creatinine</li>
+                                  </>
+                                )}
+                                {mehranResult.totalScore > 15 && (
+                                  <>
+                                    <li>• Strongly consider alternative imaging modalities</li>
+                                    <li>• If contrast required: minimal volume, staged procedures</li>
+                                    <li>• Prophylactic RRT may be considered in select cases</li>
+                                    <li>• Nephrology consultation recommended</li>
+                                    <li>• ICU monitoring may be warranted</li>
+                                  </>
+                                )}
+                              </ul>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Info Note */}
+                        <div className="p-4 rounded-lg bg-blue-500/10 border border-blue-500/30">
+                          <div className="flex items-start gap-2">
+                            <Info className="w-4 h-4 text-blue-500 mt-0.5 flex-shrink-0" />
+                            <p className="text-sm text-blue-600 dark:text-blue-400">
+                              <strong>Reference:</strong> Mehran R, et al. A simple risk score for prediction of contrast-induced nephropathy after percutaneous coronary intervention. J Am Coll Cardiol. 2004;44(7):1393-1399.
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Custom FRAX Fracture Risk Display */}
+                    {selectedCalculator.id === 'frax-simplified' && fraxResult && (
+                      <div className="mt-4 space-y-4">
+                        {/* Major Fracture and Hip Fracture Risk Display */}
+                        <div className="grid grid-cols-2 gap-4">
+                          {/* Major Osteoporotic Fracture */}
+                          <div className={`p-4 rounded-lg border-l-4 ${
+                            fraxResult.majorFracture < 10 
+                              ? 'bg-emerald-500/10 border-emerald-500' 
+                              : fraxResult.majorFracture < 20 
+                                ? 'bg-yellow-500/10 border-yellow-500' 
+                                : 'bg-red-500/10 border-red-500'
+                          }`}>
+                            <p className="text-sm font-medium text-muted-foreground">Major Osteoporotic Fracture</p>
+                            <p className={`text-3xl font-bold ${
+                              fraxResult.majorFracture < 10 
+                                ? 'text-emerald-600 dark:text-emerald-400' 
+                                : fraxResult.majorFracture < 20 
+                                  ? 'text-yellow-600 dark:text-yellow-400' 
+                                  : 'text-red-600 dark:text-red-400'
+                            }`}>
+                              {fraxResult.majorFracture.toFixed(1)}%
+                            </p>
+                            <p className="text-xs text-muted-foreground mt-1">10-year probability</p>
+                          </div>
+                          {/* Hip Fracture */}
+                          <div className={`p-4 rounded-lg border-l-4 ${
+                            fraxResult.hipFracture < 3 
+                              ? 'bg-emerald-500/10 border-emerald-500' 
+                              : fraxResult.hipFracture < 6 
+                                ? 'bg-yellow-500/10 border-yellow-500' 
+                                : 'bg-red-500/10 border-red-500'
+                          }`}>
+                            <p className="text-sm font-medium text-muted-foreground">Hip Fracture</p>
+                            <p className={`text-3xl font-bold ${
+                              fraxResult.hipFracture < 3 
+                                ? 'text-emerald-600 dark:text-emerald-400' 
+                                : fraxResult.hipFracture < 6 
+                                  ? 'text-yellow-600 dark:text-yellow-400' 
+                                  : 'text-red-600 dark:text-red-400'
+                            }`}>
+                              {fraxResult.hipFracture.toFixed(1)}%
+                            </p>
+                            <p className="text-xs text-muted-foreground mt-1">10-year probability</p>
+                          </div>
+                        </div>
+
+                        {/* Risk Category */}
+                        <div className={`p-4 rounded-lg ${
+                          fraxResult.majorFracture < 10 
+                            ? 'bg-emerald-500/10 border border-emerald-500/30' 
+                            : fraxResult.majorFracture < 20 
+                              ? 'bg-yellow-500/10 border border-yellow-500/30' 
+                              : 'bg-red-500/10 border border-red-500/30'
+                        }`}>
+                          <div className="flex items-center gap-2">
+                            {fraxResult.majorFracture < 10 ? (
+                              <Check className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+                            ) : fraxResult.majorFracture < 20 ? (
+                              <Info className="w-5 h-5 text-yellow-600 dark:text-yellow-400" />
+                            ) : (
+                              <AlertTriangle className="w-5 h-5 text-red-600 dark:text-red-400" />
+                            )}
+                            <span className={`font-semibold ${
+                              fraxResult.majorFracture < 10 
+                                ? 'text-emerald-600 dark:text-emerald-400' 
+                                : fraxResult.majorFracture < 20 
+                                  ? 'text-yellow-600 dark:text-yellow-400' 
+                                  : 'text-red-600 dark:text-red-400'
+                            }`}>
+                              {fraxResult.majorFracture < 10 
+                                ? 'Low Fracture Risk' 
+                                : fraxResult.majorFracture < 20 
+                                  ? 'Moderate Fracture Risk - Consider Treatment' 
+                                  : 'High Fracture Risk - Treatment Recommended'}
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Treatment Thresholds */}
+                        <div className="p-4 rounded-lg bg-muted/50">
+                          <p className="text-sm font-semibold mb-3">Treatment Thresholds (NOF/ISCD Guidelines)</p>
+                          <div className="space-y-2">
+                            <div className={`flex items-center justify-between p-2 rounded ${
+                              fraxResult.majorFracture < 20 && fraxResult.hipFracture < 3 ? 'bg-emerald-500/20 ring-2 ring-emerald-500' : 'bg-muted'
+                            }`}>
+                              <span className="text-sm">Below Treatment Threshold</span>
+                              <span className="text-sm font-medium">MOF &lt;20% AND Hip &lt;3%</span>
+                            </div>
+                            <div className={`flex items-center justify-between p-2 rounded ${
+                              fraxResult.majorFracture >= 20 || fraxResult.hipFracture >= 3 ? 'bg-red-500/20 ring-2 ring-red-500' : 'bg-muted'
+                            }`}>
+                              <span className="text-sm">Above Treatment Threshold</span>
+                              <span className="text-sm font-medium">MOF ≥20% OR Hip ≥3%</span>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Clinical Recommendations */}
+                        <div className={`p-4 rounded-lg border ${
+                          fraxResult.majorFracture < 10 
+                            ? 'bg-emerald-500/5 border-emerald-500/30' 
+                            : fraxResult.majorFracture < 20 
+                              ? 'bg-yellow-500/5 border-yellow-500/30' 
+                              : 'bg-red-500/5 border-red-500/30'
+                        }`}>
+                          <div className="flex items-start gap-2">
+                            <Bone className="w-5 h-5 text-blue-500 mt-0.5 flex-shrink-0" />
+                            <div>
+                              <p className="text-sm font-semibold mb-2">Clinical Recommendations</p>
+                              <ul className="text-sm text-muted-foreground space-y-1">
+                                {fraxResult.majorFracture < 10 && fraxResult.hipFracture < 3 && (
+                                  <>
+                                    <li>• Lifestyle modifications (weight-bearing exercise, fall prevention)</li>
+                                    <li>• Adequate calcium (1000-1200 mg/day) and vitamin D (800-1000 IU/day)</li>
+                                    <li>• Reassess fracture risk in 5 years or if risk factors change</li>
+                                  </>
+                                )}
+                                {(fraxResult.majorFracture >= 10 || fraxResult.hipFracture >= 3) && fraxResult.majorFracture < 20 && (
+                                  <>
+                                    <li>• Consider DXA scan if not already performed</li>
+                                    <li>• Discuss pharmacologic treatment options</li>
+                                    <li>• Address modifiable risk factors</li>
+                                    <li>• Fall risk assessment and prevention</li>
+                                  </>
+                                )}
+                                {(fraxResult.majorFracture >= 20 || fraxResult.hipFracture >= 3) && (
+                                  <>
+                                    <li>• Pharmacologic treatment recommended</li>
+                                    <li>• First-line: Bisphosphonates (alendronate, risedronate, zoledronic acid)</li>
+                                    <li>• Alternatives: Denosumab, teriparatide, romosozumab</li>
+                                    <li>• Comprehensive fall prevention program</li>
+                                    <li>• Monitor treatment response with DXA</li>
+                                  </>
+                                )}
+                              </ul>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* CKD-Specific Considerations */}
+                        <div className="p-4 rounded-lg bg-amber-500/10 border border-amber-500/30">
+                          <div className="flex items-start gap-2">
+                            <AlertTriangle className="w-5 h-5 text-amber-600 dark:text-amber-400 mt-0.5 flex-shrink-0" />
+                            <div>
+                              <p className="text-sm font-semibold text-amber-600 dark:text-amber-400 mb-2">CKD-MBD Considerations</p>
+                              <ul className="text-sm text-amber-600/80 dark:text-amber-400/80 space-y-1">
+                                <li>• FRAX may underestimate fracture risk in CKD patients</li>
+                                <li>• Bisphosphonates: Use with caution if eGFR &lt;30-35 mL/min</li>
+                                <li>• Consider PTH, calcium, phosphorus, and vitamin D status</li>
+                                <li>• Adynamic bone disease may increase fracture risk</li>
+                                <li>• Consult nephrology for CKD stages 4-5</li>
+                              </ul>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Info Note */}
+                        <div className="p-4 rounded-lg bg-blue-500/10 border border-blue-500/30">
+                          <div className="flex items-start gap-2">
+                            <Info className="w-4 h-4 text-blue-500 mt-0.5 flex-shrink-0" />
+                            <p className="text-sm text-blue-600 dark:text-blue-400">
+                              <strong>Note:</strong> This is a simplified FRAX calculation. For official FRAX scores, use the FRAX tool at <a href="https://www.sheffield.ac.uk/FRAX/" target="_blank" rel="noopener noreferrer" className="underline">www.sheffield.ac.uk/FRAX</a>. Treatment decisions should incorporate clinical judgment and patient preferences.
                             </p>
                           </div>
                         </div>
