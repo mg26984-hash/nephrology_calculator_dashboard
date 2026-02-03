@@ -1861,13 +1861,6 @@ export default function Dashboard() {
                 </div>
               )}
 
-              {/* Unit Conversion Reference Card */}
-              {showConversionCard && (
-                <div className="mb-8">
-                  <ConversionReferenceCard onClose={() => setShowConversionCard(false)} />
-                </div>
-              )}
-
               {/* Category Quick Access Header */}
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-lg font-semibold">
@@ -2006,6 +1999,13 @@ export default function Dashboard() {
                   );
                 })}
               </div>
+
+              {/* Unit Conversion Reference Card - At Bottom */}
+              {showConversionCard && (
+                <div className="mt-8">
+                  <ConversionReferenceCard onClose={() => setShowConversionCard(false)} />
+                </div>
+              )}
             </div>
           ) : (
             // Calculator View
