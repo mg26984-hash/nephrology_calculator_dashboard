@@ -148,13 +148,14 @@ export function ckdEpiCystatinC(
   cystatinC: number,
   age: number,
   sex: "M" | "F",
-  creatinineUnit: "mg/dL" | "μmol/L" = "mg/dL"
+  creatinineUnit: "mg/dL" | "μmol/L" = "mg/dL",
+  cystatinCUnit: "mg/L" | "mg/mmol" = "mg/L"
 ): number {
   // CKD-EPI Creatinine-Cystatin C Combined Equation (2021)
   // Reference: https://www.kidney.org/professionals/gfr_calculator
   
   let scr = creatinineUnit === "μmol/L" ? creatinine / 88.4 : creatinine;
-  let scys = cystatinC; // Cystatin C in mg/L
+  let scys = cystatinCUnit === "mg/mmol" ? cystatinC / 1.04 : cystatinC; // Convert to mg/L if needed
 
   // Sex-specific constants for creatinine
   const kappaCr = sex === "F" ? 0.7 : 0.9;

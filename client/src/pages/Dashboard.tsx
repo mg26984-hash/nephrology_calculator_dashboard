@@ -130,6 +130,8 @@ const unitOptions: { [inputId: string]: { conventional: string; si: string; conv
   ratioValue: { conventional: "mg/mg", si: "mg/mmol", conversionFactor: 113.12 },
   proteinValue: { conventional: "mg/dL", si: "g/L", conversionFactor: 0.01 },
   creatinineValue: { conventional: "mg/dL", si: "mmol/L", conversionFactor: 0.0884 },
+  cystatinC: { conventional: "mg/L", si: "mg/mmol", conversionFactor: 1.04 },
+  acr: { conventional: "mg/g", si: "mg/mmol", conversionFactor: 8.84 },
 };
 
 export default function Dashboard() {
@@ -426,10 +428,11 @@ export default function Dashboard() {
         case "ckd-epi-cystatin-c":
           calculationResult = calc.ckdEpiCystatinC(
             getValue("creatinine"),
-            calculatorState.cystatinC as number,
+            getValue("cystatinC"),
             calculatorState.age as number,
             calculatorState.sex as "M" | "F",
-            "mg/dL"
+            unitState.creatinine === "si" ? "μmol/L" : "mg/dL",
+            unitState.cystatinC === "si" ? "mg/mmol" : "mg/L"
           );
           break;
 
@@ -446,8 +449,8 @@ export default function Dashboard() {
             calculatorState.age as number,
             calculatorState.sex as "M" | "F",
             calculatorState.eGFR as number,
-            calculatorState.acr as number,
-            (calculatorState.acrUnit as "mg/g" | "mg/mmol") || "mg/g",
+            getValue("acr"),
+            (unitState.acr === "si" ? "mg/mmol" : "mg/g") as "mg/g" | "mg/mmol",
             (calculatorState.years as 2 | 5) || 5
           );
           break;
