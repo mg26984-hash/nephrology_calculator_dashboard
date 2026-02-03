@@ -132,6 +132,10 @@ const unitOptions: { [inputId: string]: { conventional: string; si: string; conv
   creatinineValue: { conventional: "mg/dL", si: "mmol/L", conversionFactor: 0.0884 },
   cystatinC: { conventional: "mg/L", si: "mg/mmol", conversionFactor: 1.04 },
   acr: { conventional: "mg/g", si: "mg/mmol", conversionFactor: 8.84 },
+  sodium: { conventional: "mEq/L", si: "mmol/L", conversionFactor: 1 },
+  chloride: { conventional: "mEq/L", si: "mmol/L", conversionFactor: 1 },
+  bicarbonate: { conventional: "mEq/L", si: "mmol/L", conversionFactor: 1 },
+  glucose: { conventional: "mg/dL", si: "mmol/L", conversionFactor: 0.0555 },
 };
 
 export default function Dashboard() {
@@ -461,7 +465,7 @@ export default function Dashboard() {
             getValue("plasmaCr"),
             calculatorState.plasmaNa as number,
             getValue("urineCr"),
-            "mg/dL"
+            unitState.plasmaCr === "si" ? "μmol/L" : "mg/dL"
           );
           break;
 
@@ -475,11 +479,11 @@ export default function Dashboard() {
           );
           break;
 
-        case "anion-gap":
+        case "serum-anion-gap":
           calculationResult = calc.anionGap(
-            calculatorState.sodium as number,
-            calculatorState.chloride as number,
-            calculatorState.bicarbonate as number
+            getValue("sodium"),
+            getValue("chloride"),
+            getValue("bicarbonate")
           );
           break;
 
@@ -496,12 +500,12 @@ export default function Dashboard() {
         case "osmolal-gap":
           calculationResult = calc.osmolalGap(
             calculatorState.measuredOsmolality as number,
-            calculatorState.sodium as number,
+            getValue("sodium"),
             getValue("glucose"),
             getValue("bun"),
             calculatorState.ethanol as number,
-            "mg/dL",
-            "mg/dL"
+            unitState.glucose === "si" ? "mmol/L" : "mg/dL",
+            unitState.bun === "si" ? "mmol/L" : "mg/dL"
           );
           break;
 
