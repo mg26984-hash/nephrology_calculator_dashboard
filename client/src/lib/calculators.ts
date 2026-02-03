@@ -1760,16 +1760,19 @@ export function bunCreatinineRatio(
   let bun = bunInput;
   let creatinine = creatinineInput;
 
-  // Convert BUN if needed
-  if (bunUnit === "mmol/L") {
-    bun = bun * 2.8; // mmol/L to mg/dL
-  }
-
-  // Convert urea to BUN if input type is urea
-  if (inputType === "urea") {
+  // Handle BUN vs Urea input
+  if (inputType === "bun") {
+    // BUN input - convert if needed
+    if (bunUnit === "mmol/L") {
+      bun = bunInput * 2.8; // mmol/L to mg/dL
+    }
+  } else if (inputType === "urea") {
+    // Urea input - convert to BUN
     if (ureaUnit === "mmol/L") {
-      // mmol/L to mg/dL
-      bun = bunInput * 2.8;
+      // mmol/L urea to mg/dL urea first
+      const ureaInMgDl = bunInput * 2.8;
+      // Then convert urea to BUN: BUN = urea / 2.14
+      bun = ureaInMgDl / 2.14;
     } else {
       // mg/dL urea to BUN: BUN = urea / 2.14
       bun = bunInput / 2.14;
@@ -1781,13 +1784,13 @@ export function bunCreatinineRatio(
     creatinine = creatinineInput / 88.4; // μmol/L to mg/dL
   }
 
-  // Prevent division by zero
-  if (creatinine <= 0) {
+  // Validate inputs
+  if (bunInput <= 0 || creatinineInput <= 0) {
     return {
       ratio: 0,
       bunValue: bun,
       creatinineValue: creatinine,
-      interpretation: "Invalid input: Creatinine must be > 0",
+      interpretation: "Invalid input: Both BUN/Urea and Creatinine must be > 0",
       category: "Error",
       clinicalSignificance: "Unable to calculate ratio",
     };
