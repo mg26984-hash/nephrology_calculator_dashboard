@@ -107,7 +107,7 @@ const unitOptions: { [inputId: string]: { conventional: string; si: string; conv
   urineUrea: { conventional: "mg/dL", si: "mmol/L", conversionFactor: 0.357 },
   urineaNitrogen: { conventional: "mg/dL", si: "mmol/L", conversionFactor: 0.357 },
   glucose: { conventional: "mg/dL", si: "mmol/L", conversionFactor: 0.0555 },
-  albumin: { conventional: "g/dL", si: "g/L", conversionFactor: 10 },
+  albumin: { conventional: "g/dL", si: "g/L", conversionFactor: 0.1 },
   // UACR inputs
   urineAlbumin: { conventional: "mg", si: "μg", conversionFactor: 1000 },
   urineCreatinineUACR: { conventional: "g", si: "mg", conversionFactor: 1000 },
@@ -131,15 +131,11 @@ const unitOptions: { [inputId: string]: { conventional: string; si: string; conv
   proteinValue: { conventional: "mg/dL", si: "g/L", conversionFactor: 0.01 },
   creatinineValue: { conventional: "mg/dL", si: "mmol/L", conversionFactor: 0.0884 },
   cystatinC: { conventional: "mg/L", si: "mg/mmol", conversionFactor: 1.04 },
-  acr: { conventional: "mg/g", si: "mg/mmol", conversionFactor: 8.84 },
   sodium: { conventional: "mEq/L", si: "mmol/L", conversionFactor: 1 },
   chloride: { conventional: "mEq/L", si: "mmol/L", conversionFactor: 1 },
   bicarbonate: { conventional: "mEq/L", si: "mmol/L", conversionFactor: 1 },
-  glucose: { conventional: "mg/dL", si: "mmol/L", conversionFactor: 0.0555 },
   urineK: { conventional: "mEq/L", si: "mmol/L", conversionFactor: 1 },
   plasmaK: { conventional: "mEq/L", si: "mmol/L", conversionFactor: 1 },
-  measuredCa: { conventional: "mg/dL", si: "mmol/L", conversionFactor: 0.25 },
-  albumin: { conventional: "g/dL", si: "g/L", conversionFactor: 0.1 },
   qtInterval: { conventional: "ms", si: "ms", conversionFactor: 1 },
   heartRate: { conventional: "bpm", si: "bpm", conversionFactor: 1 },
 };
@@ -529,8 +525,7 @@ export default function Dashboard() {
             calculatorState.creatinine as number,
             calculatorState.inputType as "bun" | "urea",
             unitState.bunValue === "si" ? "mmol/L" : "mg/dL",
-            unitState.creatinine === "si" ? "μmol/L" : "mg/dL",
-            unitState.urineUrea === "si" ? "mmol/L" : "mg/dL"
+            unitState.creatinine === "si" ? "μmol/L" : "mg/dL"
           );
           setBunCrResult(bunCrResult);
           setResult(null);
