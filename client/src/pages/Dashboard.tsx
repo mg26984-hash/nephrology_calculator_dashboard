@@ -1017,6 +1017,8 @@ export default function Dashboard() {
         }
 
         case "banff-classification":
+          console.log('Banff calculation starting...');
+          console.log('calculatorState:', JSON.stringify(calculatorState));
           const banffScores: calc.BanffScores = {
             glomeruli: parseFloat(calculatorState.glomeruli as string) || 10,
             arteries: parseFloat(calculatorState.arteries as string) || 2,
@@ -1036,8 +1038,11 @@ export default function Dashboard() {
             c4d: parseInt(calculatorState.c4d as string) || 0,
             dsa: (calculatorState.dsa as string) || 'negative',
           };
+          console.log('banffScores:', JSON.stringify(banffScores));
           const banffResultData = calc.banffClassification(banffScores);
+          console.log('banffResultData:', JSON.stringify(banffResultData));
           setBanffResult(banffResultData);
+          console.log('setBanffResult called');
           setResult(null); // Banff uses custom display, not numeric result
           setResultInterpretation('');
           return; // Skip the default interpretation handling
@@ -2781,6 +2786,123 @@ export default function Dashboard() {
                 </Card>
               );
               })()}
+
+              {/* Standalone Banff Result Display - shown when result is null but banffResult exists */}
+              {selectedCalculator.id === 'banff-classification' && banffResult && result === null && (
+                <Card className="border-l-4 border-emerald-500 bg-emerald-500/5">
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-base flex items-center gap-2">
+                      <Activity className="w-5 h-5 text-emerald-600" />
+                      Banff Classification Result
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-4">
+                      {/* Adequacy Warning/Success */}
+                      {!banffResult.isAdequate ? (
+                        <div className="p-4 rounded-lg bg-amber-500/10 border border-amber-500/30">
+                          <div className="flex items-center gap-2 text-amber-600 dark:text-amber-400">
+                            <AlertTriangle className="w-5 h-5" />
+                            <span className="font-semibold">Specimen adequacy is suboptimal ({banffResult.adequacyStatus}).</span>
+                          </div>
+                          <p className="text-sm text-amber-600/80 dark:text-amber-400/80 mt-1">
+                            Diagnostic accuracy may be limited. Consider repeat biopsy if clinically indicated.
+                          </p>
+                        </div>
+                      ) : (
+                        <div className="p-4 rounded-lg bg-emerald-500/10 border border-emerald-500/30">
+                          <div className="flex items-center gap-2 text-emerald-600 dark:text-emerald-400">
+                            <Check className="w-5 h-5" />
+                            <span className="font-semibold">Specimen Adequacy: {banffResult.adequacyStatus}</span>
+                          </div>
+                          <p className="text-sm text-emerald-600/80 dark:text-emerald-400/80 mt-1">
+                            Glomeruli: {calculatorState.glomeruli || 10}, Arteries: {calculatorState.arteries || 2}
+                          </p>
+                        </div>
+                      )}
+
+                      {/* Diagnosis Boxes */}
+                      {banffResult.diagnoses.map((diagnosis, idx) => {
+                        const diagnosisColors = {
+                          tcmr: 'border-l-orange-500 bg-orange-500/5',
+                          abmr: 'border-l-red-500 bg-red-500/5',
+                          borderline: 'border-l-slate-400 bg-slate-400/5',
+                          normal: 'border-l-emerald-500 bg-emerald-500/5'
+                        };
+                        const colorClass = diagnosisColors[diagnosis.type as keyof typeof diagnosisColors] || diagnosisColors.normal;
+                        
+                        return (
+                          <div key={idx} className={`p-4 rounded-lg border-l-4 ${colorClass}`}>
+                            <div className="flex items-center justify-between mb-2">
+                              <h3 className="text-lg font-bold text-foreground">{diagnosis.title}</h3>
+                              <span className="text-xs font-medium px-2 py-1 rounded bg-muted text-muted-foreground">
+                                {diagnosis.category}
+                              </span>
+                            </div>
+                            <p className="text-sm text-muted-foreground mb-3">{diagnosis.description}</p>
+                            
+                            {/* Diagnostic Criteria */}
+                            {diagnosis.criteria.length > 0 && (
+                              <div className="mb-3">
+                                <p className="text-sm font-semibold mb-2">Diagnostic Criteria:</p>
+                                <div className="space-y-1">
+                                  {diagnosis.criteria.map((c, cIdx) => (
+                                    <div key={cIdx} className={`flex items-center gap-2 text-sm ${c.met ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-500'}`}>
+                                      <span className="font-bold">{c.met ? '✓' : '✗'}</span>
+                                      <span>{c.text}</span>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+                            
+                            {/* Clinical Interpretation */}
+                            {diagnosis.interpretation && (
+                              <div className="pt-3 border-t border-border/50">
+                                <p className="text-sm font-semibold mb-1">Clinical Interpretation</p>
+                                <p className="text-sm text-muted-foreground">{diagnosis.interpretation}</p>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+
+                      {/* Banff Score Summary */}
+                      <div className="p-4 rounded-lg bg-muted/30 border border-border">
+                        <h3 className="text-sm font-semibold mb-3">Banff Score Summary</h3>
+                        <div className="grid grid-cols-2 gap-2">
+                          <div className="p-2 rounded bg-background border border-border/50">
+                            <p className="text-xs text-muted-foreground">Acute Scores</p>
+                            <p className="text-sm font-mono font-medium">{banffResult.scoreSummary.acute}</p>
+                          </div>
+                          <div className="p-2 rounded bg-background border border-border/50">
+                            <p className="text-xs text-muted-foreground">Chronic Scores</p>
+                            <p className="text-sm font-mono font-medium">{banffResult.scoreSummary.chronic}</p>
+                          </div>
+                          <div className="p-2 rounded bg-background border border-border/50">
+                            <p className="text-xs text-muted-foreground">Chronic Active</p>
+                            <p className="text-sm font-mono font-medium">{banffResult.scoreSummary.chronicActive}</p>
+                          </div>
+                          <div className="p-2 rounded bg-background border border-border/50">
+                            <p className="text-xs text-muted-foreground">Other</p>
+                            <p className="text-sm font-mono font-medium">{banffResult.scoreSummary.other}</p>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Info Note */}
+                      <div className="p-4 rounded-lg bg-blue-500/10 border border-blue-500/30">
+                        <div className="flex items-start gap-2">
+                          <Info className="w-4 h-4 text-blue-500 mt-0.5 flex-shrink-0" />
+                          <p className="text-sm text-blue-600 dark:text-blue-400">
+                            <strong>Note:</strong> This tool is based on Banff 2022 classification criteria. Clinical context, including graft function, time post-transplant, immunosuppression regimen, and prior rejection episodes should be considered.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
 
               {/* Clinical Decision Support Recommendations */}
               {result !== null && (() => {
