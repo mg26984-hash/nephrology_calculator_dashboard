@@ -514,8 +514,9 @@ export function ktv(
 ): number {
   // Daugirdas Second Generation Kt/V Formula
   // Kt/V = -ln(R - 0.008 * t) + (4 - 3.5 * R) * UF/W
-  let preBUNMgDl = bunUnit === "mmol/L" ? preBUN * 2.8 : preBUN;
-  let postBUNMgDl = bunUnit === "mmol/L" ? postBUN * 2.8 : postBUN;
+  // Conversion factor: BUN (mmol/L) / 0.357 = BUN (mg/dL)
+  let preBUNMgDl = bunUnit === "mmol/L" ? preBUN / 0.357 : preBUN;
+  let postBUNMgDl = bunUnit === "mmol/L" ? postBUN / 0.357 : postBUN;
 
   const R = postBUNMgDl / preBUNMgDl;
   const t = sessionTime / 60; // Convert minutes to hours

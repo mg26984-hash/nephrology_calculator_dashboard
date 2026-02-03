@@ -689,13 +689,15 @@ export default function Dashboard() {
         }
 
         case "ktv-hemodialysis":
+          // Convert UI unit flag to canonical unit string
+          const ktvBunUnit = unitState.preBUN === "si" ? "mmol/L" : "mg/dL";
           calculationResult = calc.ktv(
             getValue("preBUN"),
             getValue("postBUN"),
             calculatorState.postWeight as number,
             calculatorState.sessionTime as number,
             calculatorState.ultrafiltration as number || 0,
-            (calculatorState.bunUnit as "mg/dL" | "mmol/L") || "mg/dL"
+            ktvBunUnit
           );
           break;
 
