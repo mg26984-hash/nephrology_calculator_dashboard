@@ -148,8 +148,8 @@ export const calculators: Calculator[] = [
     description: "Calculates GFR from urea kinetics during dialysis",
     category: "Kidney Function & CKD Risk",
     inputs: [
-      { id: "preBUN", label: "Pre-Dialysis BUN", type: "number", unit: "mg/dL or mmol/L", placeholder: "60", required: true },
-      { id: "postBUN", label: "Post-Dialysis BUN", type: "number", unit: "mg/dL or mmol/L", placeholder: "20", required: true },
+      { id: "preBunValue", label: "Pre-Dialysis BUN/Urea", type: "number", unit: "mg/dL or mmol/L", placeholder: "60", required: true },
+      { id: "postBunValue", label: "Post-Dialysis BUN/Urea", type: "number", unit: "mg/dL or mmol/L", placeholder: "20", required: true },
       { id: "preCreatinine", label: "Pre-Dialysis Creatinine", type: "number", unit: "mg/dL or μmol/L", placeholder: "8", required: true },
       { id: "postCreatinine", label: "Post-Dialysis Creatinine", type: "number", unit: "mg/dL or μmol/L", placeholder: "6", required: true },
       { id: "weight", label: "Body Weight", type: "number", unit: "kg", placeholder: "70", required: true },

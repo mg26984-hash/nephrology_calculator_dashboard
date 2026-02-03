@@ -222,12 +222,14 @@ export function runCalculatorTests(calculatorId: string): RegressionTestResult {
       // Call the appropriate calculator function based on ID
       switch (calculatorId) {
         case 'bun-creatinine-ratio':
-          actual = calc.bunCreatinineRatio(
+          const bunCrResult = calc.bunCreatinineRatio(
             testCase.inputs.bun,
             testCase.inputs.creatinine,
-            testCase.inputs.bunUnit || 'conventional',
-            testCase.inputs.creatinineUnit || 'conventional'
+            testCase.inputs.inputType || 'bun',
+            testCase.inputs.bunUnit || 'mg/dL',
+            testCase.inputs.creatinineUnit || 'mg/dL'
           );
+          actual = bunCrResult.ratio;
           break;
         case 'ckd-epi-creatinine':
           actual = calc.ckdEpiCreatinine(

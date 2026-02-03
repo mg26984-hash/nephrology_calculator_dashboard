@@ -419,17 +419,48 @@ export default function Dashboard() {
           );
           break;
 
-        case "kinetic-egfr":
+        case "kinetic-egfr": {
+          // Handle BUN/Urea auto-converter with multi-option support for pre and post values
+          const preBunUnit = unitState.preBunValue || "BUN (mg/dL)";
+          const postBunUnit = unitState.postBunValue || "BUN (mg/dL)";
+          
+          // Convert pre-dialysis BUN/Urea to mg/dL
+          const preIsBUN = preBunUnit.includes("BUN");
+          const preIsSI = preBunUnit.includes("mmol/L");
+          const preBunRaw = calculatorState.preBunValue as number;
+          let preBunInMgDl = preBunRaw;
+          if (preIsBUN) {
+            preBunInMgDl = preIsSI ? preBunRaw / 0.357 : preBunRaw;
+          } else {
+            // Urea input
+            const ureaInMgDl = preIsSI ? preBunRaw / 0.357 : preBunRaw;
+            preBunInMgDl = ureaInMgDl * 0.467;
+          }
+          
+          // Convert post-dialysis BUN/Urea to mg/dL
+          const postIsBUN = postBunUnit.includes("BUN");
+          const postIsSI = postBunUnit.includes("mmol/L");
+          const postBunRaw = calculatorState.postBunValue as number;
+          let postBunInMgDl = postBunRaw;
+          if (postIsBUN) {
+            postBunInMgDl = postIsSI ? postBunRaw / 0.357 : postBunRaw;
+          } else {
+            // Urea input
+            const ureaInMgDl = postIsSI ? postBunRaw / 0.357 : postBunRaw;
+            postBunInMgDl = ureaInMgDl * 0.467;
+          }
+          
           calculationResult = calc.kineticEgfr(
-            getValue("preBUN"),
-            getValue("postBUN"),
+            preBunInMgDl,
+            postBunInMgDl,
             getValue("preCreatinine"),
             getValue("postCreatinine"),
             calculatorState.weight as number,
             calculatorState.sessionTime as number,
-            "mg/dL"
+            unitState.preCreatinine === "si" ? "μmol/L" : "mg/dL"
           );
           break;
+        }
 
         case "ckd-epi-cystatin-c":
           calculationResult = calc.ckdEpiCystatinC(
@@ -491,12 +522,10 @@ export default function Dashboard() {
 
         case "delta-gap":
           const deltaResult = calc.deltaGap(
-            getValue("sodium"),      // measuredAG uses sodium unit options
-            getValue("bicarbonate"), // measuredHCO3 uses bicarbonate unit options
-            getValue("sodium"),      // normalAG uses sodium unit options
-            getValue("bicarbonate"), // normalHCO3 uses bicarbonate unit options
-            unitState.sodium === "si" ? "mmol/L" : "mEq/L",
-            unitState.bicarbonate === "si" ? "mmol/L" : "mEq/L"
+            getValue("measuredAG"),   // measuredAG
+            getValue("measuredHCO3"), // measuredHCO3
+            getValue("normalAG"),     // normalAG (defaults to 12)
+            getValue("normalHCO3")    // normalHCO3 (defaults to 24)
           );
           calculationResult = deltaResult.ratio;
           break;
@@ -579,9 +608,9 @@ export default function Dashboard() {
           break;
 
         case "sodium-deficit":
-          calculationResult = calc.sodiumDeficit(
-            getValue("sodium"),
-            getValue("sodium"),
+          calculationResult = calc.sodiumDeficitHyponatremia(
+            getValue("currentNa"),
+            getValue("targetNa"),
             calculatorState.totalBodyWater as number
           );
           break;
@@ -918,7 +947,6 @@ export default function Dashboard() {
             getValue("weight"),
             getValue("height"),
             calculatorState.sex as "M" | "F",
-            unitState.weight === "si" ? "kg" : "lb",
             unitState.height === "si" ? "cm" : "in"
           );
           break;
@@ -1508,13 +1536,15 @@ export default function Dashboard() {
     ratioValue: ["mg/mg", "mg/g", "mg/mmol", "mg/L"],
     proteinValue: ["mg/dL", "g/L", "mg/L"],
     creatinineValue: ["mg/dL", "mmol/L"],
-    // BUN/Urea auto-converter options for osmolal-gap and curb-65
+    // BUN/Urea auto-converter options for osmolal-gap, curb-65, and kinetic-egfr
     bunValue: ["BUN (mg/dL)", "BUN (mmol/L)", "Urea (mg/dL)", "Urea (mmol/L)"],
+    preBunValue: ["BUN (mg/dL)", "BUN (mmol/L)", "Urea (mg/dL)", "Urea (mmol/L)"],
+    postBunValue: ["BUN (mg/dL)", "BUN (mmol/L)", "Urea (mg/dL)", "Urea (mmol/L)"],
   };
 
   const InlineUnitToggle = ({ inputId }: { inputId: string }) => {
     // Check if this input has multi-unit options (for 24-hour-protein calculator or BUN/Urea converters)
-    if ((selectedCalculatorId === "24-hour-protein" || selectedCalculatorId === "osmolal-gap" || selectedCalculatorId === "curb-65") && multiUnitOptions[inputId]) {
+    if ((selectedCalculatorId === "24-hour-protein" || selectedCalculatorId === "osmolal-gap" || selectedCalculatorId === "curb-65" || selectedCalculatorId === "kinetic-egfr") && multiUnitOptions[inputId]) {
       const options = multiUnitOptions[inputId];
       const currentUnit = unitState[inputId] || options[0];
       
@@ -3004,15 +3034,30 @@ export default function Dashboard() {
                         <p className="text-sm text-muted-foreground mt-2">{bunCrResult.interpretation}</p>
                       </div>
                       <div className="p-4 rounded-lg bg-muted/30 border border-border">
-                        <h3 className="text-sm font-semibold mb-3">Input Values</h3>
+                        <h3 className="text-sm font-semibold mb-3">Input Values (Converted to Standard Units)</h3>
                         <div className="grid grid-cols-2 gap-3">
                           <div>
-                            <p className="text-xs text-muted-foreground mb-1">BUN</p>
+                            <p className="text-xs text-muted-foreground mb-1">BUN (converted)</p>
                             <p className="text-sm font-mono font-medium">{bunCrResult.bunValue} mg/dL</p>
+                            {unitState.bunValue && unitState.bunValue.includes("Urea") && (
+                              <p className="text-xs text-blue-500 mt-1">
+                                → Converted from Urea input
+                              </p>
+                            )}
+                            {unitState.bunValue && unitState.bunValue.includes("mmol/L") && (
+                              <p className="text-xs text-amber-500 mt-1">
+                                → Converted from SI units
+                              </p>
+                            )}
                           </div>
                           <div>
-                            <p className="text-xs text-muted-foreground mb-1">Creatinine</p>
+                            <p className="text-xs text-muted-foreground mb-1">Creatinine (converted)</p>
                             <p className="text-sm font-mono font-medium">{bunCrResult.creatinineValue} mg/dL</p>
+                            {unitState.creatinine === "si" && (
+                              <p className="text-xs text-amber-500 mt-1">
+                                → Converted from μmol/L
+                              </p>
+                            )}
                           </div>
                         </div>
                       </div>

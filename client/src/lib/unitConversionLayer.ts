@@ -400,7 +400,7 @@ export function validateCanonicalUnits(
   const validUnits = new Set(Object.values(CANONICAL_UNITS));
   
   for (const [key, unit] of Object.entries(units)) {
-    if (!validUnits.has(unit)) {
+    if (!validUnits.has(unit as typeof CANONICAL_UNITS[keyof typeof CANONICAL_UNITS])) {
       console.warn(`Invalid canonical unit for ${key}: ${unit}`);
       return false;
     }
