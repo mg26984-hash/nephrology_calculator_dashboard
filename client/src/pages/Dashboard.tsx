@@ -491,10 +491,12 @@ export default function Dashboard() {
 
         case "delta-gap":
           const deltaResult = calc.deltaGap(
-            calculatorState.measuredAG as number,
-            calculatorState.measuredHCO3 as number,
-            calculatorState.normalAG as number,
-            calculatorState.normalHCO3 as number
+            getValue("sodium"),      // measuredAG uses sodium unit options
+            getValue("bicarbonate"), // measuredHCO3 uses bicarbonate unit options
+            getValue("sodium"),      // normalAG uses sodium unit options
+            getValue("bicarbonate"), // normalHCO3 uses bicarbonate unit options
+            unitState.sodium === "si" ? "mmol/L" : "mEq/L",
+            unitState.bicarbonate === "si" ? "mmol/L" : "mEq/L"
           );
           calculationResult = deltaResult.ratio;
           break;
@@ -903,10 +905,11 @@ export default function Dashboard() {
 
         case "lean-body-weight":
           calculationResult = calc.leanBodyWeight(
-            calculatorState.weight as number,
-            calculatorState.height as number,
+            getValue("weight"),
+            getValue("height"),
             calculatorState.sex as "M" | "F",
-            "cm"
+            unitState.weight === "si" ? "kg" : "lb",
+            unitState.height === "si" ? "cm" : "in"
           );
           break;
 
@@ -921,8 +924,8 @@ export default function Dashboard() {
           calculationResult = calc.caPhoProduct(
             getValue("calcium"),
             getValue("phosphate"),
-            "mg/dL",
-            "mg/dL"
+            unitState.calcium === "si" ? "mmol/L" : "mg/dL",
+            unitState.phosphate === "si" ? "mmol/L" : "mg/dL"
           );
           break;
 
@@ -977,12 +980,12 @@ export default function Dashboard() {
         case "curb-65":
           calculationResult = calc.curb65(
             Boolean(calculatorState.confusion),
-            getValue("urineaNitrogen"),
+            getValue("bun"),
             calculatorState.respiratoryRate as number,
             calculatorState.bloodPressureSystolic as number,
             calculatorState.bloodPressureDiastolic as number,
             calculatorState.age as number,
-            "mg/dL"
+            unitState.bun === "si" ? "mmol/L" : "mg/dL"
           );
           break;
 
@@ -1136,9 +1139,11 @@ export default function Dashboard() {
           mehranScore += egfrPoints;
           
           // SCr >1.5: 4 points (only if eGFR not provided)
-          const cinScr = calculatorState.creatinine as number || 1.0;
-          if (!calculatorState.egfr && cinScr > 1.5) {
-            breakdown.push({ factor: `Serum Creatinine >1.5 mg/dL (${cinScr})`, points: 4, present: true });
+          const cinScr = getValue("creatinine");
+          const creatinineThreshold = unitState.creatinine === "si" ? 132.6 : 1.5; // 1.5 mg/dL = 132.6 μmol/L
+          const creatinineUnit = unitState.creatinine === "si" ? "μmol/L" : "mg/dL";
+          if (!calculatorState.egfr && cinScr > creatinineThreshold) {
+            breakdown.push({ factor: `Serum Creatinine >${creatinineThreshold} ${creatinineUnit} (${cinScr})`, points: 4, present: true });
             mehranScore += 4;
           }
           
