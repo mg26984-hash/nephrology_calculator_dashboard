@@ -136,6 +136,12 @@ const unitOptions: { [inputId: string]: { conventional: string; si: string; conv
   chloride: { conventional: "mEq/L", si: "mmol/L", conversionFactor: 1 },
   bicarbonate: { conventional: "mEq/L", si: "mmol/L", conversionFactor: 1 },
   glucose: { conventional: "mg/dL", si: "mmol/L", conversionFactor: 0.0555 },
+  urineK: { conventional: "mEq/L", si: "mmol/L", conversionFactor: 1 },
+  plasmaK: { conventional: "mEq/L", si: "mmol/L", conversionFactor: 1 },
+  measuredCa: { conventional: "mg/dL", si: "mmol/L", conversionFactor: 0.25 },
+  albumin: { conventional: "g/dL", si: "g/L", conversionFactor: 0.1 },
+  qtInterval: { conventional: "ms", si: "ms", conversionFactor: 1 },
+  heartRate: { conventional: "bpm", si: "bpm", conversionFactor: 1 },
 };
 
 export default function Dashboard() {
@@ -532,8 +538,8 @@ export default function Dashboard() {
 
         case "ttkg":
           calculationResult = calc.ttkg(
-            calculatorState.urineK as number,
-            calculatorState.plasmaK as number,
+            getValue("urineK"),
+            getValue("plasmaK"),
             calculatorState.urineOsm as number,
             calculatorState.plasmaOsm as number
           );
@@ -541,17 +547,17 @@ export default function Dashboard() {
 
         case "water-deficit-hypernatremia":
           calculationResult = calc.waterDeficitHypernatremia(
-            calculatorState.currentNa as number,
-            calculatorState.targetNa as number,
+            getValue("sodium"),
+            getValue("sodium"),
             calculatorState.totalBodyWater as number
           );
           break;
 
         case "corrected-sodium-hyperglycemia":
           calculationResult = calc.correctedSodiumHyperglycemia(
-            calculatorState.measuredNa as number,
+            getValue("sodium"),
             getValue("glucose"),
-            "mg/dL"
+            unitState.glucose === "si" ? "mmol/L" : "mg/dL"
           );
           break;
 
@@ -566,9 +572,9 @@ export default function Dashboard() {
           break;
 
         case "sodium-deficit":
-          calculationResult = calc.sodiumDeficitHyponatremia(
-            calculatorState.currentNa as number,
-            calculatorState.targetNa as number,
+          calculationResult = calc.sodiumDeficit(
+            getValue("sodium"),
+            getValue("sodium"),
             calculatorState.totalBodyWater as number
           );
           break;
@@ -577,14 +583,14 @@ export default function Dashboard() {
           calculationResult = calc.correctedCalcium(
             getValue("measuredCa"),
             getValue("albumin"),
-            "g/dL"
+            unitState.albumin === "si" ? "g/L" : "g/dL"
           );
           break;
 
         case "qtc-bazett":
           calculationResult = calc.qtcBazett(
-            calculatorState.qtInterval as number,
-            calculatorState.heartRate as number
+            getValue("qtInterval"),
+            getValue("heartRate")
           );
           break;
 
