@@ -501,17 +501,27 @@ export default function Dashboard() {
           calculationResult = deltaResult.ratio;
           break;
 
-        case "osmolal-gap":
+        case "osmolal-gap": {
+          // Handle BUN/Urea auto-converter with multi-option support
+          const bunUnit = unitState.bunValue || "BUN (mg/dL)";
+          const isBUN = bunUnit.includes("BUN");
+          const isSI = bunUnit.includes("mmol/L");
+          const bunValue = calculatorState.bunValue as number;
+          const bunInMgDl = isBUN
+            ? (isSI ? bunValue / 0.357 : bunValue)
+            : (isSI ? (bunValue / 0.357) * 0.467 : bunValue * 0.467);
+          
           calculationResult = calc.osmolalGap(
             calculatorState.measuredOsmolality as number,
             getValue("sodium"),
             getValue("glucose"),
-            getValue("bun"),
+            bunInMgDl,
             calculatorState.ethanol as number,
             unitState.glucose === "si" ? "mmol/L" : "mg/dL",
-            unitState.bun === "si" ? "mmol/L" : "mg/dL"
+            "mg/dL"
           );
           break;
+        }
 
         case "urine-anion-gap":
           calculationResult = calc.urineAnionGap(
@@ -977,17 +987,27 @@ export default function Dashboard() {
           );
           break;
 
-        case "curb-65":
+        case "curb-65": {
+          // Handle BUN/Urea auto-converter with multi-option support
+          const curb65BunUnit = unitState.bunValue || "BUN (mg/dL)";
+          const curb65IsBUN = curb65BunUnit.includes("BUN");
+          const curb65IsSI = curb65BunUnit.includes("mmol/L");
+          const curb65BunValue = calculatorState.bunValue as number;
+          const curb65BunInMgDl = curb65IsBUN
+            ? (curb65IsSI ? curb65BunValue / 0.357 : curb65BunValue)
+            : (curb65IsSI ? (curb65BunValue / 0.357) * 0.467 : curb65BunValue * 0.467);
+          
           calculationResult = calc.curb65(
             Boolean(calculatorState.confusion),
-            getValue("bun"),
+            curb65BunInMgDl,
             calculatorState.respiratoryRate as number,
             calculatorState.bloodPressureSystolic as number,
             calculatorState.bloodPressureDiastolic as number,
             calculatorState.age as number,
-            unitState.bun === "si" ? "mmol/L" : "mg/dL"
+            "mg/dL"
           );
           break;
+        }
 
         case "roks":
           calculationResult = calc.roks(
@@ -1488,11 +1508,13 @@ export default function Dashboard() {
     ratioValue: ["mg/mg", "mg/g", "mg/mmol", "mg/L"],
     proteinValue: ["mg/dL", "g/L", "mg/L"],
     creatinineValue: ["mg/dL", "mmol/L"],
+    // BUN/Urea auto-converter options for osmolal-gap and curb-65
+    bunValue: ["BUN (mg/dL)", "BUN (mmol/L)", "Urea (mg/dL)", "Urea (mmol/L)"],
   };
 
   const InlineUnitToggle = ({ inputId }: { inputId: string }) => {
-    // Check if this input has multi-unit options (for 24-hour-protein calculator)
-    if (selectedCalculatorId === "24-hour-protein" && multiUnitOptions[inputId]) {
+    // Check if this input has multi-unit options (for 24-hour-protein calculator or BUN/Urea converters)
+    if ((selectedCalculatorId === "24-hour-protein" || selectedCalculatorId === "osmolal-gap" || selectedCalculatorId === "curb-65") && multiUnitOptions[inputId]) {
       const options = multiUnitOptions[inputId];
       const currentUnit = unitState[inputId] || options[0];
       

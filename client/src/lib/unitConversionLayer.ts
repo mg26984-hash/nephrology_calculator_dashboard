@@ -450,3 +450,93 @@ export function validateCanonicalUnits(
  *   return { ratio, ... };
  * }
  */
+
+// ============================================================================
+// BUN-UREA AUTO-CONVERTER
+// ============================================================================
+
+/**
+ * Convert BUN value to standard mg/dL format, supporting both BUN and Urea inputs
+ * 
+ * This function implements the conversion logic from BUN/Creatinine Ratio calculator
+ * to allow all BUN-using calculators to accept both BUN and Urea inputs.
+ * 
+ * Conversion Rules:
+ * - BUN (mg/dL) × 0.357 = Urea (mmol/L)
+ * - BUN (mmol/L) / 0.357 = BUN (mg/dL)
+ * - Urea (mg/dL) × 0.467 = BUN (mg/dL)
+ * - Urea (mmol/L) / 0.357 = Urea (mg/dL), then × 0.467 = BUN (mg/dL)
+ * 
+ * @param inputValue - The numeric value entered by user
+ * @param inputType - Type of input: "bun" or "urea"
+ * @param inputUnit - Unit of the input: "mg/dL", "mmol/L"
+ * @returns BUN value in mg/dL (standard format for calculations)
+ * 
+ * @example
+ * // User enters 28 mg/dL BUN
+ * const bunMgDl = convertToBUNmgDl(28, "bun", "mg/dL");
+ * // Returns: 28
+ * 
+ * @example
+ * // User enters 9.94 mmol/L BUN
+ * const bunMgDl = convertToBUNmgDl(9.94, "bun", "mmol/L");
+ * // Returns: 27.8 (approximately)
+ * 
+ * @example
+ * // User enters 60 mg/dL Urea
+ * const bunMgDl = convertToBUNmgDl(60, "urea", "mg/dL");
+ * // Returns: 28.02 (60 × 0.467)
+ * 
+ * @example
+ * // User enters 10 mmol/L Urea
+ * const bunMgDl = convertToBUNmgDl(10, "urea", "mmol/L");
+ * // First: 10 / 0.357 = 28.01 mg/dL (urea)
+ * // Then: 28.01 × 0.467 = 13.08 mg/dL (BUN)
+ */
+export function convertToBUNmgDl(
+  inputValue: number,
+  inputType: "bun" | "urea",
+  inputUnit: "mg/dL" | "mmol/L"
+): number {
+  let bunMgDl = 0;
+
+  if (inputType === "bun") {
+    // BUN input - convert if needed
+    if (inputUnit === "mmol/L") {
+      // BUN (mmol/L) / 0.357 = BUN (mg/dL)
+      bunMgDl = inputValue / 0.357;
+    } else {
+      // Already in mg/dL
+      bunMgDl = inputValue;
+    }
+  } else if (inputType === "urea") {
+    // Urea input - convert to BUN in mg/dL
+    if (inputUnit === "mg/dL") {
+      // Urea (mg/dL) × 0.467 = BUN (mg/dL)
+      bunMgDl = inputValue * 0.467;
+    } else {
+      // inputUnit === "mmol/L"
+      // First convert mmol/L to mg/dL: Urea (mmol/L) / 0.357 = Urea (mg/dL)
+      // Then convert urea to BUN: Urea (mg/dL) × 0.467 = BUN (mg/dL)
+      const ureaMgDl = inputValue / 0.357;
+      bunMgDl = ureaMgDl * 0.467;
+    }
+  }
+
+  return bunMgDl;
+}
+
+/**
+ * Convert BUN value in mg/dL to Urea in mmol/L for display purposes
+ * 
+ * @param bunMgDl - BUN value in mg/dL
+ * @returns Urea value in mmol/L
+ * 
+ * @example
+ * const ureaMmol = convertBUNtoUreaMmol(28);
+ * // Returns: 9.996 (28 × 0.357)
+ */
+export function convertBUNtoUreaMmol(bunMgDl: number): number {
+  // BUN (mg/dL) × 0.357 = Urea (mmol/L)
+  return bunMgDl * 0.357;
+}

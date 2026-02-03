@@ -372,7 +372,7 @@ export const calculators: Calculator[] = [
       { id: "measuredOsmolality", label: "Measured Osmolality", type: "number", unit: "mOsm/kg", placeholder: "320", required: true },
       { id: "sodium", label: "Sodium", type: "number", unit: "mEq/L", placeholder: "140", required: true },
       { id: "glucose", label: "Glucose", type: "number", unit: "mg/dL or mmol/L", placeholder: "100", required: true },
-      { id: "bun", label: "BUN", type: "number", unit: "mg/dL or mmol/L", placeholder: "20", required: true },
+      { id: "bunValue", label: "BUN/Urea", type: "number", unit: "Select unit", placeholder: "20", required: true },
       { id: "ethanol", label: "Ethanol (if known)", type: "number", unit: "mg/dL", placeholder: "0" },
       { id: "glucoseUnit", label: "Glucose Unit", type: "select", options: [{ value: "mg/dL", label: "mg/dL" }, { value: "mmol/L", label: "mmol/L" }], required: true },
       { id: "bunUnit", label: "BUN Unit", type: "select", options: [{ value: "mg/dL", label: "mg/dL" }, { value: "mmol/L", label: "mmol/L" }], required: true },
@@ -1538,7 +1538,7 @@ export const calculators: Calculator[] = [
     category: "Systemic Diseases & Scores",
     inputs: [
       { id: "confusion", label: "Confusion (new onset)", type: "checkbox" },
-      { id: "urineaNitrogen", label: "Urea Nitrogen (BUN)", type: "number", unit: "mg/dL or mmol/L", placeholder: "20", required: true },
+      { id: "bunValue", label: "BUN/Urea", type: "number", unit: "Select unit", placeholder: "20", required: true },
       { id: "respiratoryRate", label: "Respiratory Rate", type: "number", unit: "breaths/min", placeholder: "20", required: true },
       { id: "bloodPressureSystolic", label: "Systolic Blood Pressure", type: "number", unit: "mmHg", placeholder: "110", required: true },
       { id: "bloodPressureDiastolic", label: "Diastolic Blood Pressure", type: "number", unit: "mmHg", placeholder: "70", required: true },
