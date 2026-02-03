@@ -148,6 +148,7 @@ export default function Dashboard() {
     breakdown: { factor: string; points: number; present: boolean }[];
   } | null>(null);
   const [fraxResult, setFraxResult] = useState<{ majorFracture: number; hipFracture: number } | null>(null);
+  const [bunCrResult, setBunCrResult] = useState<calc.BUNCrRatioResult | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [viewingCategoryList, setViewingCategoryList] = useState<string | null>(null);
@@ -506,6 +507,19 @@ export default function Dashboard() {
             calculatorState.urineK as number,
             calculatorState.urineCl as number
           );
+          break;
+
+        case "bun-creatinine-ratio":
+          const bunCrResult = calc.bunCreatinineRatio(
+            calculatorState.bunValue as number,
+            calculatorState.creatinine as number,
+            calculatorState.inputType as "bun" | "urea",
+            calculatorState.bunUnit as "mg/dL" | "mmol/L",
+            calculatorState.creatinineUnit as "mg/dL" | "μmol/L",
+            calculatorState.ureaUnit as "mg/dL" | "mmol/L"
+          );
+          setBunCrResult(bunCrResult);
+          setResult(null);
           break;
 
         case "ttkg":
@@ -1187,6 +1201,7 @@ export default function Dashboard() {
     setResultInterpretation("");
     setBanffResult(null);
     setKdpiResult(null);
+    setBunCrResult(null);
     setMobileMenuOpen(false);
     // Track recent calculator usage
     addToRecent(calcId);
@@ -2907,6 +2922,69 @@ export default function Dashboard() {
                           <p className="text-sm text-blue-600 dark:text-blue-400">
                             <strong>Note:</strong> This tool is based on Banff 2022 classification criteria. Clinical context, including graft function, time post-transplant, immunosuppression regimen, and prior rejection episodes should be considered.
                           </p>
+                        </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* BUN/Creatinine Ratio Result */}
+              {selectedCalculator.id === 'bun-creatinine-ratio' && bunCrResult && result === null && (
+                <Card className={`border-l-4 ${
+                  bunCrResult.category === 'Low' ? 'border-blue-500 bg-blue-500/5' :
+                  bunCrResult.category === 'Normal' ? 'border-emerald-500 bg-emerald-500/5' :
+                  bunCrResult.category === 'Elevated' ? 'border-amber-500 bg-amber-500/5' :
+                  'border-red-500 bg-red-500/5'
+                }`}>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-base flex items-center gap-2">
+                      <Activity className="w-5 h-5" />
+                      BUN/Creatinine Ratio Result
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-4">
+                      <div className={`p-4 rounded-lg border ${
+                        bunCrResult.category === 'Low' ? 'bg-blue-500/10 border-blue-500/30' :
+                        bunCrResult.category === 'Normal' ? 'bg-emerald-500/10 border-emerald-500/30' :
+                        bunCrResult.category === 'Elevated' ? 'bg-amber-500/10 border-amber-500/30' :
+                        'bg-red-500/10 border-red-500/30'
+                      }`}>
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="text-sm font-semibold text-muted-foreground">BUN/Creatinine Ratio</span>
+                          <span className={`text-xs font-bold px-3 py-1 rounded-full ${
+                            bunCrResult.category === 'Low' ? 'bg-blue-500/20 text-blue-700 dark:text-blue-300' :
+                            bunCrResult.category === 'Normal' ? 'bg-emerald-500/20 text-emerald-700 dark:text-emerald-300' :
+                            bunCrResult.category === 'Elevated' ? 'bg-amber-500/20 text-amber-700 dark:text-amber-300' :
+                            'bg-red-500/20 text-red-700 dark:text-red-300'
+                          }`}>
+                            {bunCrResult.category}
+                          </span>
+                        </div>
+                        <div className="text-3xl font-bold">{bunCrResult.ratio}</div>
+                        <p className="text-sm text-muted-foreground mt-2">{bunCrResult.interpretation}</p>
+                      </div>
+                      <div className="p-4 rounded-lg bg-muted/30 border border-border">
+                        <h3 className="text-sm font-semibold mb-3">Input Values</h3>
+                        <div className="grid grid-cols-2 gap-3">
+                          <div>
+                            <p className="text-xs text-muted-foreground mb-1">BUN</p>
+                            <p className="text-sm font-mono font-medium">{bunCrResult.bunValue} mg/dL</p>
+                          </div>
+                          <div>
+                            <p className="text-xs text-muted-foreground mb-1">Creatinine</p>
+                            <p className="text-sm font-mono font-medium">{bunCrResult.creatinineValue} mg/dL</p>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="p-4 rounded-lg bg-blue-500/10 border border-blue-500/30">
+                        <div className="flex items-start gap-2">
+                          <Info className="w-4 h-4 text-blue-500 mt-0.5 flex-shrink-0" />
+                          <div>
+                            <p className="text-sm font-semibold text-blue-700 dark:text-blue-300 mb-1">Clinical Significance</p>
+                            <p className="text-sm text-blue-600 dark:text-blue-400">{bunCrResult.clinicalSignificance}</p>
+                          </div>
                         </div>
                       </div>
                     </div>

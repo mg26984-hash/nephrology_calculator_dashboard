@@ -415,6 +415,39 @@ export const calculators: Calculator[] = [
     ],
     references: ["Batlle DC et al. N Engl J Med. 1988;318(10):594-599"],
   },
+  {
+    id: "bun-creatinine-ratio",
+    name: "BUN/Creatinine Ratio",
+    description: "Differentiates prerenal azotemia from intrinsic renal disease; supports AKI workup",
+    category: "Acute Kidney Injury (AKI) Workup",
+    inputs: [
+      { id: "inputType", label: "Input Type", type: "select", options: [{ value: "bun", label: "BUN (Blood Urea Nitrogen)" }, { value: "urea", label: "Urea" }], required: true },
+      { id: "bunValue", label: "BUN / Urea", type: "number", unit: "mg/dL", placeholder: "20", required: true, unitToggle: { units: ["mg/dL", "mmol/L"], conversionFactor: 0.357 } },
+      { id: "creatinine", label: "Serum Creatinine", type: "number", unit: "mg/dL", placeholder: "1.0", required: true, unitToggle: { units: ["mg/dL", "μmol/L"], conversionFactor: 88.4 } },
+    ],
+    resultLabel: "BUN/Creatinine Ratio",
+    resultUnit: "ratio",
+    interpretation: (value) => {
+      if (value < 10) return "Low - suggests intrinsic renal disease or decreased BUN production";
+      if (value <= 20) return "Normal - proportional elevation or normal kidney function";
+      if (value <= 30) return "Elevated - suggests prerenal azotemia";
+      return "High - strongly suggests prerenal azotemia with significant volume depletion";
+    },
+    referenceRanges: [
+      { label: "Low (<10)", max: 10, unit: "ratio", note: "Intrinsic renal disease, liver disease, malnutrition" },
+      { label: "Normal (10-20)", min: 10, max: 20, unit: "ratio", note: "Proportional elevation or normal" },
+      { label: "Elevated (20-30)", min: 20, max: 30, unit: "ratio", note: "Prerenal azotemia" },
+      { label: "High (>30)", min: 30, unit: "ratio", note: "Significant prerenal azotemia" },
+    ],
+    clinicalPearls: [
+      "Normal ratio: 10-20 (BUN in mg/dL, Creatinine in mg/dL)",
+      "Ratio >20 suggests prerenal azotemia (volume depletion, heart failure, cirrhosis)",
+      "Ratio <10 suggests intrinsic renal disease, liver disease, or malnutrition",
+      "Use with clinical context: volume status, medications (NSAIDs, ACE-I), urine output",
+      "Auto-converts urea to BUN: BUN = urea / 2.14 (for mg/dL values)",
+    ],
+    references: ["Levey AS et al. Kidney Int. 2005;67(6):2089-2100"],
+  },
   // ============================================================================
   // ELECTROLYTES & ACID-BASE
   // ============================================================================

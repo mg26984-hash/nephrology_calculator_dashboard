@@ -1733,3 +1733,98 @@ export function estimated24HourProtein(
 
   return Math.round(gPerDay * 1000) / 1000;
 }
+
+
+// ============================================================================
+// BUN/CREATININE RATIO CALCULATOR
+// ============================================================================
+
+export interface BUNCrRatioResult {
+  ratio: number;
+  bunValue: number;
+  creatinineValue: number;
+  interpretation: string;
+  category: string;
+  clinicalSignificance: string;
+}
+
+export function bunCreatinineRatio(
+  bunInput: number,
+  creatinineInput: number,
+  inputType: "bun" | "urea", // "bun" for BUN (mg/dL), "urea" for urea (mg/dL or mmol/L)
+  bunUnit: "mg/dL" | "mmol/L" = "mg/dL",
+  creatinineUnit: "mg/dL" | "μmol/L" = "mg/dL",
+  ureaUnit: "mg/dL" | "mmol/L" = "mg/dL"
+): BUNCrRatioResult {
+  // Convert all values to mg/dL for calculation
+  let bun = bunInput;
+  let creatinine = creatinineInput;
+
+  // Convert BUN if needed
+  if (bunUnit === "mmol/L") {
+    bun = bun * 2.8; // mmol/L to mg/dL
+  }
+
+  // Convert urea to BUN if input type is urea
+  if (inputType === "urea") {
+    if (ureaUnit === "mmol/L") {
+      // mmol/L to mg/dL
+      bun = bunInput * 2.8;
+    } else {
+      // mg/dL urea to BUN: BUN = urea / 2.14
+      bun = bunInput / 2.14;
+    }
+  }
+
+  // Convert creatinine to mg/dL if needed
+  if (creatinineUnit === "μmol/L") {
+    creatinine = creatinineInput / 88.4; // μmol/L to mg/dL
+  }
+
+  // Prevent division by zero
+  if (creatinine <= 0) {
+    return {
+      ratio: 0,
+      bunValue: bun,
+      creatinineValue: creatinine,
+      interpretation: "Invalid input: Creatinine must be > 0",
+      category: "Error",
+      clinicalSignificance: "Unable to calculate ratio",
+    };
+  }
+
+  // Calculate BUN/Creatinine Ratio
+  const ratio = bun / creatinine;
+
+  // Determine category and interpretation
+  let category = "";
+  let interpretation = "";
+  let clinicalSignificance = "";
+
+  if (ratio < 10) {
+    category = "Low";
+    interpretation = "Low BUN/Creatinine Ratio";
+    clinicalSignificance = "Suggests intrinsic renal disease, liver disease, malnutrition, or pregnancy. BUN production is decreased or creatinine is increased disproportionately.";
+  } else if (ratio >= 10 && ratio <= 20) {
+    category = "Normal";
+    interpretation = "Normal BUN/Creatinine Ratio";
+    clinicalSignificance = "Typical ratio in healthy individuals. Suggests proportional elevation of both BUN and creatinine, or normal kidney function.";
+  } else if (ratio > 20 && ratio <= 30) {
+    category = "Elevated";
+    interpretation = "Elevated BUN/Creatinine Ratio";
+    clinicalSignificance = "Suggests prerenal azotemia (volume depletion, heart failure, cirrhosis) or high protein diet. BUN rises more than creatinine.";
+  } else {
+    category = "High";
+    interpretation = "High BUN/Creatinine Ratio";
+    clinicalSignificance = "Strongly suggests prerenal azotemia with significant volume depletion or reduced renal perfusion. Requires urgent evaluation of volume status and renal perfusion.";
+  }
+
+  return {
+    ratio: Math.round(ratio * 10) / 10,
+    bunValue: Math.round(bun * 10) / 10,
+    creatinineValue: Math.round(creatinine * 100) / 100,
+    interpretation,
+    category,
+    clinicalSignificance,
+  };
+}
