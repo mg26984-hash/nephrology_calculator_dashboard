@@ -148,8 +148,8 @@ export const calculators: Calculator[] = [
     description: "Calculates GFR from urea kinetics during dialysis",
     category: "Kidney Function & CKD Risk",
     inputs: [
-      { id: "preBunValue", label: "Pre-Dialysis BUN/Urea", type: "number", unit: "mg/dL or mmol/L", placeholder: "60", required: true },
-      { id: "postBunValue", label: "Post-Dialysis BUN/Urea", type: "number", unit: "mg/dL or mmol/L", placeholder: "20", required: true },
+      { id: "preBUN", label: "Pre-Dialysis BUN", type: "number", unit: "mg/dL or mmol/L", placeholder: "60", required: true },
+      { id: "postBUN", label: "Post-Dialysis BUN", type: "number", unit: "mg/dL or mmol/L", placeholder: "20", required: true },
       { id: "preCreatinine", label: "Pre-Dialysis Creatinine", type: "number", unit: "mg/dL or μmol/L", placeholder: "8", required: true },
       { id: "postCreatinine", label: "Post-Dialysis Creatinine", type: "number", unit: "mg/dL or μmol/L", placeholder: "6", required: true },
       { id: "weight", label: "Body Weight", type: "number", unit: "kg", placeholder: "70", required: true },
@@ -372,9 +372,10 @@ export const calculators: Calculator[] = [
       { id: "measuredOsmolality", label: "Measured Osmolality", type: "number", unit: "mOsm/kg", placeholder: "320", required: true },
       { id: "sodium", label: "Sodium", type: "number", unit: "mEq/L", placeholder: "140", required: true },
       { id: "glucose", label: "Glucose", type: "number", unit: "mg/dL or mmol/L", placeholder: "100", required: true },
-      { id: "bunValue", label: "BUN/Urea", type: "number", unit: "mg/dL or mmol/L", placeholder: "20", required: true },
+      { id: "bun", label: "BUN", type: "number", unit: "mg/dL or mmol/L", placeholder: "20", required: true },
       { id: "ethanol", label: "Ethanol (if known)", type: "number", unit: "mg/dL", placeholder: "0" },
       { id: "glucoseUnit", label: "Glucose Unit", type: "select", options: [{ value: "mg/dL", label: "mg/dL" }, { value: "mmol/L", label: "mmol/L" }], required: true },
+      { id: "bunUnit", label: "BUN Unit", type: "select", options: [{ value: "mg/dL", label: "mg/dL" }, { value: "mmol/L", label: "mmol/L" }], required: true },
     ],
     resultLabel: "Osmolal Gap",
     resultUnit: "mOsm/kg",
@@ -413,39 +414,6 @@ export const calculators: Calculator[] = [
       "Type 1 RTA: positive UAG, urine pH >5.5, may have stones",
     ],
     references: ["Batlle DC et al. N Engl J Med. 1988;318(10):594-599"],
-  },
-  {
-    id: "bun-creatinine-ratio",
-    name: "BUN/Creatinine Ratio",
-    description: "Differentiates prerenal azotemia from intrinsic renal disease; supports AKI workup",
-    category: "Acute Kidney Injury (AKI) Workup",
-    inputs: [
-      { id: "inputType", label: "Input Type", type: "select", options: [{ value: "bun", label: "BUN (Blood Urea Nitrogen)" }, { value: "urea", label: "Urea" }], required: true },
-      { id: "bunValue", label: "BUN / Urea", type: "number", unit: "mg/dL", placeholder: "20", required: true, unitToggle: { units: ["mg/dL", "mmol/L"], conversionFactor: 0.357 } },
-      { id: "creatinine", label: "Serum Creatinine", type: "number", unit: "mg/dL", placeholder: "1.0", required: true, unitToggle: { units: ["mg/dL", "μmol/L"], conversionFactor: 88.4 } },
-    ],
-    resultLabel: "BUN/Creatinine Ratio",
-    resultUnit: "ratio",
-    interpretation: (value) => {
-      if (value < 10) return "Low - suggests intrinsic renal disease or decreased BUN production";
-      if (value <= 20) return "Normal - proportional elevation or normal kidney function";
-      if (value <= 30) return "Elevated - suggests prerenal azotemia";
-      return "High - strongly suggests prerenal azotemia with significant volume depletion";
-    },
-    referenceRanges: [
-      { label: "Low (<10)", max: 10, unit: "ratio", note: "Intrinsic renal disease, liver disease, malnutrition" },
-      { label: "Normal (10-20)", min: 10, max: 20, unit: "ratio", note: "Proportional elevation or normal" },
-      { label: "Elevated (20-30)", min: 20, max: 30, unit: "ratio", note: "Prerenal azotemia" },
-      { label: "High (>30)", min: 30, unit: "ratio", note: "Significant prerenal azotemia" },
-    ],
-    clinicalPearls: [
-      "Normal ratio: 10-20 (BUN in mg/dL, Creatinine in mg/dL)",
-      "Ratio >20 suggests prerenal azotemia (volume depletion, heart failure, cirrhosis)",
-      "Ratio <10 suggests intrinsic renal disease, liver disease, or malnutrition",
-      "Use with clinical context: volume status, medications (NSAIDs, ACE-I), urine output",
-      "Auto-converts urea to BUN: BUN = urea / 2.14 (for mg/dL values)",
-    ],
-    references: ["Levey AS et al. Kidney Int. 2005;67(6):2089-2100"],
   },
   // ============================================================================
   // ELECTROLYTES & ACID-BASE
@@ -769,11 +737,12 @@ export const calculators: Calculator[] = [
     description: "Measures dialysis dose - most important adequacy parameter",
     category: "Dialysis Adequacy",
     inputs: [
-      { id: "preBunValue", label: "Pre-Dialysis BUN/Urea", type: "number", unit: "mg/dL or mmol/L", placeholder: "60", required: true },
-      { id: "postBunValue", label: "Post-Dialysis BUN/Urea", type: "number", unit: "mg/dL or mmol/L", placeholder: "20", required: true },
+      { id: "preBUN", label: "Pre-Dialysis BUN", type: "number", unit: "mg/dL or mmol/L", placeholder: "60", required: true },
+      { id: "postBUN", label: "Post-Dialysis BUN", type: "number", unit: "mg/dL or mmol/L", placeholder: "20", required: true },
       { id: "postWeight", label: "Post-Dialysis Weight", type: "number", unit: "kg", placeholder: "70", required: true },
       { id: "sessionTime", label: "Session Duration", type: "number", unit: "minutes", placeholder: "240", required: true },
       { id: "ultrafiltration", label: "Ultrafiltration Volume", type: "number", unit: "L", placeholder: "3", required: true },
+      { id: "bunUnit", label: "BUN Unit", type: "select", options: [{ value: "mg/dL", label: "mg/dL" }, { value: "mmol/L", label: "mmol/L" }], required: true },
     ],
     resultLabel: "Kt/V",
     resultUnit: "ratio",
@@ -952,8 +921,9 @@ export const calculators: Calculator[] = [
     description: "Simplest measure of hemodialysis adequacy",
     category: "Dialysis Adequacy",
     inputs: [
-      { id: "preBunValue", label: "Pre-Dialysis BUN/Urea", type: "number", unit: "mg/dL or mmol/L", placeholder: "60", required: true },
-      { id: "postBunValue", label: "Post-Dialysis BUN/Urea", type: "number", unit: "mg/dL or mmol/L", placeholder: "20", required: true },
+      { id: "preBUN", label: "Pre-Dialysis BUN", type: "number", unit: "mg/dL or mmol/L", placeholder: "60", required: true },
+      { id: "postBUN", label: "Post-Dialysis BUN", type: "number", unit: "mg/dL or mmol/L", placeholder: "20", required: true },
+      { id: "bunUnit", label: "BUN Unit", type: "select", options: [{ value: "mg/dL", label: "mg/dL" }, { value: "mmol/L", label: "mmol/L" }], required: true },
     ],
     resultLabel: "URR",
     resultUnit: "%",
@@ -1535,11 +1505,12 @@ export const calculators: Calculator[] = [
     category: "Systemic Diseases & Scores",
     inputs: [
       { id: "confusion", label: "Confusion (new onset)", type: "checkbox" },
-      { id: "bunValue", label: "BUN/Urea", type: "number", unit: "mg/dL or mmol/L", placeholder: "20", required: true },
+      { id: "urineaNitrogen", label: "Urea Nitrogen (BUN)", type: "number", unit: "mg/dL or mmol/L", placeholder: "20", required: true },
       { id: "respiratoryRate", label: "Respiratory Rate", type: "number", unit: "breaths/min", placeholder: "20", required: true },
       { id: "bloodPressureSystolic", label: "Systolic Blood Pressure", type: "number", unit: "mmHg", placeholder: "110", required: true },
       { id: "bloodPressureDiastolic", label: "Diastolic Blood Pressure", type: "number", unit: "mmHg", placeholder: "70", required: true },
       { id: "age", label: "Age", type: "number", unit: "years", placeholder: "65", required: true },
+      { id: "bunUnit", label: "BUN Unit", type: "select", options: [{ value: "mg/dL", label: "mg/dL" }, { value: "mmol/L", label: "mmol/L" }], required: true },
     ],
     resultLabel: "CURB-65 Score",
     resultUnit: "points",

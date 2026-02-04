@@ -49,7 +49,6 @@ import { useTheme } from "@/contexts/ThemeContext";
 import { cn } from "@/lib/utils";
 import SearchInput from "@/components/SearchInput";
 import { EGFRComparison } from "@/components/EGFRComparison";
-import ConversionReferenceCard from "@/components/ConversionReferenceCard";
 import { getResultColorCoding } from "@/lib/resultColorCoding";
 import { UnitConversionTooltip, hasUnitConversion } from "@/components/UnitConversionTooltip";
 
@@ -101,14 +100,13 @@ const unitOptions: { [inputId: string]: { conventional: string; si: string; conv
   urineCr: { conventional: "mg/dL", si: "μmol/L", conversionFactor: 88.4 },
   donorCreatinine: { conventional: "mg/dL", si: "μmol/L", conversionFactor: 88.4 },
   bun: { conventional: "mg/dL", si: "mmol/L", conversionFactor: 0.357 },
-  bunValue: { conventional: "mg/dL", si: "mmol/L", conversionFactor: 0.357 },
   preBUN: { conventional: "mg/dL", si: "mmol/L", conversionFactor: 0.357 },
   postBUN: { conventional: "mg/dL", si: "mmol/L", conversionFactor: 0.357 },
   plasmaUrea: { conventional: "mg/dL", si: "mmol/L", conversionFactor: 0.357 },
   urineUrea: { conventional: "mg/dL", si: "mmol/L", conversionFactor: 0.357 },
   urineaNitrogen: { conventional: "mg/dL", si: "mmol/L", conversionFactor: 0.357 },
   glucose: { conventional: "mg/dL", si: "mmol/L", conversionFactor: 0.0555 },
-  albumin: { conventional: "g/dL", si: "g/L", conversionFactor: 0.1 },
+  albumin: { conventional: "g/dL", si: "g/L", conversionFactor: 10 },
   // UACR inputs
   urineAlbumin: { conventional: "mg", si: "μg", conversionFactor: 1000 },
   urineCreatinineUACR: { conventional: "g", si: "mg", conversionFactor: 1000 },
@@ -131,25 +129,13 @@ const unitOptions: { [inputId: string]: { conventional: string; si: string; conv
   ratioValue: { conventional: "mg/mg", si: "mg/mmol", conversionFactor: 113.12 },
   proteinValue: { conventional: "mg/dL", si: "g/L", conversionFactor: 0.01 },
   creatinineValue: { conventional: "mg/dL", si: "mmol/L", conversionFactor: 0.0884 },
-  cystatinC: { conventional: "mg/L", si: "mg/mmol", conversionFactor: 1.04 },
-  sodium: { conventional: "mEq/L", si: "mmol/L", conversionFactor: 1 },
-  chloride: { conventional: "mEq/L", si: "mmol/L", conversionFactor: 1 },
-  bicarbonate: { conventional: "mEq/L", si: "mmol/L", conversionFactor: 1 },
-  urineK: { conventional: "mEq/L", si: "mmol/L", conversionFactor: 1 },
-  plasmaK: { conventional: "mEq/L", si: "mmol/L", conversionFactor: 1 },
-  qtInterval: { conventional: "ms", si: "ms", conversionFactor: 1 },
-  heartRate: { conventional: "bpm", si: "bpm", conversionFactor: 1 },
 };
 
 export default function Dashboard() {
   const { theme, toggleTheme } = useTheme();
   const [selectedCalculatorId, setSelectedCalculatorId] = useState<string | null>(null);
   const [calculatorState, setCalculatorState] = useState<CalculatorState>({});
-  // Unit state with localStorage persistence for user preferences
-  const [unitState, setUnitState] = useState<UnitState>(() => {
-    const saved = localStorage.getItem('nephrology-calculator-unit-preferences');
-    return saved ? JSON.parse(saved) : {};
-  });
+  const [unitState, setUnitState] = useState<UnitState>({});
   const [result, setResult] = useState<number | null>(null);
   const [resultInterpretation, setResultInterpretation] = useState<string>("");
   const [banffResult, setBanffResult] = useState<calc.BanffResult | null>(null);
@@ -162,7 +148,6 @@ export default function Dashboard() {
     breakdown: { factor: string; points: number; present: boolean }[];
   } | null>(null);
   const [fraxResult, setFraxResult] = useState<{ majorFracture: number; hipFracture: number } | null>(null);
-  const [bunCrResult, setBunCrResult] = useState<calc.BUNCrRatioResult | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [viewingCategoryList, setViewingCategoryList] = useState<string | null>(null);
@@ -173,7 +158,6 @@ export default function Dashboard() {
   const [focusedIndex, setFocusedIndex] = useState<number>(-1);
   const [copied, setCopied] = useState(false);
   const [showComparison, setShowComparison] = useState(false);
-  const [showConversionCard, setShowConversionCard] = useState(false);
   const searchInputRef = useRef<HTMLInputElement>(null);
   
   // Favorites state with localStorage persistence
@@ -186,11 +170,6 @@ export default function Dashboard() {
   useEffect(() => {
     localStorage.setItem('nephrology-calculator-favorites', JSON.stringify(favorites));
   }, [favorites]);
-
-  // Save unit preferences to localStorage when they change
-  useEffect(() => {
-    localStorage.setItem('nephrology-calculator-unit-preferences', JSON.stringify(unitState));
-  }, [unitState]);
 
   // Toggle favorite status for a calculator
   const toggleFavorite = useCallback((calcId: string, e?: React.MouseEvent) => {
@@ -430,57 +409,25 @@ export default function Dashboard() {
           );
           break;
 
-        case "kinetic-egfr": {
-          // Handle BUN/Urea auto-converter with multi-option support for pre and post values
-          const preBunUnit = unitState.preBunValue || "BUN (mg/dL)";
-          const postBunUnit = unitState.postBunValue || "BUN (mg/dL)";
-          
-          // Convert pre-dialysis BUN/Urea to mg/dL
-          const preIsBUN = preBunUnit.includes("BUN");
-          const preIsSI = preBunUnit.includes("mmol/L");
-          const preBunRaw = calculatorState.preBunValue as number;
-          let preBunInMgDl = preBunRaw;
-          if (preIsBUN) {
-            preBunInMgDl = preIsSI ? preBunRaw / 0.357 : preBunRaw;
-          } else {
-            // Urea input
-            const ureaInMgDl = preIsSI ? preBunRaw / 0.357 : preBunRaw;
-            preBunInMgDl = ureaInMgDl * 0.467;
-          }
-          
-          // Convert post-dialysis BUN/Urea to mg/dL
-          const postIsBUN = postBunUnit.includes("BUN");
-          const postIsSI = postBunUnit.includes("mmol/L");
-          const postBunRaw = calculatorState.postBunValue as number;
-          let postBunInMgDl = postBunRaw;
-          if (postIsBUN) {
-            postBunInMgDl = postIsSI ? postBunRaw / 0.357 : postBunRaw;
-          } else {
-            // Urea input
-            const ureaInMgDl = postIsSI ? postBunRaw / 0.357 : postBunRaw;
-            postBunInMgDl = ureaInMgDl * 0.467;
-          }
-          
+        case "kinetic-egfr":
           calculationResult = calc.kineticEgfr(
-            preBunInMgDl,
-            postBunInMgDl,
+            getValue("preBUN"),
+            getValue("postBUN"),
             getValue("preCreatinine"),
             getValue("postCreatinine"),
             calculatorState.weight as number,
             calculatorState.sessionTime as number,
-            unitState.preCreatinine === "si" ? "μmol/L" : "mg/dL"
+            "mg/dL"
           );
           break;
-        }
 
         case "ckd-epi-cystatin-c":
           calculationResult = calc.ckdEpiCystatinC(
             getValue("creatinine"),
-            getValue("cystatinC"),
+            calculatorState.cystatinC as number,
             calculatorState.age as number,
             calculatorState.sex as "M" | "F",
-            unitState.creatinine === "si" ? "μmol/L" : "mg/dL",
-            unitState.cystatinC === "si" ? "mg/mmol" : "mg/L"
+            "mg/dL"
           );
           break;
 
@@ -497,8 +444,8 @@ export default function Dashboard() {
             calculatorState.age as number,
             calculatorState.sex as "M" | "F",
             calculatorState.eGFR as number,
-            getValue("acr"),
-            (unitState.acr === "si" ? "mg/mmol" : "mg/g") as "mg/g" | "mg/mmol",
+            calculatorState.acr as number,
+            (calculatorState.acrUnit as "mg/g" | "mg/mmol") || "mg/g",
             (calculatorState.years as 2 | 5) || 5
           );
           break;
@@ -509,7 +456,7 @@ export default function Dashboard() {
             getValue("plasmaCr"),
             calculatorState.plasmaNa as number,
             getValue("urineCr"),
-            unitState.plasmaCr === "si" ? "μmol/L" : "mg/dL"
+            "mg/dL"
           );
           break;
 
@@ -523,45 +470,35 @@ export default function Dashboard() {
           );
           break;
 
-        case "serum-anion-gap":
+        case "anion-gap":
           calculationResult = calc.anionGap(
-            getValue("sodium"),
-            getValue("chloride"),
-            getValue("bicarbonate")
+            calculatorState.sodium as number,
+            calculatorState.chloride as number,
+            calculatorState.bicarbonate as number
           );
           break;
 
         case "delta-gap":
           const deltaResult = calc.deltaGap(
-            getValue("measuredAG"),   // measuredAG
-            getValue("measuredHCO3"), // measuredHCO3
-            getValue("normalAG"),     // normalAG (defaults to 12)
-            getValue("normalHCO3")    // normalHCO3 (defaults to 24)
+            calculatorState.measuredAG as number,
+            calculatorState.measuredHCO3 as number,
+            calculatorState.normalAG as number,
+            calculatorState.normalHCO3 as number
           );
           calculationResult = deltaResult.ratio;
           break;
 
-        case "osmolal-gap": {
-          // Handle BUN/Urea auto-converter with multi-option support
-          const bunUnit = unitState.bunValue || "BUN (mg/dL)";
-          const isBUN = bunUnit.includes("BUN");
-          const isSI = bunUnit.includes("mmol/L");
-          const bunValue = calculatorState.bunValue as number;
-          const bunInMgDl = isBUN
-            ? (isSI ? bunValue / 0.357 : bunValue)
-            : (isSI ? (bunValue / 0.357) * 0.467 : bunValue * 0.467);
-          
+        case "osmolal-gap":
           calculationResult = calc.osmolalGap(
             calculatorState.measuredOsmolality as number,
-            getValue("sodium"),
+            calculatorState.sodium as number,
             getValue("glucose"),
-            bunInMgDl,
+            getValue("bun"),
             calculatorState.ethanol as number,
-            unitState.glucose === "si" ? "mmol/L" : "mg/dL",
+            "mg/dL",
             "mg/dL"
           );
           break;
-        }
 
         case "urine-anion-gap":
           calculationResult = calc.urineAnionGap(
@@ -571,22 +508,10 @@ export default function Dashboard() {
           );
           break;
 
-        case "bun-creatinine-ratio":
-          const bunCrResult = calc.bunCreatinineRatio(
-            calculatorState.bunValue as number,
-            calculatorState.creatinine as number,
-            calculatorState.inputType as "bun" | "urea",
-            unitState.bunValue === "si" ? "mmol/L" : "mg/dL",
-            unitState.creatinine === "si" ? "μmol/L" : "mg/dL"
-          );
-          setBunCrResult(bunCrResult);
-          setResult(null);
-          break;
-
         case "ttkg":
           calculationResult = calc.ttkg(
-            getValue("urineK"),
-            getValue("plasmaK"),
+            calculatorState.urineK as number,
+            calculatorState.plasmaK as number,
             calculatorState.urineOsm as number,
             calculatorState.plasmaOsm as number
           );
@@ -594,17 +519,17 @@ export default function Dashboard() {
 
         case "water-deficit-hypernatremia":
           calculationResult = calc.waterDeficitHypernatremia(
-            getValue("sodium"),
-            getValue("sodium"),
+            calculatorState.currentNa as number,
+            calculatorState.targetNa as number,
             calculatorState.totalBodyWater as number
           );
           break;
 
         case "corrected-sodium-hyperglycemia":
           calculationResult = calc.correctedSodiumHyperglycemia(
-            getValue("sodium"),
+            calculatorState.measuredNa as number,
             getValue("glucose"),
-            unitState.glucose === "si" ? "mmol/L" : "mg/dL"
+            "mg/dL"
           );
           break;
 
@@ -620,8 +545,8 @@ export default function Dashboard() {
 
         case "sodium-deficit":
           calculationResult = calc.sodiumDeficitHyponatremia(
-            getValue("currentNa"),
-            getValue("targetNa"),
+            calculatorState.currentNa as number,
+            calculatorState.targetNa as number,
             calculatorState.totalBodyWater as number
           );
           break;
@@ -630,14 +555,14 @@ export default function Dashboard() {
           calculationResult = calc.correctedCalcium(
             getValue("measuredCa"),
             getValue("albumin"),
-            unitState.albumin === "si" ? "g/L" : "g/dL"
+            "g/dL"
           );
           break;
 
         case "qtc-bazett":
           calculationResult = calc.qtcBazett(
-            getValue("qtInterval"),
-            getValue("heartRate")
+            calculatorState.qtInterval as number,
+            calculatorState.heartRate as number
           );
           break;
 
@@ -748,45 +673,16 @@ export default function Dashboard() {
           break;
         }
 
-        case "ktv-hemodialysis": {
-          // Handle BUN/Urea auto-converter with multi-option support
-          const ktvPreBunUnit = unitState.preBunValue || "BUN (mg/dL)";
-          const ktvPostBunUnit = unitState.postBunValue || "BUN (mg/dL)";
-          
-          // Convert pre-dialysis BUN/Urea to mg/dL
-          const ktvPreIsBUN = ktvPreBunUnit.includes("BUN");
-          const ktvPreIsSI = ktvPreBunUnit.includes("mmol/L");
-          const ktvPreBunRaw = calculatorState.preBunValue as number;
-          let ktvPreBunInMgDl = ktvPreBunRaw;
-          if (ktvPreIsBUN) {
-            ktvPreBunInMgDl = ktvPreIsSI ? ktvPreBunRaw / 0.357 : ktvPreBunRaw;
-          } else {
-            const ureaInMgDl = ktvPreIsSI ? ktvPreBunRaw / 0.357 : ktvPreBunRaw;
-            ktvPreBunInMgDl = ureaInMgDl * 0.467;
-          }
-          
-          // Convert post-dialysis BUN/Urea to mg/dL
-          const ktvPostIsBUN = ktvPostBunUnit.includes("BUN");
-          const ktvPostIsSI = ktvPostBunUnit.includes("mmol/L");
-          const ktvPostBunRaw = calculatorState.postBunValue as number;
-          let ktvPostBunInMgDl = ktvPostBunRaw;
-          if (ktvPostIsBUN) {
-            ktvPostBunInMgDl = ktvPostIsSI ? ktvPostBunRaw / 0.357 : ktvPostBunRaw;
-          } else {
-            const ureaInMgDl = ktvPostIsSI ? ktvPostBunRaw / 0.357 : ktvPostBunRaw;
-            ktvPostBunInMgDl = ureaInMgDl * 0.467;
-          }
-          
+        case "ktv-hemodialysis":
           calculationResult = calc.ktv(
-            ktvPreBunInMgDl,
-            ktvPostBunInMgDl,
+            getValue("preBUN"),
+            getValue("postBUN"),
             calculatorState.postWeight as number,
             calculatorState.sessionTime as number,
             calculatorState.ultrafiltration as number || 0,
-            "mg/dL"
+            (calculatorState.bunUnit as "mg/dL" | "mmol/L") || "mg/dL"
           );
           break;
-        }
 
         case "hd-session-duration":
           calculationResult = calc.hemodialysisSessionDuration(
@@ -874,42 +770,13 @@ export default function Dashboard() {
           );
           break;
 
-        case "urr": {
-          // Handle BUN/Urea auto-converter with multi-option support
-          const urrPreBunUnit = unitState.preBunValue || "BUN (mg/dL)";
-          const urrPostBunUnit = unitState.postBunValue || "BUN (mg/dL)";
-          
-          // Convert pre-dialysis BUN/Urea to mg/dL
-          const urrPreIsBUN = urrPreBunUnit.includes("BUN");
-          const urrPreIsSI = urrPreBunUnit.includes("mmol/L");
-          const urrPreBunRaw = calculatorState.preBunValue as number;
-          let urrPreBunInMgDl = urrPreBunRaw;
-          if (urrPreIsBUN) {
-            urrPreBunInMgDl = urrPreIsSI ? urrPreBunRaw / 0.357 : urrPreBunRaw;
-          } else {
-            const ureaInMgDl = urrPreIsSI ? urrPreBunRaw / 0.357 : urrPreBunRaw;
-            urrPreBunInMgDl = ureaInMgDl * 0.467;
-          }
-          
-          // Convert post-dialysis BUN/Urea to mg/dL
-          const urrPostIsBUN = urrPostBunUnit.includes("BUN");
-          const urrPostIsSI = urrPostBunUnit.includes("mmol/L");
-          const urrPostBunRaw = calculatorState.postBunValue as number;
-          let urrPostBunInMgDl = urrPostBunRaw;
-          if (urrPostIsBUN) {
-            urrPostBunInMgDl = urrPostIsSI ? urrPostBunRaw / 0.357 : urrPostBunRaw;
-          } else {
-            const ureaInMgDl = urrPostIsSI ? urrPostBunRaw / 0.357 : urrPostBunRaw;
-            urrPostBunInMgDl = ureaInMgDl * 0.467;
-          }
-          
+        case "urr":
           calculationResult = calc.urrHemodialysis(
-            urrPreBunInMgDl,
-            urrPostBunInMgDl,
+            getValue("preBUN"),
+            getValue("postBUN"),
             "mg/dL"
           );
           break;
-        }
 
         case "iron-deficit":
           calculationResult = calc.ironDeficitGanzoni(
@@ -1011,10 +878,10 @@ export default function Dashboard() {
 
         case "lean-body-weight":
           calculationResult = calc.leanBodyWeight(
-            getValue("weight"),
-            getValue("height"),
+            calculatorState.weight as number,
+            calculatorState.height as number,
             calculatorState.sex as "M" | "F",
-            unitState.height === "si" ? "cm" : "in"
+            "cm"
           );
           break;
 
@@ -1029,8 +896,8 @@ export default function Dashboard() {
           calculationResult = calc.caPhoProduct(
             getValue("calcium"),
             getValue("phosphate"),
-            unitState.calcium === "si" ? "mmol/L" : "mg/dL",
-            unitState.phosphate === "si" ? "mmol/L" : "mg/dL"
+            "mg/dL",
+            "mg/dL"
           );
           break;
 
@@ -1082,19 +949,10 @@ export default function Dashboard() {
           );
           break;
 
-        case "curb-65": {
-          // Handle BUN/Urea auto-converter with multi-option support
-          const curb65BunUnit = unitState.bunValue || "BUN (mg/dL)";
-          const curb65IsBUN = curb65BunUnit.includes("BUN");
-          const curb65IsSI = curb65BunUnit.includes("mmol/L");
-          const curb65BunValue = calculatorState.bunValue as number;
-          const curb65BunInMgDl = curb65IsBUN
-            ? (curb65IsSI ? curb65BunValue / 0.357 : curb65BunValue)
-            : (curb65IsSI ? (curb65BunValue / 0.357) * 0.467 : curb65BunValue * 0.467);
-          
+        case "curb-65":
           calculationResult = calc.curb65(
             Boolean(calculatorState.confusion),
-            curb65BunInMgDl,
+            getValue("urineaNitrogen"),
             calculatorState.respiratoryRate as number,
             calculatorState.bloodPressureSystolic as number,
             calculatorState.bloodPressureDiastolic as number,
@@ -1102,7 +960,6 @@ export default function Dashboard() {
             "mg/dL"
           );
           break;
-        }
 
         case "roks":
           calculationResult = calc.roks(
@@ -1254,11 +1111,9 @@ export default function Dashboard() {
           mehranScore += egfrPoints;
           
           // SCr >1.5: 4 points (only if eGFR not provided)
-          const cinScr = getValue("creatinine");
-          const creatinineThreshold = unitState.creatinine === "si" ? 132.6 : 1.5; // 1.5 mg/dL = 132.6 μmol/L
-          const creatinineUnit = unitState.creatinine === "si" ? "μmol/L" : "mg/dL";
-          if (!calculatorState.egfr && cinScr > creatinineThreshold) {
-            breakdown.push({ factor: `Serum Creatinine >${creatinineThreshold} ${creatinineUnit} (${cinScr})`, points: 4, present: true });
+          const cinScr = calculatorState.creatinine as number || 1.0;
+          if (!calculatorState.egfr && cinScr > 1.5) {
+            breakdown.push({ factor: `Serum Creatinine >1.5 mg/dL (${cinScr})`, points: 4, present: true });
             mehranScore += 4;
           }
           
@@ -1332,7 +1187,6 @@ export default function Dashboard() {
     setResultInterpretation("");
     setBanffResult(null);
     setKdpiResult(null);
-    setBunCrResult(null);
     setMobileMenuOpen(false);
     // Track recent calculator usage
     addToRecent(calcId);
@@ -1603,15 +1457,11 @@ export default function Dashboard() {
     ratioValue: ["mg/mg", "mg/g", "mg/mmol", "mg/L"],
     proteinValue: ["mg/dL", "g/L", "mg/L"],
     creatinineValue: ["mg/dL", "mmol/L"],
-    // BUN/Urea auto-converter options for osmolal-gap, curb-65, and kinetic-egfr
-    bunValue: ["BUN (mg/dL)", "BUN (mmol/L)", "Urea (mg/dL)", "Urea (mmol/L)"],
-    preBunValue: ["BUN (mg/dL)", "BUN (mmol/L)", "Urea (mg/dL)", "Urea (mmol/L)"],
-    postBunValue: ["BUN (mg/dL)", "BUN (mmol/L)", "Urea (mg/dL)", "Urea (mmol/L)"],
   };
 
   const InlineUnitToggle = ({ inputId }: { inputId: string }) => {
-    // Check if this input has multi-unit options (for 24-hour-protein calculator or BUN/Urea converters)
-    if ((selectedCalculatorId === "24-hour-protein" || selectedCalculatorId === "osmolal-gap" || selectedCalculatorId === "curb-65" || selectedCalculatorId === "kinetic-egfr" || selectedCalculatorId === "ktv-hemodialysis" || selectedCalculatorId === "urr") && multiUnitOptions[inputId]) {
+    // Check if this input has multi-unit options (for 24-hour-protein calculator)
+    if (selectedCalculatorId === "24-hour-protein" && multiUnitOptions[inputId]) {
       const options = multiUnitOptions[inputId];
       const currentUnit = unitState[inputId] || options[0];
       
@@ -1836,22 +1686,14 @@ export default function Dashboard() {
                 <p className="text-muted-foreground max-w-md mx-auto mb-6">
                   Select a calculator from the sidebar to begin. This dashboard includes {calculators.length} clinical calculators organized by category for nephrology practice.
                 </p>
-                <div className="flex flex-wrap gap-2 justify-center mb-8">
-                  <Button 
-                    onClick={() => setShowComparison(!showComparison)}
-                    variant={showComparison ? "default" : "outline"}
-                  >
-                    <ArrowLeftRight className="w-4 h-4 mr-2" />
-                    {showComparison ? "Hide eGFR Comparison" : "Compare eGFR Equations"}
-                  </Button>
-                  <Button 
-                    onClick={() => setShowConversionCard(!showConversionCard)}
-                    variant={showConversionCard ? "default" : "outline"}
-                  >
-                    <Calculator className="w-4 h-4 mr-2" />
-                    {showConversionCard ? "Hide Unit Converter" : "Unit Conversion Reference"}
-                  </Button>
-                </div>
+                <Button 
+                  onClick={() => setShowComparison(!showComparison)}
+                  variant={showComparison ? "default" : "outline"}
+                  className="mb-8"
+                >
+                  <ArrowLeftRight className="w-4 h-4 mr-2" />
+                  {showComparison ? "Hide eGFR Comparison" : "Compare eGFR Equations"}
+                </Button>
               </div>
 
               {/* eGFR Comparison Mode */}
@@ -1999,13 +1841,6 @@ export default function Dashboard() {
                   );
                 })}
               </div>
-
-              {/* Unit Conversion Reference Card - At Bottom */}
-              {showConversionCard && (
-                <div className="mt-8">
-                  <ConversionReferenceCard onClose={() => setShowConversionCard(false)} />
-                </div>
-              )}
             </div>
           ) : (
             // Calculator View
@@ -3072,84 +2907,6 @@ export default function Dashboard() {
                           <p className="text-sm text-blue-600 dark:text-blue-400">
                             <strong>Note:</strong> This tool is based on Banff 2022 classification criteria. Clinical context, including graft function, time post-transplant, immunosuppression regimen, and prior rejection episodes should be considered.
                           </p>
-                        </div>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
-
-              {/* BUN/Creatinine Ratio Result */}
-              {selectedCalculator.id === 'bun-creatinine-ratio' && bunCrResult && result === null && (
-                <Card className={`border-l-4 ${
-                  bunCrResult.category === 'Low' ? 'border-blue-500 bg-blue-500/5' :
-                  bunCrResult.category === 'Normal' ? 'border-emerald-500 bg-emerald-500/5' :
-                  bunCrResult.category === 'Elevated' ? 'border-amber-500 bg-amber-500/5' :
-                  'border-red-500 bg-red-500/5'
-                }`}>
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-base flex items-center gap-2">
-                      <Activity className="w-5 h-5" />
-                      BUN/Creatinine Ratio Result
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-4">
-                      <div className={`p-4 rounded-lg border ${
-                        bunCrResult.category === 'Low' ? 'bg-blue-500/10 border-blue-500/30' :
-                        bunCrResult.category === 'Normal' ? 'bg-emerald-500/10 border-emerald-500/30' :
-                        bunCrResult.category === 'Elevated' ? 'bg-amber-500/10 border-amber-500/30' :
-                        'bg-red-500/10 border-red-500/30'
-                      }`}>
-                        <div className="flex items-center justify-between mb-2">
-                          <span className="text-sm font-semibold text-muted-foreground">BUN/Creatinine Ratio</span>
-                          <span className={`text-xs font-bold px-3 py-1 rounded-full ${
-                            bunCrResult.category === 'Low' ? 'bg-blue-500/20 text-blue-700 dark:text-blue-300' :
-                            bunCrResult.category === 'Normal' ? 'bg-emerald-500/20 text-emerald-700 dark:text-emerald-300' :
-                            bunCrResult.category === 'Elevated' ? 'bg-amber-500/20 text-amber-700 dark:text-amber-300' :
-                            'bg-red-500/20 text-red-700 dark:text-red-300'
-                          }`}>
-                            {bunCrResult.category}
-                          </span>
-                        </div>
-                        <div className="text-3xl font-bold">{bunCrResult.ratio}</div>
-                        <p className="text-sm text-muted-foreground mt-2">{bunCrResult.interpretation}</p>
-                      </div>
-                      <div className="p-4 rounded-lg bg-muted/30 border border-border">
-                        <h3 className="text-sm font-semibold mb-3">Input Values (Converted to Standard Units)</h3>
-                        <div className="grid grid-cols-2 gap-3">
-                          <div>
-                            <p className="text-xs text-muted-foreground mb-1">BUN (converted)</p>
-                            <p className="text-sm font-mono font-medium">{bunCrResult.bunValue} mg/dL</p>
-                            {unitState.bunValue && unitState.bunValue.includes("Urea") && (
-                              <p className="text-xs text-blue-500 mt-1">
-                                → Converted from Urea input
-                              </p>
-                            )}
-                            {unitState.bunValue && unitState.bunValue.includes("mmol/L") && (
-                              <p className="text-xs text-amber-500 mt-1">
-                                → Converted from SI units
-                              </p>
-                            )}
-                          </div>
-                          <div>
-                            <p className="text-xs text-muted-foreground mb-1">Creatinine (converted)</p>
-                            <p className="text-sm font-mono font-medium">{bunCrResult.creatinineValue} mg/dL</p>
-                            {unitState.creatinine === "si" && (
-                              <p className="text-xs text-amber-500 mt-1">
-                                → Converted from μmol/L
-                              </p>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                      <div className="p-4 rounded-lg bg-blue-500/10 border border-blue-500/30">
-                        <div className="flex items-start gap-2">
-                          <Info className="w-4 h-4 text-blue-500 mt-0.5 flex-shrink-0" />
-                          <div>
-                            <p className="text-sm font-semibold text-blue-700 dark:text-blue-300 mb-1">Clinical Significance</p>
-                            <p className="text-sm text-blue-600 dark:text-blue-400">{bunCrResult.clinicalSignificance}</p>
-                          </div>
                         </div>
                       </div>
                     </div>

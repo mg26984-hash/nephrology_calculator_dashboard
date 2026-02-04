@@ -19,20 +19,6 @@ export function EGFRComparison({ onClose }: EGFRComparisonProps) {
   const [race, setRace] = useState<"Black" | "Other">("Other");
   const [creatinine, setCreatinine] = useState<string>("1.2");
   const [creatinineUnit, setCreatinineUnit] = useState<"mg/dL" | "μmol/L">("mg/dL");
-
-  // Handle unit change and adjust sample value
-  const handleUnitChange = (newUnit: "mg/dL" | "μmol/L") => {
-    const currentValue = parseFloat(creatinine);
-    if (!isNaN(currentValue) && currentValue > 0) {
-      // Convert between units: mg/dL * 88.4 = μmol/L
-      const convertedValue = newUnit === "μmol/L" 
-        ? (currentValue * 88.4).toFixed(0)
-        : (currentValue / 88.4).toFixed(1);
-      setCreatinine(convertedValue);
-    }
-    setCreatinineUnit(newUnit);
-    setCalculated(false);
-  };
   const [weight, setWeight] = useState<string>("70");
   const [calculated, setCalculated] = useState(false);
 
@@ -127,7 +113,7 @@ export function EGFRComparison({ onClose }: EGFRComparisonProps) {
               <div className="flex rounded-md border overflow-hidden">
                 <button
                   type="button"
-                  onClick={() => handleUnitChange("mg/dL")}
+                  onClick={() => { setCreatinineUnit("mg/dL"); setCalculated(false); }}
                   className={`px-2 py-1 text-xs font-medium transition-colors ${
                     creatinineUnit === "mg/dL"
                       ? "bg-primary text-primary-foreground"
@@ -138,7 +124,7 @@ export function EGFRComparison({ onClose }: EGFRComparisonProps) {
                 </button>
                 <button
                   type="button"
-                  onClick={() => handleUnitChange("μmol/L")}
+                  onClick={() => { setCreatinineUnit("μmol/L"); setCalculated(false); }}
                   className={`px-2 py-1 text-xs font-medium transition-colors ${
                     creatinineUnit === "μmol/L"
                       ? "bg-primary text-primary-foreground"

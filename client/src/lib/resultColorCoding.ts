@@ -173,7 +173,7 @@ export function getResultColorCoding(calculatorId: string, value: number, inputs
     case 'prisma7':
       return getPRISMA7Color(value);
 
-    case 'curb-65':
+    case 'curb65':
       return getCURB65Color(value);
 
     case 'roks':
@@ -1379,27 +1379,12 @@ function getPRISMA7Color(value: number): ColorResult {
 }
 
 function getCURB65Color(value: number): ColorResult {
-  // CURB-65 Score Interpretation (based on Lim WS et al. Thorax 2003)
-  // Score 0-1: Low risk (0.6-2.7% mortality) - Outpatient treatment
-  // Score 2: Moderate risk (6.8% mortality) - Consider hospital admission
-  // Score 3: Moderate-high risk (14% mortality) - Hospital admission
-  // Score 4-5: High risk (27-57% mortality) - ICU admission consideration
-  
-  if (value === 0) {
+  if (value <= 1) {
     return {
       bgClass: 'bg-emerald-500/10',
       textClass: 'text-emerald-600 dark:text-emerald-400',
       borderClass: 'border-emerald-500',
-      label: 'Low Risk (0.6% mortality)',
-      severity: 'success'
-    };
-  }
-  if (value === 1) {
-    return {
-      bgClass: 'bg-green-500/10',
-      textClass: 'text-green-600 dark:text-green-400',
-      borderClass: 'border-green-500',
-      label: 'Low Risk (2.7% mortality)',
+      label: 'Low Risk',
       severity: 'success'
     };
   }
@@ -1408,34 +1393,15 @@ function getCURB65Color(value: number): ColorResult {
       bgClass: 'bg-yellow-500/10',
       textClass: 'text-yellow-600 dark:text-yellow-400',
       borderClass: 'border-yellow-500',
-      label: 'Moderate Risk (6.8% mortality)',
+      label: 'Moderate Risk',
       severity: 'warning'
     };
   }
-  if (value === 3) {
-    return {
-      bgClass: 'bg-orange-500/10',
-      textClass: 'text-orange-600 dark:text-orange-400',
-      borderClass: 'border-orange-500',
-      label: 'Moderate-High Risk (14% mortality)',
-      severity: 'warning'
-    };
-  }
-  if (value === 4) {
-    return {
-      bgClass: 'bg-red-500/10',
-      textClass: 'text-red-600 dark:text-red-400',
-      borderClass: 'border-red-500',
-      label: 'High Risk (27% mortality)',
-      severity: 'danger'
-    };
-  }
-  // Score 5
   return {
-    bgClass: 'bg-red-700/10',
-    textClass: 'text-red-700 dark:text-red-500',
-    borderClass: 'border-red-700',
-    label: 'Very High Risk (57% mortality)',
+    bgClass: 'bg-red-500/10',
+    textClass: 'text-red-600 dark:text-red-400',
+    borderClass: 'border-red-500',
+    label: 'High Risk',
     severity: 'danger'
   };
 }
