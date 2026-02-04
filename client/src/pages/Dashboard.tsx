@@ -350,7 +350,23 @@ export default function Dashboard() {
     })
   );
 
-  // Handle drag end for favorites reordering
+  // Haptic feedback helper for mobile devices
+  const triggerHapticFeedback = useCallback((pattern: number | number[]) => {
+    if ('vibrate' in navigator) {
+      try {
+        navigator.vibrate(pattern);
+      } catch (e) {
+        // Vibration API not supported or permission denied
+      }
+    }
+  }, []);
+
+  // Handle drag start with haptic feedback
+  const handleDragStart = useCallback(() => {
+    triggerHapticFeedback(50); // Short vibration on drag start
+  }, [triggerHapticFeedback]);
+
+  // Handle drag end for favorites reordering with haptic feedback
   const handleDragEnd = useCallback((event: DragEndEvent) => {
     const { active, over } = event;
     if (over && active.id !== over.id) {
@@ -359,8 +375,11 @@ export default function Dashboard() {
         const newIndex = items.indexOf(over.id as string);
         return arrayMove(items, oldIndex, newIndex);
       });
+      triggerHapticFeedback([30, 50, 30]); // Success pattern: short-pause-short
+    } else {
+      triggerHapticFeedback(20); // Light tap for cancelled drag
     }
-  }, []);
+  }, [triggerHapticFeedback]);
 
   // Category preference state with localStorage persistence
   const [categoryOrder, setCategoryOrder] = useState<string[]>(() => {
@@ -2082,6 +2101,43 @@ export default function Dashboard() {
               )}
 
               {/* Favorite Calculators Section with Drag-and-Drop */}
+              {favoriteCalculators.length === 0 && (
+                <div className="mb-10">
+                  <div className="flex items-center gap-2 mb-4">
+                    <Star className="w-5 h-5 text-muted-foreground" />
+                    <h3 className="text-lg font-semibold">Your Favorites</h3>
+                  </div>
+                  <div className="border-2 border-dashed border-muted-foreground/30 rounded-xl p-8 text-center">
+                    <div className="flex justify-center mb-4">
+                      <div className="p-4 rounded-full bg-muted">
+                        <Star className="w-8 h-8 text-muted-foreground" />
+                      </div>
+                    </div>
+                    <h4 className="text-lg font-medium text-foreground mb-2">No favorites yet</h4>
+                    <p className="text-sm text-muted-foreground max-w-md mx-auto mb-4">
+                      Click the star icon on any calculator to add it to your favorites for quick access.
+                      Your favorites will appear here and can be reordered by dragging.
+                    </p>
+                    <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
+                      <span className="flex items-center gap-1">
+                        <Star className="w-3 h-3" /> Click star to favorite
+                      </span>
+                      <span className="text-muted-foreground/50">•</span>
+                      <span className="flex items-center gap-1">
+                        <svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor">
+                          <circle cx="4" cy="4" r="1.5" />
+                          <circle cx="12" cy="4" r="1.5" />
+                          <circle cx="4" cy="8" r="1.5" />
+                          <circle cx="12" cy="8" r="1.5" />
+                          <circle cx="4" cy="12" r="1.5" />
+                          <circle cx="12" cy="12" r="1.5" />
+                        </svg>
+                        Drag to reorder
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              )}
               {favoriteCalculators.length > 0 && (
                 <div className="mb-10">
                   <div className="flex items-center gap-2 mb-4">
@@ -2093,6 +2149,7 @@ export default function Dashboard() {
                   <DndContext
                     sensors={sensors}
                     collisionDetection={closestCenter}
+                    onDragStart={handleDragStart}
                     onDragEnd={handleDragEnd}
                   >
                     <SortableContext
