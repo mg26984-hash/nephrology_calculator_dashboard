@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Calculator, ArrowLeftRight, Info, Users, Baby, UserCheck, Globe, Ruler } from "lucide-react";
-import { ckdEpiCreatinine, cockcrofGault, lundMalmoRevised, bis1Elderly, fasFullAgeSpectrum, schwartzPediatric } from "@/lib/calculators";
+import { ckdEpiCreatinine, cockcrofGault, bis1Elderly, fasFullAgeSpectrum, schwartzPediatric } from "@/lib/calculators";
 
 interface EGFRComparisonProps {
   onClose?: () => void;
@@ -63,14 +63,7 @@ const equationInfo = {
     icon: Calculator,
     highlight: false,
   },
-  lundMalmo: {
-    name: "Lund-Malmö Revised",
-    shortDesc: "Swedish equation, race-free",
-    population: "Scandinavian populations",
-    indication: "Developed and validated in Swedish population. Outperforms MDRD and CKD-EPI across GFR, age, and BMI intervals. Recommended in Scandinavian countries.",
-    icon: Globe,
-    highlight: false,
-  },
+
   bis1: {
     name: "BIS1 (Berlin Initiative)",
     shortDesc: "Optimized for elderly ≥70 years",
@@ -122,7 +115,7 @@ export function EGFRComparison({ onClose }: EGFRComparisonProps) {
     const cockcroftGault = !isNaN(weightNum) && weightNum > 0 
       ? cockcrofGault(creatNum, ageNum, weightNum, sex, creatinineUnit)
       : null;
-    const lundMalmo = lundMalmoRevised(creatNum, ageNum, sex, creatinineUnit);
+
     const bis1 = bis1Elderly(creatNum, ageNum, sex, creatinineUnit);
     const fas = fasFullAgeSpectrum(creatNum, ageNum, sex, creatinineUnit);
     
@@ -135,7 +128,7 @@ export function EGFRComparison({ onClose }: EGFRComparisonProps) {
       ckdEpi,
       mdrd,
       cockcroftGault,
-      lundMalmo,
+
       bis1,
       fas,
       schwartz,
@@ -183,8 +176,8 @@ export function EGFRComparison({ onClose }: EGFRComparisonProps) {
 
   // Get the number of equations being compared
   const getEquationCount = () => {
-    if (results?.isPediatric) return 7; // Including Schwartz
-    return 6;
+    if (results?.isPediatric) return 6; // Including Schwartz
+    return 5;
   };
 
   const renderEquationResult = (
@@ -286,7 +279,7 @@ export function EGFRComparison({ onClose }: EGFRComparisonProps) {
           )}
         </div>
         <p className="text-sm text-muted-foreground">
-          Compare eGFR results from {isPediatric ? "7" : "6"} equations with population-specific recommendations
+          Compare eGFR results from {isPediatric ? "6" : "5"} equations with population-specific recommendations
           {isPediatric && <span className="text-primary font-medium"> (including pediatric Schwartz)</span>}
         </p>
       </CardHeader>
@@ -468,7 +461,6 @@ export function EGFRComparison({ onClose }: EGFRComparisonProps) {
               )}
               {renderEquationResult("ckdEpi", results.ckdEpi)}
               {renderEquationResult("fas", results.fas)}
-              {renderEquationResult("lundMalmo", results.lundMalmo)}
               {renderEquationResult("bis1", results.bis1)}
               {renderEquationResult("mdrd", results.mdrd)}
               {renderEquationResult("cockcroftGault", results.cockcroftGault, "mL/min", "Enter weight")}
@@ -484,7 +476,7 @@ export function EGFRComparison({ onClose }: EGFRComparisonProps) {
                     {Math.min(
                       results.ckdEpi,
                       results.mdrd,
-                      results.lundMalmo,
+
                       results.bis1,
                       results.fas,
                       results.schwartz || Infinity,
@@ -492,7 +484,7 @@ export function EGFRComparison({ onClose }: EGFRComparisonProps) {
                     )} - {Math.max(
                       results.ckdEpi,
                       results.mdrd,
-                      results.lundMalmo,
+
                       results.bis1,
                       results.fas,
                       results.schwartz || 0,
@@ -504,8 +496,8 @@ export function EGFRComparison({ onClose }: EGFRComparisonProps) {
                   <div className="text-muted-foreground">Mean (excl. CG)</div>
                   <div className="font-medium">
                     {Math.round(
-                      (results.ckdEpi + results.mdrd + results.lundMalmo + results.bis1 + results.fas + (results.schwartz || 0)) / 
-                      (results.schwartz ? 6 : 5)
+                      (results.ckdEpi + results.mdrd + results.bis1 + results.fas + (results.schwartz || 0)) / 
+                      (results.schwartz ? 5 : 4)
                     )} mL/min/1.73m²
                   </div>
                 </div>
@@ -554,7 +546,7 @@ export function EGFRComparison({ onClose }: EGFRComparisonProps) {
                 )}
                 <li>• <strong>CKD-EPI 2021</strong>: Gold standard for adults, race-free, recommended by KDIGO for general adult population</li>
                 <li>• <strong>FAS</strong>: Continuous equation from children to elderly, ideal for transitional care</li>
-                <li>• <strong>Lund-Malmö</strong>: Better performance in Scandinavian populations, race-free</li>
+
                 <li>• <strong>BIS1</strong>: Specifically validated for elderly ≥70 years, may be more accurate in this group</li>
                 <li>• <strong>MDRD</strong>: Legacy equation, less accurate at eGFR &gt;60, includes race coefficient</li>
                 <li>• <strong>Cockcroft-Gault</strong>: Estimates CrCl (not eGFR), primarily for drug dosing</li>
