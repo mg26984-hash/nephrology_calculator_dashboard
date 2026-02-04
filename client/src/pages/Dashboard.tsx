@@ -367,6 +367,23 @@ export default function Dashboard() {
 
   // Get dynamic placeholder based on unit selection
   const getDynamicPlaceholder = useCallback((input: CalculatorInput): string => {
+    // Handle ACR multi-unit placeholders for KFRE calculator
+    if (selectedCalculatorId === "kfre" && input.id === "acr") {
+      const currentAcrUnit = unitState.acr || "mg/g";
+      // Typical moderately elevated ACR values for each unit
+      // 300 mg/g = 33.9 mg/mmol = 0.3 mg/mg (A3 category)
+      switch (currentAcrUnit) {
+        case "mg/g":
+          return "300";
+        case "mg/mmol":
+          return "34";
+        case "mg/mg":
+          return "0.3";
+        default:
+          return "300";
+      }
+    }
+    
     const options = unitOptions[input.id];
     if (!options || !input.placeholder) return input.placeholder || "";
     const currentUnit = getInputUnit(input.id);
@@ -377,7 +394,7 @@ export default function Dashboard() {
       return siValue.toFixed(2);
     }
     return input.placeholder;
-  }, [getInputUnit]);
+  }, [getInputUnit, selectedCalculatorId, unitState.acr]);
 
   // Convert input value to conventional units for calculation
   const normalizeValue = useCallback((inputId: string, value: number): number => {
