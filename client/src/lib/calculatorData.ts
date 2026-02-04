@@ -233,7 +233,7 @@ export const calculators: Calculator[] = [
       { id: "age", label: "Age", type: "number", unit: "years", placeholder: "55", required: true },
       { id: "sex", label: "Sex", type: "select", options: [{ value: "M", label: "Male" }, { value: "F", label: "Female" }], required: true },
       { id: "eGFR", label: "eGFR", type: "number", unit: "mL/min/1.73m²", placeholder: "35", required: true },
-      { id: "acr", label: "Albumin-Creatinine Ratio", type: "number", unit: "mg/g or mg/mmol or mg/mg", placeholder: "150", required: true, unitToggle: { units: ["mg/g", "mg/mmol", "mg/mg"], conversionFactors: { "mg/g": 1, "mg/mmol": 8.84, "mg/mg": 1000 } } },
+      { id: "acr", label: "Albumin-Creatinine Ratio", type: "number", unit: "mg/g", placeholder: "150", required: true, unitToggle: { units: ["mg/g", "mg/mmol", "mg/mg"], conversionFactor: 1 } },
       { id: "years", label: "Prediction Timeframe", type: "select", options: [{ value: "2", label: "2-year risk" }, { value: "5", label: "5-year risk" }], required: true },
     ],
     resultLabel: "Kidney Failure Risk",
@@ -371,7 +371,6 @@ export const calculators: Calculator[] = [
     description: "Differentiates prerenal azotemia from intrinsic renal disease; supports AKI workup",
     category: "Acute Kidney Injury (AKI) Workup",
     inputs: [
-      { id: "bunUnit", label: "BUN / Urea Unit", type: "select", options: [{ value: "BUN (mg/dL)", label: "BUN (mg/dL)" }, { value: "BUN (mmol/L)", label: "BUN (mmol/L)" }, { value: "Urea (mg/dL)", label: "Urea (mg/dL)" }, { value: "Urea (mmol/L)", label: "Urea (mmol/L)" }], required: true },
       { id: "bunValue", label: "BUN / Urea", type: "number", unit: "mg/dL", placeholder: "20", required: true },
       { id: "creatinine", label: "Serum Creatinine", type: "number", unit: "mg/dL", placeholder: "1.0", required: true, unitToggle: { units: ["mg/dL", "μmol/L"], conversionFactor: 88.4 } },
     ],

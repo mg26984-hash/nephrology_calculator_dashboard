@@ -131,12 +131,23 @@ const unitOptions: { [inputId: string]: { conventional: string; si: string; conv
   creatinineValue: { conventional: "mg/dL", si: "mmol/L", conversionFactor: 0.0884 },
 };
 
+// BUN/Urea inputs that need 4-option toggle
+const bunUreaInputIds = ["bun", "preBUN", "postBUN", "plasmaUrea", "urineUrea", "urineaNitrogen", "bunValue"];
+
+// 4-option BUN/Urea toggle options
+const bunUreaOptions = [
+  { value: "BUN (mg/dL)", label: "BUN (mg/dL)", isBUN: true, unit: "mg/dL" },
+  { value: "BUN (mmol/L)", label: "BUN (mmol/L)", isBUN: true, unit: "mmol/L" },
+  { value: "Urea (mg/dL)", label: "Urea (mg/dL)", isBUN: false, unit: "mg/dL" },
+  { value: "Urea (mmol/L)", label: "Urea (mmol/L)", isBUN: false, unit: "mmol/L" },
+];
+
 export default function Dashboard() {
   const { theme, toggleTheme } = useTheme();
   const [selectedCalculatorId, setSelectedCalculatorId] = useState<string | null>(null);
   const [calculatorState, setCalculatorState] = useState<CalculatorState>({});
   const [unitState, setUnitState] = useState<UnitState>({});
-  const [result, setResult] = useState<number | null>(null);
+  const [result, setResult] = useState<number | { [key: string]: number } | null>(null);
   const [resultInterpretation, setResultInterpretation] = useState<string>("");
   const [banffResult, setBanffResult] = useState<calc.BanffResult | null>(null);
   const [kdpiResult, setKdpiResult] = useState<{ kdri: number; kdpi: number } | null>(null);
@@ -379,6 +390,34 @@ export default function Dashboard() {
         return normalizeValue(id, raw);
       };
 
+      // Helper to get BUN value in mg/dL from 4-option toggle
+      // Converts from BUN/Urea in different units to BUN in mg/dL
+      const getBunValue = (inputId: string) => {
+        const raw = calculatorState[inputId] as number;
+        if (raw === undefined || raw === null || isNaN(raw)) return 0;
+        
+        const selectedUnit = unitState[`${inputId}_bunUrea`] || "BUN (mg/dL)";
+        
+        // Conversion factors:
+        // BUN (mg/dL) -> BUN (mg/dL): 1
+        // BUN (mmol/L) -> BUN (mg/dL): multiply by 2.8 (1 mmol/L BUN = 2.8 mg/dL)
+        // Urea (mg/dL) -> BUN (mg/dL): divide by 2.14 (Urea = BUN × 2.14)
+        // Urea (mmol/L) -> BUN (mg/dL): multiply by 2.8 / 2.14 = 1.308 (or divide by 0.357 then divide by 2.14)
+        
+        switch (selectedUnit) {
+          case "BUN (mg/dL)":
+            return raw;
+          case "BUN (mmol/L)":
+            return raw * 2.8; // Convert BUN mmol/L to BUN mg/dL
+          case "Urea (mg/dL)":
+            return raw / 2.14; // Convert Urea mg/dL to BUN mg/dL
+          case "Urea (mmol/L)":
+            return raw * 6.006; // Convert Urea mmol/L to BUN mg/dL (2.8 / 0.4665)
+          default:
+            return raw;
+        }
+      };
+
       // Call appropriate calculator function based on ID
       switch (selectedCalculator.id) {
         case "ckd-epi-creatinine":
@@ -411,8 +450,8 @@ export default function Dashboard() {
 
         case "kinetic-egfr":
           calculationResult = calc.kineticEgfr(
-            getValue("preBUN"),
-            getValue("postBUN"),
+            getBunValue("preBUN"),
+            getBunValue("postBUN"),
             getValue("preCreatinine"),
             getValue("postCreatinine"),
             calculatorState.weight as number,
@@ -490,11 +529,12 @@ export default function Dashboard() {
 
         case "osmolal-gap":
           // getValue already normalizes to conventional units (mg/dL)
+          // getBunValue handles BUN/Urea 4-option toggle conversion
           calculationResult = calc.osmolalGap(
             calculatorState.measuredOsmolality as number,
             calculatorState.sodium as number,
             getValue("glucose"),
-            getValue("bun"),
+            getBunValue("bun"),
             calculatorState.ethanol as number,
             "mg/dL",
             "mg/dL"
@@ -506,6 +546,15 @@ export default function Dashboard() {
             calculatorState.urineNa as number,
             calculatorState.urineK as number,
             calculatorState.urineCl as number
+          );
+          break;
+
+        case "bun-creatinine-ratio":
+          // getBunValue handles BUN/Urea 4-option toggle conversion to BUN mg/dL
+          calculationResult = calc.bunCreatinineRatio(
+            getBunValue("bunValue"),
+            getValue("creatinine"),
+            getInputUnit("creatinine") as "mg/dL" | "μmol/L"
           );
           break;
 
@@ -676,13 +725,14 @@ export default function Dashboard() {
         }
 
         case "ktv-hemodialysis":
+          // getBunValue handles BUN/Urea 4-option toggle conversion to BUN mg/dL
           calculationResult = calc.ktv(
-            getValue("preBUN"),
-            getValue("postBUN"),
+            getBunValue("preBUN"),
+            getBunValue("postBUN"),
             calculatorState.postWeight as number,
             calculatorState.sessionTime as number,
             calculatorState.ultrafiltration as number || 0,
-            (calculatorState.bunUnit as "mg/dL" | "mmol/L") || "mg/dL"
+            "mg/dL" // Always mg/dL since getBunValue converts to BUN mg/dL
           );
           break;
 
@@ -735,9 +785,10 @@ export default function Dashboard() {
           break;
 
         case "kt-v-daugirdas":
+          // getBunValue handles BUN/Urea 4-option toggle conversion to BUN mg/dL
           calculationResult = calc.ktv(
-            getValue("preBUN"),
-            getValue("postBUN"),
+            getBunValue("preBUN"),
+            getBunValue("postBUN"),
             calculatorState.postWeight as number,
             calculatorState.sessionTime as number,
             calculatorState.ultrafiltration as number || 0,
@@ -773,9 +824,10 @@ export default function Dashboard() {
           break;
 
         case "urr":
+          // getBunValue handles BUN/Urea 4-option toggle conversion to BUN mg/dL
           calculationResult = calc.urrHemodialysis(
-            getValue("preBUN"),
-            getValue("postBUN"),
+            getBunValue("preBUN"),
+            getBunValue("postBUN"),
             "mg/dL"
           );
           break;
@@ -952,9 +1004,10 @@ export default function Dashboard() {
           break;
 
         case "curb-65":
+          // getBunValue handles BUN/Urea 4-option toggle conversion to BUN mg/dL
           calculationResult = calc.curb65(
             Boolean(calculatorState.confusion),
-            getValue("urineaNitrogen"),
+            getBunValue("urineaNitrogen"),
             calculatorState.respiratoryRate as number,
             calculatorState.bloodPressureSystolic as number,
             calculatorState.bloodPressureDiastolic as number,
@@ -1245,6 +1298,8 @@ export default function Dashboard() {
       const multiUnitIds = ["ratioValue", "proteinValue", "creatinineValue"];
       if (multiUnitIds.includes(inputId)) return true;
     }
+    // Check if this is a BUN/Urea input that needs 4-option toggle
+    if (bunUreaInputIds.includes(inputId)) return true;
     return inputId in unitOptions;
   };
 
@@ -1489,6 +1544,31 @@ export default function Dashboard() {
               )}
             >
               {unit}
+            </button>
+          ))}
+        </div>
+      );
+    }
+
+    // Check if this is a BUN/Urea input that needs 4-option toggle
+    if (bunUreaInputIds.includes(inputId)) {
+      const currentBunUreaUnit = unitState[`${inputId}_bunUrea`] || "BUN (mg/dL)";
+      
+      return (
+        <div className="flex items-center gap-0.5 bg-muted rounded p-0.5 flex-wrap">
+          {bunUreaOptions.map((option) => (
+            <button
+              key={option.value}
+              type="button"
+              onClick={() => setUnitState(prev => ({ ...prev, [`${inputId}_bunUrea`]: option.value }))}
+              className={cn(
+                "px-2 py-0.5 text-xs font-medium rounded transition-colors",
+                currentBunUreaUnit === option.value
+                  ? "bg-primary text-primary-foreground"
+                  : "text-muted-foreground hover:text-foreground"
+              )}
+            >
+              {option.label}
             </button>
           ))}
         </div>
@@ -2109,7 +2189,7 @@ export default function Dashboard() {
                       size="sm"
                       className="h-8 px-2 text-muted-foreground hover:text-foreground"
                       onClick={() => {
-                        const resultText = `${selectedCalculator.name}\nResult: ${typeof result === "number" ? result.toFixed(2) : result}${selectedCalculator.resultUnit ? " " + selectedCalculator.resultUnit : ""}\nInterpretation: ${resultInterpretation}`;
+                        const resultText = `${selectedCalculator.name}\nResult: ${typeof result === "number" ? result.toFixed(2) : "N/A"}${selectedCalculator.resultUnit ? " " + selectedCalculator.resultUnit : ""}\nInterpretation: ${resultInterpretation}`;
                         navigator.clipboard.writeText(resultText);
                         setCopied(true);
                         setTimeout(() => setCopied(false), 2000);
@@ -2136,7 +2216,7 @@ export default function Dashboard() {
                       ) : (
                         <>
                           <p className={cn("text-4xl font-bold", colorCoding ? colorCoding.textClass : "text-primary")}>
-                            {typeof result === "number" ? result.toFixed(2) : result}
+                            {typeof result === "number" ? result.toFixed(2) : "N/A"}
                           </p>
                           {selectedCalculator.resultUnit && (
                             <p className="text-sm text-muted-foreground mt-1">{selectedCalculator.resultUnit}</p>

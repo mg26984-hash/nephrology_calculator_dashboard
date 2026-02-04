@@ -329,6 +329,21 @@ export function urineAnionGap(
   return uag;
 }
 
+export function bunCreatinineRatio(
+  bun: number,
+  creatinine: number,
+  creatinineUnit: "mg/dL" | "μmol/L" = "mg/dL"
+): number {
+  // BUN should already be in mg/dL (converted by getBunValue helper)
+  // Creatinine needs to be converted if in μmol/L
+  let creatinineMgDl = creatinineUnit === "μmol/L" ? creatinine / 88.4 : creatinine;
+  
+  if (creatinineMgDl === 0) return 0;
+  
+  const ratio = bun / creatinineMgDl;
+  return Math.round(ratio * 100) / 100;
+}
+
 // ============================================================================
 // 3. ELECTROLYTES & ACID-BASE CALCULATORS
 // ============================================================================
