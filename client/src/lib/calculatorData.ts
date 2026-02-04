@@ -181,8 +181,6 @@ export const calculators: Calculator[] = [
       { id: "cystatinC", label: "Cystatin C", type: "number", unit: "mg/L or μmol/L", placeholder: "0.8", required: true },
       { id: "age", label: "Age", type: "number", unit: "years", placeholder: "45", required: true },
       { id: "sex", label: "Sex", type: "select", options: [{ value: "M", label: "Male" }, { value: "F", label: "Female" }], required: true },
-      { id: "creatinineUnit", label: "Creatinine Unit", type: "select", options: [{ value: "mg/dL", label: "mg/dL" }, { value: "μmol/L", label: "μmol/L" }], required: true },
-      { id: "cystatinCUnit", label: "Cystatin C Unit", type: "select", options: [{ value: "mg/L", label: "mg/L" }, { value: "μmol/L", label: "μmol/L" }], required: true },
     ],
     resultLabel: "eGFR",
     resultUnit: "mL/min/1.73m²",

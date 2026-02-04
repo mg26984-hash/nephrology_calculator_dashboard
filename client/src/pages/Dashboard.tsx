@@ -51,6 +51,7 @@ import SearchInput from "@/components/SearchInput";
 import { EGFRComparison } from "@/components/EGFRComparison";
 import { getResultColorCoding } from "@/lib/resultColorCoding";
 import { UnitConversionTooltip, hasUnitConversion } from "@/components/UnitConversionTooltip";
+import ConversionReferenceCard from "@/components/ConversionReferenceCard";
 
 interface CalculatorState {
   [key: string]: string | number | boolean;
@@ -121,6 +122,7 @@ const unitOptions: { [inputId: string]: { conventional: string; si: string; conv
   hemoglobin: { conventional: "g/dL", si: "g/L", conversionFactor: 10 },
   targetHemoglobin: { conventional: "g/dL", si: "g/L", conversionFactor: 10 },
   currentHemoglobin: { conventional: "g/dL", si: "g/L", conversionFactor: 10 },
+  cystatinC: { conventional: "mg/L", si: "μmol/L", conversionFactor: 0.0749 },
   acr: { conventional: "mg/g", si: "mg/mmol", conversionFactor: 0.113 },
   // ACR from PCR calculator - PCR: 1 g/g = 113 mg/mmol (1000 mg/g ÷ 8.84 mmol/g creatinine)
   pcr: { conventional: "g/g", si: "mg/mmol", conversionFactor: 113 },
@@ -146,7 +148,10 @@ export default function Dashboard() {
   const { theme, toggleTheme } = useTheme();
   const [selectedCalculatorId, setSelectedCalculatorId] = useState<string | null>(null);
   const [calculatorState, setCalculatorState] = useState<CalculatorState>({});
-  const [unitState, setUnitState] = useState<UnitState>({});
+  const [unitState, setUnitState] = useState<UnitState>(() => {
+    const saved = localStorage.getItem('nephrology-calculator-units');
+    return saved ? JSON.parse(saved) : {};
+  });
   const [result, setResult] = useState<number | { [key: string]: number } | null>(null);
   const [resultInterpretation, setResultInterpretation] = useState<string>("");
   const [banffResult, setBanffResult] = useState<calc.BanffResult | null>(null);
@@ -169,6 +174,7 @@ export default function Dashboard() {
   const [focusedIndex, setFocusedIndex] = useState<number>(-1);
   const [copied, setCopied] = useState(false);
   const [showComparison, setShowComparison] = useState(false);
+  const [showConversionCard, setShowConversionCard] = useState(false);
   const searchInputRef = useRef<HTMLInputElement>(null);
   
   // Favorites state with localStorage persistence
@@ -181,6 +187,11 @@ export default function Dashboard() {
   useEffect(() => {
     localStorage.setItem('nephrology-calculator-favorites', JSON.stringify(favorites));
   }, [favorites]);
+
+  // Save unit preferences to localStorage when they change
+  useEffect(() => {
+    localStorage.setItem('nephrology-calculator-units', JSON.stringify(unitState));
+  }, [unitState]);
 
   // Toggle favorite status for a calculator
   const toggleFavorite = useCallback((calcId: string, e?: React.MouseEvent) => {
@@ -1244,7 +1255,7 @@ export default function Dashboard() {
       });
     }
     setCalculatorState(initialState);
-    setUnitState({});
+    // Note: Do NOT reset unitState here - we want to preserve unit preferences across calculator switches
     setResult(null);
     setResultInterpretation("");
     setBanffResult(null);
@@ -1799,6 +1810,15 @@ export default function Dashboard() {
                 </h3>
                 <div className="flex items-center gap-2">
                   <Button
+                    variant={showConversionCard ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setShowConversionCard(!showConversionCard)}
+                    className="text-sm"
+                  >
+                    <ArrowLeftRight className="w-4 h-4 mr-1" />
+                    {showConversionCard ? "Hide Unit Converter" : "Unit Conversion Reference"}
+                  </Button>
+                  <Button
                     variant="ghost"
                     size="sm"
                     onClick={() => setShowCategoryCustomizer(!showCategoryCustomizer)}
@@ -1930,6 +1950,13 @@ export default function Dashboard() {
                   );
                 })}
               </div>
+
+              {/* Unit Conversion Reference Card - At Bottom */}
+              {showConversionCard && (
+                <div className="mt-8">
+                  <ConversionReferenceCard onClose={() => setShowConversionCard(false)} />
+                </div>
+              )}
             </div>
           ) : (
             // Calculator View
