@@ -1701,6 +1701,141 @@ export const calculators: Calculator[] = [
       "Weisbord SD et al. N Engl J Med. 2018;378(7):603-614 (PRESERVE trial)",
     ],
   },
+  // ============================================================================
+  // ADDITIONAL GFR EQUATIONS
+  // ============================================================================
+  {
+    id: "lund-malmo-revised",
+    name: "Lund-Malmö Revised (LMR)",
+    description: "Swedish equation with improved accuracy across GFR, age, and BMI intervals",
+    category: "Kidney Function & CKD Risk",
+    inputs: [
+      { id: "creatinine", label: "Serum Creatinine", type: "number", unit: "mg/dL or μmol/L", placeholder: "1.0", required: true },
+      { id: "age", label: "Age", type: "number", unit: "years", placeholder: "50", required: true, min: 18, max: 120 },
+      { id: "sex", label: "Sex", type: "select", options: [{ value: "M", label: "Male" }, { value: "F", label: "Female" }], required: true },
+    ],
+    resultLabel: "eGFR (LMR)",
+    resultUnit: "mL/min/1.73m²",
+    interpretation: (value) => {
+      if (value >= 90) return "Normal kidney function (CKD Stage 1)";
+      if (value >= 60) return "Mild decrease in kidney function (CKD Stage 2)";
+      if (value >= 45) return "Mild to moderate decrease (CKD Stage 3a)";
+      if (value >= 30) return "Moderate to severe decrease (CKD Stage 3b)";
+      if (value >= 15) return "Severe decrease in kidney function (CKD Stage 4)";
+      return "Kidney failure (CKD Stage 5) - Consider dialysis/transplant planning";
+    },
+    referenceRanges: [
+      { label: "Normal (Stage 1)", min: 90, unit: "mL/min/1.73m²", note: "Normal or high GFR" },
+      { label: "Mild decrease (Stage 2)", min: 60, max: 89, unit: "mL/min/1.73m²" },
+      { label: "Mild-moderate (Stage 3a)", min: 45, max: 59, unit: "mL/min/1.73m²" },
+      { label: "Moderate-severe (Stage 3b)", min: 30, max: 44, unit: "mL/min/1.73m²" },
+      { label: "Severe (Stage 4)", min: 15, max: 29, unit: "mL/min/1.73m²" },
+      { label: "Kidney failure (Stage 5)", max: 14, unit: "mL/min/1.73m²" },
+    ],
+    clinicalPearls: [
+      "Developed and validated in Swedish population",
+      "Outperforms MDRD and CKD-EPI across GFR, age, and BMI intervals",
+      "Does not include race as a variable",
+      "More stable across different patient subgroups",
+      "Recommended in Scandinavian countries",
+    ],
+    references: [
+      "Björk J et al. Scand J Clin Lab Invest. 2011;71:232-239",
+      "Nyman U et al. Clin Chem Lab Med. 2014;52:815-824",
+    ],
+  },
+  {
+    id: "bis1-elderly",
+    name: "BIS1 (Berlin Initiative Study)",
+    description: "Optimized for elderly patients ≥70 years old",
+    category: "Kidney Function & CKD Risk",
+    inputs: [
+      { id: "creatinine", label: "Serum Creatinine", type: "number", unit: "mg/dL or μmol/L", placeholder: "1.2", required: true },
+      { id: "age", label: "Age", type: "number", unit: "years", placeholder: "75", required: true, min: 70, max: 120 },
+      { id: "sex", label: "Sex", type: "select", options: [{ value: "M", label: "Male" }, { value: "F", label: "Female" }], required: true },
+    ],
+    resultLabel: "eGFR (BIS1)",
+    resultUnit: "mL/min/1.73m²",
+    interpretation: (value, inputs) => {
+      const age = inputs?.age as number || 70;
+      if (age < 70) return "⚠️ BIS1 is designed for patients ≥70 years. Consider using CKD-EPI or FAS equation instead.";
+      if (value >= 90) return "Normal kidney function (CKD Stage 1)";
+      if (value >= 60) return "Mild decrease in kidney function (CKD Stage 2)";
+      if (value >= 45) return "Mild to moderate decrease (CKD Stage 3a)";
+      if (value >= 30) return "Moderate to severe decrease (CKD Stage 3b)";
+      if (value >= 15) return "Severe decrease in kidney function (CKD Stage 4)";
+      return "Kidney failure (CKD Stage 5) - Consider dialysis/transplant planning";
+    },
+    referenceRanges: [
+      { label: "Normal (Stage 1)", min: 90, unit: "mL/min/1.73m²", note: "Normal or high GFR" },
+      { label: "Mild decrease (Stage 2)", min: 60, max: 89, unit: "mL/min/1.73m²" },
+      { label: "Mild-moderate (Stage 3a)", min: 45, max: 59, unit: "mL/min/1.73m²" },
+      { label: "Moderate-severe (Stage 3b)", min: 30, max: 44, unit: "mL/min/1.73m²" },
+      { label: "Severe (Stage 4)", min: 15, max: 29, unit: "mL/min/1.73m²" },
+      { label: "Kidney failure (Stage 5)", max: 14, unit: "mL/min/1.73m²" },
+    ],
+    clinicalPearls: [
+      "Specifically developed for patients aged 70 years and older",
+      "Better accuracy than CKD-EPI in elderly populations",
+      "Does not include race as a variable",
+      "Not validated in African American populations",
+      "Consider using BIS2 (cystatin C-based) for even better accuracy in elderly",
+      "May better reflect true GFR decline with aging",
+    ],
+    references: [
+      "Schaeffner ES et al. Ann Intern Med. 2012;157(7):471-481",
+      "Koppe L et al. Nephrol Dial Transplant. 2013;28(11):2839-2847",
+    ],
+  },
+  {
+    id: "fas-full-age-spectrum",
+    name: "FAS (Full Age Spectrum)",
+    description: "Works across all ages from children (2+) to elderly without discontinuity",
+    category: "Kidney Function & CKD Risk",
+    inputs: [
+      { id: "creatinine", label: "Serum Creatinine", type: "number", unit: "mg/dL or μmol/L", placeholder: "1.0", required: true },
+      { id: "age", label: "Age", type: "number", unit: "years", placeholder: "45", required: true, min: 2, max: 120 },
+      { id: "sex", label: "Sex", type: "select", options: [{ value: "M", label: "Male" }, { value: "F", label: "Female" }], required: true },
+    ],
+    resultLabel: "eGFR (FAS)",
+    resultUnit: "mL/min/1.73m²",
+    interpretation: (value, inputs) => {
+      const age = inputs?.age as number || 45;
+      let stageInfo = "";
+      if (value >= 90) stageInfo = "Normal kidney function (CKD Stage 1)";
+      else if (value >= 60) stageInfo = "Mild decrease in kidney function (CKD Stage 2)";
+      else if (value >= 45) stageInfo = "Mild to moderate decrease (CKD Stage 3a)";
+      else if (value >= 30) stageInfo = "Moderate to severe decrease (CKD Stage 3b)";
+      else if (value >= 15) stageInfo = "Severe decrease in kidney function (CKD Stage 4)";
+      else stageInfo = "Kidney failure (CKD Stage 5)";
+      
+      if (age < 18) {
+        return stageInfo + "\n\n*Note: For pediatric patients, FAS uses age-specific Q values for more accurate estimation.*";
+      }
+      return stageInfo;
+    },
+    referenceRanges: [
+      { label: "Normal (Stage 1)", min: 90, unit: "mL/min/1.73m²", note: "Normal or high GFR" },
+      { label: "Mild decrease (Stage 2)", min: 60, max: 89, unit: "mL/min/1.73m²" },
+      { label: "Mild-moderate (Stage 3a)", min: 45, max: 59, unit: "mL/min/1.73m²" },
+      { label: "Moderate-severe (Stage 3b)", min: 30, max: 44, unit: "mL/min/1.73m²" },
+      { label: "Severe (Stage 4)", min: 15, max: 29, unit: "mL/min/1.73m²" },
+      { label: "Kidney failure (Stage 5)", max: 14, unit: "mL/min/1.73m²" },
+    ],
+    clinicalPearls: [
+      "Single equation valid from age 2 to elderly without discontinuity",
+      "Uses population-normalized creatinine (SCr/Q) approach",
+      "Does not include race as a variable",
+      "Q values represent median creatinine for healthy population at each age/sex",
+      "Eliminates the abrupt changes when switching between pediatric and adult equations",
+      "Particularly useful for adolescents transitioning to adult care",
+      "Age adjustment factor applied for patients ≥40 years",
+    ],
+    references: [
+      "Pottel H et al. Nephrol Dial Transplant. 2016;31(5):798-806",
+      "Pottel H et al. Nephrol Dial Transplant. 2017;32(3):497-507",
+    ],
+  },
 ];
 export function getCalculatorsByCategory(category: string): Calculator[] {
   return calculators.filter((calc) => calc.category === category);

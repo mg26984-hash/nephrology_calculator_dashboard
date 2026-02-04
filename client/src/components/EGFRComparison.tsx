@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Calculator, ArrowLeftRight, Info } from "lucide-react";
-import { ckdEpiCreatinine, cockcrofGault, mdrdGfr } from "@/lib/calculators";
+import { ckdEpiCreatinine, cockcrofGault, mdrdGfr, lundMalmoRevised, bis1Elderly, fasFullAgeSpectrum } from "@/lib/calculators";
 
 interface EGFRComparisonProps {
   onClose?: () => void;

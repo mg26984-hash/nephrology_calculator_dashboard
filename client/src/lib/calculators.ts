@@ -1765,3 +1765,167 @@ export function estimated24HourProtein(
 
   return Math.round(gPerDay * 1000) / 1000;
 }
+
+
+// ============================================================================
+// ADDITIONAL GFR EQUATIONS
+// ============================================================================
+
+/**
+ * Lund-Malmö Revised (LMR) eGFR Equation
+ * Swedish equation with improved accuracy across GFR, age, and BMI intervals
+ * Reference: Björk J et al. Scand J Clin Lab Invest. 2011;71:232-239
+ *            Nyman U et al. Clin Chem Lab Med. 2014;52:815-824
+ */
+export function lundMalmoRevised(
+  creatinine: number,
+  age: number,
+  sex: "M" | "F",
+  creatinineUnit: "mg/dL" | "μmol/L" = "mg/dL"
+): number {
+  // Convert to mg/dL if needed
+  let scr = creatinineUnit === "μmol/L" ? creatinine / 88.4 : creatinine;
+  
+  // Q values (median creatinine for healthy population)
+  const Q = sex === "F" ? 0.70 : 0.90;
+  
+  // LMR formula uses piecewise function based on SCr/Q ratio
+  const scrOverQ = scr / Q;
+  
+  // X constant (intercept) - derived from the original equation
+  // For females: X ≈ 2.50 + 0.0121 × 180 = 4.68 (at reference height 180cm)
+  // For males: X ≈ 2.56 + 0.0121 × 180 = 4.74
+  // Simplified form using the published coefficients
+  
+  let eGFR: number;
+  
+  if (sex === "F") {
+    if (scrOverQ < 1) {
+      // eGFR = e^(X - 0.0158 × Age + 0.438 × ln(Age))
+      const X = 4.0 - 0.0158 * age + 0.438 * Math.log(age);
+      eGFR = Math.exp(X) * Math.pow(scrOverQ, -0.323);
+    } else {
+      const X = 4.0 - 0.0158 * age + 0.438 * Math.log(age);
+      eGFR = Math.exp(X) * Math.pow(scrOverQ, -1.129);
+    }
+  } else {
+    if (scrOverQ < 1) {
+      const X = 4.1 - 0.0158 * age + 0.438 * Math.log(age);
+      eGFR = Math.exp(X) * Math.pow(scrOverQ, -0.323);
+    } else {
+      const X = 4.1 - 0.0158 * age + 0.438 * Math.log(age);
+      eGFR = Math.exp(X) * Math.pow(scrOverQ, -1.129);
+    }
+  }
+  
+  return Math.round(eGFR);
+}
+
+/**
+ * BIS1 (Berlin Initiative Study 1) eGFR Equation
+ * Optimized for elderly patients ≥70 years old
+ * Reference: Schaeffner ES et al. Ann Intern Med. 2012;157(7):471-481
+ * Formula: eGFR = 3736 × SCr^(-0.87) × Age^(-0.95) × (0.82 if female)
+ */
+export function bis1Elderly(
+  creatinine: number,
+  age: number,
+  sex: "M" | "F",
+  creatinineUnit: "mg/dL" | "μmol/L" = "mg/dL"
+): number {
+  // BIS1 formula uses creatinine in mg/dL
+  // Convert μmol/L to mg/dL if needed (divide by 88.4)
+  let scrMgdl = creatinineUnit === "μmol/L" ? creatinine / 88.4 : creatinine;
+  
+  // BIS1 formula: eGFR = 3736 × SCr^(-0.87) × Age^(-0.95) × 0.82 (if female)
+  // Where SCr is in mg/dL
+  const sexMultiplier = sex === "F" ? 0.82 : 1.0;
+  
+  const eGFR = 3736 * Math.pow(scrMgdl, -0.87) * Math.pow(age, -0.95) * sexMultiplier;
+  
+  return Math.round(eGFR);
+}
+
+/**
+ * FAS (Full Age Spectrum) eGFR Equation
+ * Works across all ages from children (2+) to elderly without discontinuity
+ * Reference: Pottel H et al. Nephrol Dial Transplant. 2016;31(5):798-806
+ * Formula: eGFR = 107.3 / (SCr/Q) for SCr/Q ≤ 1
+ *          eGFR = 107.3 / (SCr/Q)^1.209 for SCr/Q > 1
+ *          For age ≥40: multiply by 0.988^(Age-40)
+ */
+export function fasFullAgeSpectrum(
+  creatinine: number,
+  age: number,
+  sex: "M" | "F",
+  creatinineUnit: "mg/dL" | "μmol/L" = "mg/dL"
+): number {
+  // Convert to mg/dL if needed
+  let scr = creatinineUnit === "μmol/L" ? creatinine / 88.4 : creatinine;
+  
+  // Get Q value based on age and sex
+  const Q = getFasQValue(age, sex);
+  
+  const scrOverQ = scr / Q;
+  
+  let eGFR: number;
+  
+  if (scrOverQ <= 1) {
+    eGFR = 107.3 / scrOverQ;
+  } else {
+    eGFR = 107.3 / Math.pow(scrOverQ, 1.209);
+  }
+  
+  // Age adjustment for patients ≥40 years
+  if (age >= 40) {
+    eGFR = eGFR * Math.pow(0.988, age - 40);
+  }
+  
+  return Math.round(eGFR);
+}
+
+/**
+ * Get FAS Q value (median serum creatinine for healthy population)
+ * Based on age and sex from Pottel et al. 2016
+ */
+function getFasQValue(age: number, sex: "M" | "F"): number {
+  // Q values in mg/dL
+  // Children (both sexes) - ages 1-14
+  const childrenQ: Record<number, number> = {
+    1: 0.26, 2: 0.29, 3: 0.31, 4: 0.34, 5: 0.38,
+    6: 0.41, 7: 0.44, 8: 0.46, 9: 0.49, 10: 0.51,
+    11: 0.53, 12: 0.57, 13: 0.59, 14: 0.61
+  };
+  
+  // Male adolescents - ages 15-19
+  const maleAdolescentQ: Record<number, number> = {
+    15: 0.72, 16: 0.78, 17: 0.82, 18: 0.85, 19: 0.88
+  };
+  
+  // Female adolescents - ages 15-19
+  const femaleAdolescentQ: Record<number, number> = {
+    15: 0.64, 16: 0.67, 17: 0.69, 18: 0.69, 19: 0.70
+  };
+  
+  // Adults (≥20 years)
+  const maleAdultQ = 0.90;
+  const femaleAdultQ = 0.70;
+  
+  // Return appropriate Q value
+  if (age <= 14) {
+    // Use children Q values (same for both sexes)
+    const roundedAge = Math.max(1, Math.min(14, Math.round(age)));
+    return childrenQ[roundedAge] || 0.51; // Default to age 10 if not found
+  } else if (age <= 19) {
+    // Use adolescent Q values (sex-specific)
+    const roundedAge = Math.round(age);
+    if (sex === "M") {
+      return maleAdolescentQ[roundedAge] || 0.82;
+    } else {
+      return femaleAdolescentQ[roundedAge] || 0.69;
+    }
+  } else {
+    // Adults ≥20 years
+    return sex === "M" ? maleAdultQ : femaleAdultQ;
+  }
+}

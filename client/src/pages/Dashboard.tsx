@@ -585,6 +585,33 @@ export default function Dashboard() {
           );
           break;
 
+        case "lund-malmo-revised":
+          calculationResult = calc.lundMalmoRevised(
+            getValue("creatinine"),
+            calculatorState.age as number,
+            calculatorState.sex as "M" | "F",
+            "mg/dL"
+          );
+          break;
+
+        case "bis1-elderly":
+          calculationResult = calc.bis1Elderly(
+            getValue("creatinine"),
+            calculatorState.age as number,
+            calculatorState.sex as "M" | "F",
+            "mg/dL"
+          );
+          break;
+
+        case "fas-full-age-spectrum":
+          calculationResult = calc.fasFullAgeSpectrum(
+            getValue("creatinine"),
+            calculatorState.age as number,
+            calculatorState.sex as "M" | "F",
+            "mg/dL"
+          );
+          break;
+
         case "fena":
           calculationResult = calc.fena(
             calculatorState.urineNa as number,
