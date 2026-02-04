@@ -1923,6 +1923,71 @@ export default function Dashboard() {
                 </Button>
               </div>
 
+              {/* Favorite Calculators Section */}
+              {favoriteCalculators.length > 0 && (
+                <div className="mb-10">
+                  <div className="flex items-center gap-2 mb-4">
+                    <Star className="w-5 h-5 fill-amber-500 text-amber-500" />
+                    <h3 className="text-lg font-semibold">Your Favorites</h3>
+                    <span className="text-sm text-muted-foreground">({favoriteCalculators.length})</span>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {favoriteCalculators.map((calc) => {
+                      return (
+                        <button
+                          key={calc.id}
+                          onClick={() => handleSelectCalculator(calc.id)}
+                          className="group relative bg-card hover:bg-accent/50 border border-border hover:border-primary/30 rounded-xl p-4 text-left transition-all duration-200 hover:shadow-lg hover:shadow-primary/5 hover:-translate-y-0.5"
+                        >
+                          {/* Category Badge */}
+                          <div className="flex items-center gap-2 mb-3">
+                            <span className="p-1 rounded bg-primary/10 text-primary">
+                              {categoryIcons[calc.category] || <Calculator className="w-4 h-4" />}
+                            </span>
+                            <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                              {calc.category.split(" & ")[0]}
+                            </span>
+                          </div>
+                          
+                          {/* Calculator Name */}
+                          <h4 className="font-semibold text-foreground group-hover:text-primary transition-colors mb-2 pr-8">
+                            {calc.name}
+                          </h4>
+                          
+                          {/* Description */}
+                          <p className="text-sm text-muted-foreground line-clamp-2 mb-3">
+                            {calc.description}
+                          </p>
+                          
+                          {/* Footer with result info */}
+                          <div className="flex items-center justify-between text-xs text-muted-foreground">
+                            <span className="flex items-center gap-1">
+                              <Calculator className="w-3 h-3" />
+                              {calc.inputs.length} inputs
+                            </span>
+                            <span className="text-primary font-medium group-hover:underline">
+                              Calculate →
+                            </span>
+                          </div>
+                          
+                          {/* Favorite Star */}
+                          <span
+                            role="button"
+                            tabIndex={0}
+                            onClick={(e) => toggleFavorite(calc.id, e)}
+                            onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); e.stopPropagation(); toggleFavorite(calc.id, e as unknown as React.MouseEvent); } }}
+                            className="absolute top-4 right-4 p-1 rounded-full hover:bg-amber-500/10 transition-colors"
+                            title="Remove from favorites"
+                          >
+                            <Star className="w-4 h-4 fill-amber-500 text-amber-500" />
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
               {/* eGFR Comparison Mode */}
               {showComparison && (
                 <div className="mb-8">
