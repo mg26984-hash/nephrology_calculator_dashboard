@@ -526,10 +526,11 @@ export default function Dashboard() {
           break;
 
         case "corrected-sodium-hyperglycemia":
+          // getValue already normalizes to conventional units (mg/dL)
           calculationResult = calc.correctedSodiumHyperglycemia(
             calculatorState.measuredNa as number,
             getValue("glucose"),
-            getInputUnit("glucose") === "si" ? "mmol/L" : "mg/dL"
+            "mg/dL"
           );
           break;
 
@@ -1156,9 +1157,16 @@ export default function Dashboard() {
       }
 
       if (calculationResult !== undefined) {
-        const numResult = typeof calculationResult === "number" ? calculationResult : 0;
-        setResult(numResult);
-        setResultInterpretation(selectedCalculator.interpretation(numResult));
+        // For corrected-calcium, pass the object directly
+        if (selectedCalculator.id === "corrected-calcium" && typeof calculationResult === "object") {
+          setResult(calculationResult);
+          const numResult = (calculationResult as any).mgDl;
+          setResultInterpretation(selectedCalculator.interpretation(numResult));
+        } else {
+          const numResult = typeof calculationResult === "number" ? calculationResult : 0;
+          setResult(numResult);
+          setResultInterpretation(selectedCalculator.interpretation(numResult));
+        }
       }
     } catch (error) {
       console.error("Calculation error:", error);
