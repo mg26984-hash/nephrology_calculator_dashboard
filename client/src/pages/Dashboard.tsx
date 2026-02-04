@@ -53,6 +53,7 @@ import {
   closestCenter,
   KeyboardSensor,
   PointerSensor,
+  TouchSensor,
   useSensor,
   useSensors,
   DragEndEvent,
@@ -195,20 +196,20 @@ function SortableFavoriteCard({ calc, categoryIcons, onSelect, onToggleFavorite 
         isDragging && "shadow-xl ring-2 ring-primary/30"
       )}
     >
-      {/* Drag Handle */}
+      {/* Drag Handle - larger touch target for mobile */}
       <div
         {...attributes}
         {...listeners}
-        className="absolute top-2 left-2 p-1.5 rounded cursor-grab active:cursor-grabbing text-muted-foreground hover:text-foreground hover:bg-accent/50 transition-colors"
+        className="absolute top-1 left-1 p-2.5 rounded-lg cursor-grab active:cursor-grabbing text-muted-foreground hover:text-foreground hover:bg-accent/80 active:bg-accent transition-colors touch-none"
         title="Drag to reorder"
       >
-        <svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor">
-          <circle cx="4" cy="4" r="1.5" />
-          <circle cx="12" cy="4" r="1.5" />
-          <circle cx="4" cy="8" r="1.5" />
-          <circle cx="12" cy="8" r="1.5" />
-          <circle cx="4" cy="12" r="1.5" />
-          <circle cx="12" cy="12" r="1.5" />
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" className="pointer-events-none">
+          <circle cx="4" cy="4" r="2" />
+          <circle cx="12" cy="4" r="2" />
+          <circle cx="4" cy="8" r="2" />
+          <circle cx="12" cy="8" r="2" />
+          <circle cx="4" cy="12" r="2" />
+          <circle cx="12" cy="12" r="2" />
         </svg>
       </div>
       
@@ -331,11 +332,17 @@ export default function Dashboard() {
     [favorites]
   );
 
-  // DnD sensors for drag-and-drop
+  // DnD sensors for drag-and-drop with touch support
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
         distance: 8,
+      },
+    }),
+    useSensor(TouchSensor, {
+      activationConstraint: {
+        delay: 200,
+        tolerance: 5,
       },
     }),
     useSensor(KeyboardSensor, {
@@ -2067,6 +2074,13 @@ export default function Dashboard() {
                 </Button>
               </div>
 
+              {/* eGFR Comparison Mode - Always appears before favorites when shown */}
+              {showComparison && (
+                <div className="mb-8">
+                  <EGFRComparison onClose={() => setShowComparison(false)} />
+                </div>
+              )}
+
               {/* Favorite Calculators Section with Drag-and-Drop */}
               {favoriteCalculators.length > 0 && (
                 <div className="mb-10">
@@ -2098,13 +2112,6 @@ export default function Dashboard() {
                       </div>
                     </SortableContext>
                   </DndContext>
-                </div>
-              )}
-
-              {/* eGFR Comparison Mode */}
-              {showComparison && (
-                <div className="mb-8">
-                  <EGFRComparison onClose={() => setShowComparison(false)} />
                 </div>
               )}
 
