@@ -201,7 +201,7 @@ export function kfre(
   sex: "M" | "F",
   eGFR: number,
   acr: number,
-  acrUnit: "mg/g" | "mg/mmol" = "mg/g",
+  acrUnit: "mg/g" | "mg/mmol" | "mg/mg" = "mg/g",
   years: 2 | 5 = 5
 ): number {
   // KFRE 4-variable equation (Tangri et al. 2016)
@@ -209,8 +209,21 @@ export function kfre(
   // Validated: Age 60, Male, eGFR 30, ACR 300 mg/mmol = 5yr: 52.9%, 2yr: 21.4%
   
   // Convert ACR to mg/mmol if needed (formula uses mg/mmol internally)
-  // Conversion: 1 mg/g = 0.113 mg/mmol (or divide by 8.84)
-  let acrMgMmol = acrUnit === "mg/g" ? acr / 8.84 : acr;
+  // Conversion factors:
+  // - mg/g to mg/mmol: divide by 8.84 (1 mg/g = 0.113 mg/mmol)
+  // - mg/mg to mg/mmol: multiply by 1000 then divide by 8.84 (mg/mg = g/g * 1000 = mg/g)
+  //   Actually mg/mg is same as mg albumin per mg creatinine, which equals g/g
+  //   To convert mg/mg to mg/g: multiply by 1000 (since mg/mg = g/g, and g/g * 1000 = mg/g)
+  let acrMgMmol: number;
+  if (acrUnit === "mg/mmol") {
+    acrMgMmol = acr;
+  } else if (acrUnit === "mg/mg") {
+    // mg/mg is same as g/g ratio, convert to mg/g first (multiply by 1000), then to mg/mmol
+    acrMgMmol = (acr * 1000) / 8.84;
+  } else {
+    // mg/g to mg/mmol
+    acrMgMmol = acr / 8.84;
+  }
   
   // Natural log of ACR in mg/mmol
   const lnACR = Math.log(acrMgMmol);

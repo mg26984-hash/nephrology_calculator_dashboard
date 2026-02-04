@@ -495,7 +495,7 @@ export default function Dashboard() {
             calculatorState.sex as "M" | "F",
             calculatorState.eGFR as number,
             calculatorState.acr as number,
-            (calculatorState.acrUnit as "mg/g" | "mg/mmol") || "mg/g",
+            (unitState.acr as "mg/g" | "mg/mmol" | "mg/mg") || "mg/g",
             (calculatorState.years as 2 | 5) || 5
           );
           break;
@@ -1527,16 +1527,23 @@ export default function Dashboard() {
   ), [selectedCategory, categories, favoriteCalculators, recentCalculators, groupedCalculators, filteredCalculators, selectedCalculatorId, focusedIndex, favorites, handleSelectCalculator, toggleFavorite]);
 
   // Inline Unit Toggle Component
-  // Multi-option unit definitions for 24-hour-protein calculator
+  // Multi-option unit definitions for calculators with more than 2 unit options
   const multiUnitOptions: { [inputId: string]: string[] } = {
     ratioValue: ["mg/mg", "mg/g", "mg/mmol", "mg/L"],
     proteinValue: ["mg/dL", "g/L", "mg/L"],
     creatinineValue: ["mg/dL", "mmol/L"],
+    // ACR for KFRE calculator - mg/g is most common, mg/mmol is SI, mg/mg is ratio
+    acr: ["mg/g", "mg/mmol", "mg/mg"],
   };
 
   const InlineUnitToggle = ({ inputId }: { inputId: string }) => {
-    // Check if this input has multi-unit options (for 24-hour-protein calculator)
-    if (selectedCalculatorId === "24-hour-protein" && multiUnitOptions[inputId]) {
+    // Check if this input has multi-unit options
+    // For 24-hour-protein calculator or ACR in KFRE
+    const hasMultiUnitOptions = 
+      (selectedCalculatorId === "24-hour-protein" && multiUnitOptions[inputId]) ||
+      (selectedCalculatorId === "kfre" && inputId === "acr");
+    
+    if (hasMultiUnitOptions && multiUnitOptions[inputId]) {
       const options = multiUnitOptions[inputId];
       const currentUnit = unitState[inputId] || options[0];
       
