@@ -48,6 +48,23 @@ import { getRecommendations } from '@/lib/clinicalRecommendations';
 import { useTheme } from "@/contexts/ThemeContext";
 import { cn } from "@/lib/utils";
 import SearchInput from "@/components/SearchInput";
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+} from '@dnd-kit/core';
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  rectSortingStrategy,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 import { EGFRComparison } from "@/components/EGFRComparison";
 import { getResultColorCoding } from "@/lib/resultColorCoding";
 import { UnitConversionTooltip, hasUnitConversion } from "@/components/UnitConversionTooltip";
@@ -144,6 +161,109 @@ const bunUreaOptions = [
   { value: "Urea (mmol/L)", label: "Urea (mmol/L)", isBUN: false, unit: "mmol/L" },
 ];
 
+// Sortable Favorite Card Component for drag-and-drop
+interface SortableFavoriteCardProps {
+  calc: typeof calculators[0];
+  categoryIcons: { [key: string]: React.ReactNode };
+  onSelect: (id: string) => void;
+  onToggleFavorite: (id: string, e: React.MouseEvent) => void;
+}
+
+function SortableFavoriteCard({ calc, categoryIcons, onSelect, onToggleFavorite }: SortableFavoriteCardProps) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: calc.id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+    zIndex: isDragging ? 1000 : 1,
+  };
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className={cn(
+        "group relative bg-card hover:bg-accent/50 border border-border hover:border-primary/30 rounded-xl p-4 text-left transition-all duration-200 hover:shadow-lg hover:shadow-primary/5",
+        isDragging && "shadow-xl ring-2 ring-primary/30"
+      )}
+    >
+      {/* Drag Handle */}
+      <div
+        {...attributes}
+        {...listeners}
+        className="absolute top-2 left-2 p-1.5 rounded cursor-grab active:cursor-grabbing text-muted-foreground hover:text-foreground hover:bg-accent/50 transition-colors"
+        title="Drag to reorder"
+      >
+        <svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor">
+          <circle cx="4" cy="4" r="1.5" />
+          <circle cx="12" cy="4" r="1.5" />
+          <circle cx="4" cy="8" r="1.5" />
+          <circle cx="12" cy="8" r="1.5" />
+          <circle cx="4" cy="12" r="1.5" />
+          <circle cx="12" cy="12" r="1.5" />
+        </svg>
+      </div>
+      
+      {/* Clickable Card Content */}
+      <button
+        onClick={() => onSelect(calc.id)}
+        className="w-full text-left pl-6"
+      >
+        {/* Category Badge */}
+        <div className="flex items-center gap-2 mb-3">
+          <span className="p-1 rounded bg-primary/10 text-primary">
+            {categoryIcons[calc.category] || <Calculator className="w-4 h-4" />}
+          </span>
+          <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+            {calc.category.split(" & ")[0]}
+          </span>
+        </div>
+        
+        {/* Calculator Name */}
+        <h4 className="font-semibold text-foreground group-hover:text-primary transition-colors mb-2 pr-8">
+          {calc.name}
+        </h4>
+        
+        {/* Description */}
+        <p className="text-sm text-muted-foreground line-clamp-2 mb-3">
+          {calc.description}
+        </p>
+        
+        {/* Footer with result info */}
+        <div className="flex items-center justify-between text-xs text-muted-foreground">
+          <span className="flex items-center gap-1">
+            <Calculator className="w-3 h-3" />
+            {calc.inputs.length} inputs
+          </span>
+          <span className="text-primary font-medium group-hover:underline">
+            Calculate →
+          </span>
+        </div>
+      </button>
+      
+      {/* Favorite Star */}
+      <span
+        role="button"
+        tabIndex={0}
+        onClick={(e) => onToggleFavorite(calc.id, e)}
+        onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); e.stopPropagation(); onToggleFavorite(calc.id, e as unknown as React.MouseEvent); } }}
+        className="absolute top-4 right-4 p-1 rounded-full hover:bg-amber-500/10 transition-colors z-10"
+        title="Remove from favorites"
+      >
+        <Star className="w-4 h-4 fill-amber-500 text-amber-500" />
+      </span>
+    </div>
+  );
+}
+
 export default function Dashboard() {
   const { theme, toggleTheme } = useTheme();
   const [selectedCalculatorId, setSelectedCalculatorId] = useState<string | null>(null);
@@ -205,11 +325,35 @@ export default function Dashboard() {
     );
   }, []);
 
-  // Get favorite calculators
+  // Get favorite calculators - preserve order from favorites array
   const favoriteCalculators = useMemo(() => 
-    calculators.filter(c => favorites.includes(c.id)),
+    favorites.map(id => calculators.find(c => c.id === id)).filter(Boolean) as typeof calculators,
     [favorites]
   );
+
+  // DnD sensors for drag-and-drop
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8,
+      },
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
+
+  // Handle drag end for favorites reordering
+  const handleDragEnd = useCallback((event: DragEndEvent) => {
+    const { active, over } = event;
+    if (over && active.id !== over.id) {
+      setFavorites((items) => {
+        const oldIndex = items.indexOf(active.id as string);
+        const newIndex = items.indexOf(over.id as string);
+        return arrayMove(items, oldIndex, newIndex);
+      });
+    }
+  }, []);
 
   // Category preference state with localStorage persistence
   const [categoryOrder, setCategoryOrder] = useState<string[]>(() => {
@@ -1923,68 +2067,37 @@ export default function Dashboard() {
                 </Button>
               </div>
 
-              {/* Favorite Calculators Section */}
+              {/* Favorite Calculators Section with Drag-and-Drop */}
               {favoriteCalculators.length > 0 && (
                 <div className="mb-10">
                   <div className="flex items-center gap-2 mb-4">
                     <Star className="w-5 h-5 fill-amber-500 text-amber-500" />
                     <h3 className="text-lg font-semibold">Your Favorites</h3>
                     <span className="text-sm text-muted-foreground">({favoriteCalculators.length})</span>
+                    <span className="text-xs text-muted-foreground ml-2">• Drag to reorder</span>
                   </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {favoriteCalculators.map((calc) => {
-                      return (
-                        <button
-                          key={calc.id}
-                          onClick={() => handleSelectCalculator(calc.id)}
-                          className="group relative bg-card hover:bg-accent/50 border border-border hover:border-primary/30 rounded-xl p-4 text-left transition-all duration-200 hover:shadow-lg hover:shadow-primary/5 hover:-translate-y-0.5"
-                        >
-                          {/* Category Badge */}
-                          <div className="flex items-center gap-2 mb-3">
-                            <span className="p-1 rounded bg-primary/10 text-primary">
-                              {categoryIcons[calc.category] || <Calculator className="w-4 h-4" />}
-                            </span>
-                            <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-                              {calc.category.split(" & ")[0]}
-                            </span>
-                          </div>
-                          
-                          {/* Calculator Name */}
-                          <h4 className="font-semibold text-foreground group-hover:text-primary transition-colors mb-2 pr-8">
-                            {calc.name}
-                          </h4>
-                          
-                          {/* Description */}
-                          <p className="text-sm text-muted-foreground line-clamp-2 mb-3">
-                            {calc.description}
-                          </p>
-                          
-                          {/* Footer with result info */}
-                          <div className="flex items-center justify-between text-xs text-muted-foreground">
-                            <span className="flex items-center gap-1">
-                              <Calculator className="w-3 h-3" />
-                              {calc.inputs.length} inputs
-                            </span>
-                            <span className="text-primary font-medium group-hover:underline">
-                              Calculate →
-                            </span>
-                          </div>
-                          
-                          {/* Favorite Star */}
-                          <span
-                            role="button"
-                            tabIndex={0}
-                            onClick={(e) => toggleFavorite(calc.id, e)}
-                            onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); e.stopPropagation(); toggleFavorite(calc.id, e as unknown as React.MouseEvent); } }}
-                            className="absolute top-4 right-4 p-1 rounded-full hover:bg-amber-500/10 transition-colors"
-                            title="Remove from favorites"
-                          >
-                            <Star className="w-4 h-4 fill-amber-500 text-amber-500" />
-                          </span>
-                        </button>
-                      );
-                    })}
-                  </div>
+                  <DndContext
+                    sensors={sensors}
+                    collisionDetection={closestCenter}
+                    onDragEnd={handleDragEnd}
+                  >
+                    <SortableContext
+                      items={favorites}
+                      strategy={rectSortingStrategy}
+                    >
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {favoriteCalculators.map((calc) => (
+                          <SortableFavoriteCard
+                            key={calc.id}
+                            calc={calc}
+                            categoryIcons={categoryIcons}
+                            onSelect={handleSelectCalculator}
+                            onToggleFavorite={toggleFavorite}
+                          />
+                        ))}
+                      </div>
+                    </SortableContext>
+                  </DndContext>
                 </div>
               )}
 
