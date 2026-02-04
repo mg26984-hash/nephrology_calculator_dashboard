@@ -384,6 +384,74 @@ export default function Dashboard() {
       }
     }
     
+    // Define typical clinical values for common inputs (conventional | SI)
+    // These represent typical or moderately abnormal values for clinical context
+    const typicalValues: { [inputId: string]: { conventional: string; si: string } } = {
+      // Creatinine: 1.2 mg/dL = 106 μmol/L (mildly elevated)
+      creatinine: { conventional: "1.2", si: "106" },
+      preCreatinine: { conventional: "1.2", si: "106" },
+      postCreatinine: { conventional: "0.8", si: "71" },
+      plasmaCr: { conventional: "1.0", si: "88" },
+      urineCr: { conventional: "100", si: "8840" },
+      donorCreatinine: { conventional: "0.9", si: "80" },
+      // BUN: 20 mg/dL = 7.1 mmol/L (upper normal)
+      bun: { conventional: "20", si: "7.1" },
+      preBUN: { conventional: "60", si: "21" },
+      postBUN: { conventional: "20", si: "7.1" },
+      plasmaUrea: { conventional: "20", si: "7.1" },
+      urineUrea: { conventional: "500", si: "178" },
+      urineaNitrogen: { conventional: "12", si: "4.3" },
+      // Glucose: 100 mg/dL = 5.6 mmol/L (fasting normal)
+      glucose: { conventional: "100", si: "5.6" },
+      // Albumin: 4.0 g/dL = 40 g/L (normal)
+      albumin: { conventional: "4.0", si: "40" },
+      // Calcium: 9.5 mg/dL = 2.4 mmol/L (normal)
+      calcium: { conventional: "9.5", si: "2.4" },
+      measuredCa: { conventional: "9.5", si: "2.4" },
+      // Phosphate: 4.0 mg/dL = 1.3 mmol/L (normal)
+      phosphate: { conventional: "4.0", si: "1.3" },
+      // Cystatin C: 1.0 mg/L = 0.075 μmol/L (normal)
+      cystatinC: { conventional: "1.0", si: "0.08" },
+      // Hemoglobin: 12 g/dL = 120 g/L (lower normal)
+      hemoglobin: { conventional: "12", si: "120" },
+      targetHemoglobin: { conventional: "11", si: "110" },
+      currentHemoglobin: { conventional: "9", si: "90" },
+      // Cholesterol: 200 mg/dL = 5.2 mmol/L (borderline high)
+      totalCholesterol: { conventional: "200", si: "5.2" },
+      hdl: { conventional: "50", si: "1.3" },
+      // ACR: 30 mg/g = 3.4 mg/mmol (A2 category - moderately increased)
+      acr: { conventional: "30", si: "3.4" },
+      // PCR: 0.5 g/g = 56.5 mg/mmol (mild proteinuria)
+      pcr: { conventional: "0.5", si: "57" },
+    };
+    
+    const typicalValue = typicalValues[input.id];
+    if (typicalValue) {
+      const currentUnit = getInputUnit(input.id);
+      return currentUnit === "si" ? typicalValue.si : typicalValue.conventional;
+    }
+    
+    // Handle BUN/Urea 4-option toggle placeholders
+    if (bunUreaInputIds.includes(input.id)) {
+      const bunUreaUnit = unitState[input.id] || "BUN (mg/dL)";
+      // Typical pre-dialysis BUN: 60 mg/dL, post-dialysis: 20 mg/dL
+      const isPreBUN = input.id === "preBUN";
+      const baseBUN = isPreBUN ? 60 : 20; // mg/dL
+      switch (bunUreaUnit) {
+        case "BUN (mg/dL)":
+          return String(baseBUN);
+        case "BUN (mmol/L)":
+          return (baseBUN * 0.357).toFixed(1);
+        case "Urea (mg/dL)":
+          return (baseBUN / 0.467).toFixed(0); // BUN to Urea
+        case "Urea (mmol/L)":
+          return ((baseBUN / 0.467) * 0.166).toFixed(1); // Urea mg/dL to mmol/L
+        default:
+          return String(baseBUN);
+      }
+    }
+    
+    // Fallback to original logic for other inputs
     const options = unitOptions[input.id];
     if (!options || !input.placeholder) return input.placeholder || "";
     const currentUnit = getInputUnit(input.id);
@@ -394,7 +462,7 @@ export default function Dashboard() {
       return siValue.toFixed(2);
     }
     return input.placeholder;
-  }, [getInputUnit, selectedCalculatorId, unitState.acr]);
+  }, [getInputUnit, selectedCalculatorId, unitState]);
 
   // Convert input value to conventional units for calculation
   const normalizeValue = useCallback((inputId: string, value: number): number => {
