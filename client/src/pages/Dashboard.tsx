@@ -489,6 +489,7 @@ export default function Dashboard() {
           break;
 
         case "osmolal-gap":
+          // getValue already normalizes to conventional units (mg/dL)
           calculationResult = calc.osmolalGap(
             calculatorState.measuredOsmolality as number,
             calculatorState.sodium as number,
