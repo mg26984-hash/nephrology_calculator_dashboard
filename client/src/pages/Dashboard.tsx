@@ -1751,9 +1751,17 @@ export default function Dashboard() {
                           </p>
                         </div>
                         <div className="flex items-center gap-2">
-                          <button
+                          <span
                             onClick={(e) => toggleFavorite(calc.id, e)}
-                            className="p-1 rounded hover:bg-background/50 transition-colors"
+                            className="p-1 rounded hover:bg-background/50 transition-colors cursor-pointer"
+                            role="button"
+                            tabIndex={0}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter' || e.key === ' ') {
+                                e.preventDefault();
+                                toggleFavorite(calc.id, e as unknown as React.MouseEvent);
+                              }
+                            }}
                           >
                             <Star
                               className={cn(
@@ -1763,7 +1771,7 @@ export default function Dashboard() {
                                   : "text-muted-foreground hover:text-yellow-500"
                               )}
                             />
-                          </button>
+                          </span>
                           <ChevronRight className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors" />
                         </div>
                       </div>
