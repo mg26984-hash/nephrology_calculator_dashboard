@@ -529,7 +529,7 @@ export default function Dashboard() {
           calculationResult = calc.correctedSodiumHyperglycemia(
             calculatorState.measuredNa as number,
             getValue("glucose"),
-            "mg/dL"
+            getInputUnit("glucose") === "si" ? "mmol/L" : "mg/dL"
           );
           break;
 
@@ -2115,14 +2115,24 @@ export default function Dashboard() {
                   </CardHeader>
                   <CardContent>
                     <div className="text-center py-4">
-                      <p className={cn(
-                        "text-4xl font-bold",
-                        colorCoding ? colorCoding.textClass : "text-primary"
-                      )}>
-                        {typeof result === "number" ? result.toFixed(2) : result}
-                      </p>
-                      {selectedCalculator.resultUnit && (
-                        <p className="text-sm text-muted-foreground mt-1">{selectedCalculator.resultUnit}</p>
+                      {selectedCalculator.id === "corrected-calcium" && typeof result === "object" ? (
+                        <>
+                          <p className={cn("text-3xl font-bold", colorCoding ? colorCoding.textClass : "text-primary")}>
+                            {(result as any).mgDl.toFixed(2)} mg/dL
+                          </p>
+                          <p className="text-sm text-muted-foreground mt-2">
+                            {(result as any).mmolL.toFixed(2)} mmol/L
+                          </p>
+                        </>
+                      ) : (
+                        <>
+                          <p className={cn("text-4xl font-bold", colorCoding ? colorCoding.textClass : "text-primary")}>
+                            {typeof result === "number" ? result.toFixed(2) : result}
+                          </p>
+                          {selectedCalculator.resultUnit && (
+                            <p className="text-sm text-muted-foreground mt-1">{selectedCalculator.resultUnit}</p>
+                          )}
+                        </>
                       )}
                     </div>
 

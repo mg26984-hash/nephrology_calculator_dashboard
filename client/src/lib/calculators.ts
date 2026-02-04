@@ -391,12 +391,16 @@ export function correctedCalcium(
   measuredCa: number,
   albumin: number,
   albuminUnit: "g/dL" | "g/L" = "g/dL"
-): number {
+): { mgDl: number; mmolL: number } {
   let albuminGdL = albuminUnit === "g/L" ? albumin / 10 : albumin;
 
-  const correctedCa = measuredCa + 0.8 * (4.0 - albuminGdL);
+  const correctedCaMgDl = measuredCa + 0.8 * (4.0 - albuminGdL);
+  const correctedCaMmolL = correctedCaMgDl / 4.0; // Conversion factor: 1 mmol/L = 4 mg/dL
 
-  return Math.round(correctedCa * 100) / 100;
+  return {
+    mgDl: Math.round(correctedCaMgDl * 100) / 100,
+    mmolL: Math.round(correctedCaMmolL * 100) / 100
+  };
 }
 
 export function qtcBazett(
