@@ -1611,7 +1611,11 @@ export default function Dashboard() {
       <div className="h-full flex flex-col">
       {/* Search - Using separate memoized component to prevent iOS focus loss */}
       <div className="sticky top-0 z-10 p-4 border-b border-border bg-background">
-        <SearchInput onSearchChange={setSearchQuery} placeholder="Search calculators..." />
+        <SearchInput 
+          onSearchChange={setSearchQuery} 
+          onSelectCalculator={handleSelectCalculator}
+          placeholder="Search calculators..." 
+        />
       </div>
 
       {/* Category Filter */}

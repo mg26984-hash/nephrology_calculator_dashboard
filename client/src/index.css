@@ -205,3 +205,149 @@
     @apply text-xs text-muted-foreground;
   }
 }
+
+/* Mobile Touch Target Improvements */
+@layer components {
+  /* Ensure minimum 44px touch targets on mobile (WCAG 2.5.5) */
+  @media (max-width: 768px) {
+    /* Sidebar calculator buttons */
+    .sidebar-calc-btn {
+      @apply min-h-[48px] py-3;
+    }
+    
+    /* Category cards */
+    .category-card {
+      @apply min-h-[56px];
+    }
+    
+    /* Unit toggle buttons */
+    .unit-toggle-btn {
+      @apply min-h-[40px] min-w-[44px] px-3;
+    }
+    
+    /* Form inputs */
+    input[type="text"],
+    input[type="number"],
+    select,
+    .select-trigger {
+      @apply min-h-[48px] text-base;
+    }
+    
+    /* Primary action buttons */
+    .btn-primary-action {
+      @apply min-h-[52px] text-base px-6;
+    }
+    
+    /* Icon buttons */
+    .icon-btn {
+      @apply min-w-[44px] min-h-[44px] p-3;
+    }
+    
+    /* Favorite star buttons */
+    .favorite-btn {
+      @apply min-w-[44px] min-h-[44px] p-2.5;
+    }
+    
+    /* Breadcrumb links */
+    .breadcrumb-link {
+      @apply min-h-[44px] py-2 px-1;
+    }
+    
+    /* Dropdown items */
+    [role="option"],
+    [role="menuitem"] {
+      @apply min-h-[48px] py-3;
+    }
+    
+    /* Search suggestions */
+    .search-suggestion {
+      @apply min-h-[56px] py-3;
+    }
+    
+    /* Drag handles */
+    .drag-handle {
+      @apply min-w-[48px] min-h-[48px] p-3;
+    }
+  }
+  
+  /* Tablet touch improvements */
+  @media (min-width: 769px) and (max-width: 1024px) {
+    input[type="text"],
+    input[type="number"],
+    select,
+    .select-trigger {
+      @apply min-h-[44px];
+    }
+    
+    .btn-primary-action {
+      @apply min-h-[48px];
+    }
+  }
+}
+
+/* Dark Mode Contrast Improvements */
+@layer base {
+  .dark {
+    /* Ensure sufficient contrast for text elements */
+    --muted-foreground: oklch(0.70 0.02 250); /* Increased from 0.65 for better readability */
+    
+    /* Better contrast for borders */
+    --border: oklch(0.35 0.02 250); /* Increased from 0.30 */
+    
+    /* Improved input contrast */
+    --input: oklch(0.32 0.02 250); /* Slightly lighter for better visibility */
+  }
+}
+
+@layer components {
+  /* Dark mode specific contrast fixes */
+  .dark .calculator-card {
+    @apply border-border/80;
+  }
+  
+  .dark .unit-toggle {
+    @apply bg-secondary/80 border border-border/50;
+  }
+  
+  .dark .result-display {
+    @apply bg-primary/15 border-primary/30;
+  }
+  
+  /* Ensure placeholder text is visible in dark mode */
+  .dark input::placeholder,
+  .dark textarea::placeholder {
+    @apply text-muted-foreground/70;
+  }
+  
+  /* Better focus rings in dark mode */
+  .dark *:focus-visible {
+    @apply ring-2 ring-ring ring-offset-2 ring-offset-background;
+  }
+  
+  /* Improved hover states in dark mode */
+  .dark .hover\:bg-accent:hover {
+    @apply bg-accent/80;
+  }
+  
+  /* Better disabled state contrast */
+  .dark button:disabled,
+  .dark input:disabled,
+  .dark select:disabled {
+    @apply opacity-60;
+  }
+  
+  /* Improved card shadows in dark mode */
+  .dark .calculator-card:hover {
+    @apply shadow-lg shadow-black/20;
+  }
+  
+  /* Better text contrast for labels */
+  .dark .input-label {
+    @apply text-foreground/95;
+  }
+  
+  /* Improved secondary text visibility */
+  .dark .text-muted-foreground {
+    color: oklch(0.70 0.02 250);
+  }
+}
