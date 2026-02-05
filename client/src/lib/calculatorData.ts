@@ -2272,7 +2272,7 @@ export const calculators: Calculator[] = [
         { value: "normal", label: "<75 bpm (0)" },
         { value: "moderate", label: "75-94 bpm (+3)" },
         { value: "high", label: ">=95 bpm (+5)" },
-      ], required: true },
+      ], required: true, default: "normal" },
       { id: "legPainEdema", label: "Pain on deep palpation and unilateral edema", type: "select", options: [
         { value: "no", label: "No (0)" },
         { value: "yes", label: "Yes (+4)" },
