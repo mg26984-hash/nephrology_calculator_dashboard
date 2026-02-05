@@ -2622,3 +2622,69 @@ export function apacheIIScore(
     predictedMortality
   };
 }
+
+
+// SIRS Criteria Calculator
+export function sirsScore(
+  temperature: string,
+  heartRate: string,
+  respiratoryRate: string,
+  wbc: string
+): { score: number; criteria: { temp: boolean; hr: boolean; rr: boolean; wbc: boolean } } {
+  const tempAbnormal = temperature === 'abnormal';
+  const hrAbnormal = heartRate === 'abnormal';
+  const rrAbnormal = respiratoryRate === 'abnormal';
+  const wbcAbnormal = wbc === 'abnormal';
+  
+  const score = (tempAbnormal ? 1 : 0) + (hrAbnormal ? 1 : 0) + (rrAbnormal ? 1 : 0) + (wbcAbnormal ? 1 : 0);
+  
+  return {
+    score,
+    criteria: {
+      temp: tempAbnormal,
+      hr: hrAbnormal,
+      rr: rrAbnormal,
+      wbc: wbcAbnormal
+    }
+  };
+}
+
+// Revised Geneva Score for PE
+export function genevaRevisedScore(
+  age: string,
+  previousPeDvt: string,
+  surgery: string,
+  malignancy: string,
+  unilateralPain: string,
+  hemoptysis: string,
+  heartRate: string,
+  legPainEdema: string
+): { score: number; components: Record<string, number> } {
+  const agePoints = age === 'yes' ? 1 : 0;
+  const previousPeDvtPoints = previousPeDvt === 'yes' ? 3 : 0;
+  const surgeryPoints = surgery === 'yes' ? 2 : 0;
+  const malignancyPoints = malignancy === 'yes' ? 2 : 0;
+  const unilateralPainPoints = unilateralPain === 'yes' ? 3 : 0;
+  const hemoptysisPoints = hemoptysis === 'yes' ? 2 : 0;
+  let heartRatePoints = 0;
+  if (heartRate === 'moderate') heartRatePoints = 3;
+  else if (heartRate === 'high') heartRatePoints = 5;
+  const legPainEdemaPoints = legPainEdema === 'yes' ? 4 : 0;
+  
+  const score = agePoints + previousPeDvtPoints + surgeryPoints + malignancyPoints + 
+                unilateralPainPoints + hemoptysisPoints + heartRatePoints + legPainEdemaPoints;
+  
+  return {
+    score,
+    components: {
+      age: agePoints,
+      previousPeDvt: previousPeDvtPoints,
+      surgery: surgeryPoints,
+      malignancy: malignancyPoints,
+      unilateralPain: unilateralPainPoints,
+      hemoptysis: hemoptysisPoints,
+      heartRate: heartRatePoints,
+      legPainEdema: legPainEdemaPoints
+    }
+  };
+}

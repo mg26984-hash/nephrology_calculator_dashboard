@@ -2148,6 +2148,108 @@ export const calculators: Calculator[] = [
       "Zimmerman JE et al. Crit Care Med. 2006;34(5):1297-1310",
     ],
   },
+  {
+    id: "sirs",
+    name: "SIRS Criteria",
+    description: "Systemic Inflammatory Response Syndrome criteria for sepsis screening",
+    category: "Critical Care",
+    inputs: [
+      { id: "temperature", label: "Temperature", type: "select", options: [
+        { value: "normal", label: "36.0-38.0 C (96.8-100.4 F) - Normal" },
+        { value: "abnormal", label: ">38 C (>100.4 F) or <36 C (<96.8 F) (+1)" },
+      ], required: true },
+      { id: "heartRate", label: "Heart Rate", type: "select", options: [
+        { value: "normal", label: "<=90 beats/min - Normal" },
+        { value: "abnormal", label: ">90 beats/min (+1)" },
+      ], required: true },
+      { id: "respiratoryRate", label: "Respiratory Rate or PaCO2", type: "select", options: [
+        { value: "normal", label: "RR <=20 and PaCO2 >=32 mmHg - Normal" },
+        { value: "abnormal", label: "RR >20 or PaCO2 <32 mmHg (+1)" },
+      ], required: true },
+      { id: "wbc", label: "White Blood Cell Count", type: "select", options: [
+        { value: "normal", label: "4,000-12,000/mm3 with <10% bands - Normal" },
+        { value: "abnormal", label: ">12,000 or <4,000/mm3 or >10% bands (+1)" },
+      ], required: true },
+    ],
+    resultLabel: "SIRS Criteria Met",
+    resultUnit: "of 4",
+    interpretation: (value) => {
+      if (value >= 2) return "SIRS POSITIVE - >=2 criteria met. If infection suspected, consider sepsis. Evaluate for source and initiate workup.";
+      return "SIRS NEGATIVE - <2 criteria met. SIRS not present, but does not rule out infection.";
+    },
+    clinicalPearls: [
+      "SIRS >=2 criteria + suspected infection = Sepsis (Sepsis-1 definition)",
+      "SIRS is sensitive but not specific for sepsis",
+      "qSOFA and SOFA are now preferred for sepsis diagnosis (Sepsis-3)",
+      "SIRS remains useful for early warning and triage",
+      "Many non-infectious conditions cause SIRS (trauma, burns, pancreatitis)",
+      "Absence of SIRS does not exclude sepsis - clinical judgment essential",
+    ],
+    references: [
+      "Bone RC et al. Chest. 1992;101(6):1644-1655",
+      "American College of Chest Physicians/Society of Critical Care Medicine Consensus Conference. Crit Care Med. 1992;20(6):864-874",
+    ],
+  },
+  {
+    id: "genevaRevised",
+    name: "Revised Geneva Score",
+    description: "Clinical prediction rule for pulmonary embolism probability",
+    category: "Critical Care",
+    inputs: [
+      { id: "age", label: "Age >65 years", type: "select", options: [
+        { value: "no", label: "No (0)" },
+        { value: "yes", label: "Yes (+1)" },
+      ], required: true },
+      { id: "previousPeDvt", label: "Previous PE or DVT", type: "select", options: [
+        { value: "no", label: "No (0)" },
+        { value: "yes", label: "Yes (+3)" },
+      ], required: true },
+      { id: "surgery", label: "Surgery or fracture within 1 month", type: "select", options: [
+        { value: "no", label: "No (0)" },
+        { value: "yes", label: "Yes (+2)" },
+      ], required: true },
+      { id: "malignancy", label: "Active malignancy (or cured <1 year)", type: "select", options: [
+        { value: "no", label: "No (0)" },
+        { value: "yes", label: "Yes (+2)" },
+      ], required: true },
+      { id: "unilateralPain", label: "Unilateral lower limb pain", type: "select", options: [
+        { value: "no", label: "No (0)" },
+        { value: "yes", label: "Yes (+3)" },
+      ], required: true },
+      { id: "hemoptysis", label: "Hemoptysis", type: "select", options: [
+        { value: "no", label: "No (0)" },
+        { value: "yes", label: "Yes (+2)" },
+      ], required: true },
+      { id: "heartRate", label: "Heart Rate", type: "select", options: [
+        { value: "normal", label: "<75 bpm (0)" },
+        { value: "moderate", label: "75-94 bpm (+3)" },
+        { value: "high", label: ">=95 bpm (+5)" },
+      ], required: true },
+      { id: "legPainEdema", label: "Pain on deep palpation and unilateral edema", type: "select", options: [
+        { value: "no", label: "No (0)" },
+        { value: "yes", label: "Yes (+4)" },
+      ], required: true },
+    ],
+    resultLabel: "Revised Geneva Score",
+    resultUnit: "points",
+    interpretation: (value) => {
+      if (value >= 11) return "HIGH PROBABILITY - PE prevalence ~74%. Proceed directly to CTPA or treatment if CTPA unavailable.";
+      if (value >= 4) return "INTERMEDIATE PROBABILITY - PE prevalence ~28%. D-dimer testing recommended; if positive, proceed to CTPA.";
+      return "LOW PROBABILITY - PE prevalence ~8%. D-dimer testing; if negative, PE can be safely ruled out.";
+    },
+    clinicalPearls: [
+      "Three-tier interpretation: 0-3 low, 4-10 intermediate, >=11 high probability",
+      "Two-tier (simplified): 0-5 PE unlikely, >=6 PE likely",
+      "Does not include subjective criterion (PE most likely diagnosis)",
+      "Can be used with age-adjusted D-dimer (age x 10 if >50 years)",
+      "Validated in outpatient and emergency department settings",
+      "Similar diagnostic accuracy to Wells score for PE",
+    ],
+    references: [
+      "Le Gal G et al. Ann Intern Med. 2006;144(3):165-171",
+      "Klok FA et al. Arch Intern Med. 2008;168(21):2131-2136",
+    ],
+  },
 ];
 export function getCalculatorsByCategory(category: string): Calculator[] {
   return calculators.filter((calc) => calc.category === category);

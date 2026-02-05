@@ -1661,6 +1661,56 @@ export default function Dashboard() {
           break;
         }
 
+        case "sirs": {
+          const sirsResult = calc.sirsScore(
+            String(calculatorState.temperature) || 'normal',
+            String(calculatorState.heartRate) || 'normal',
+            String(calculatorState.respiratoryRate) || 'normal',
+            String(calculatorState.wbc) || 'normal'
+          );
+          calculationResult = sirsResult.score;
+          const criteriaMet = [];
+          if (sirsResult.criteria.temp) criteriaMet.push('Temperature >38C or <36C');
+          if (sirsResult.criteria.hr) criteriaMet.push('Heart Rate >90 bpm');
+          if (sirsResult.criteria.rr) criteriaMet.push('RR >20 or PaCO2 <32');
+          if (sirsResult.criteria.wbc) criteriaMet.push('WBC >12k or <4k or >10% bands');
+          setResultInterpretation(
+            `Criteria Met (${sirsResult.score}/4):\n${criteriaMet.length > 0 ? criteriaMet.map(c => '\u2713 ' + c).join('\n') : 'None'}\n\n${sirsResult.score >= 2 ? 'SIRS POSITIVE - If infection suspected, consider sepsis.' : 'SIRS NEGATIVE - Does not rule out infection.'}`
+          );
+          break;
+        }
+
+        case "genevaRevised": {
+          const genevaResult = calc.genevaRevisedScore(
+            String(calculatorState.age) || 'no',
+            String(calculatorState.previousPeDvt) || 'no',
+            String(calculatorState.surgery) || 'no',
+            String(calculatorState.malignancy) || 'no',
+            String(calculatorState.unilateralPain) || 'no',
+            String(calculatorState.hemoptysis) || 'no',
+            String(calculatorState.heartRate) || 'normal',
+            String(calculatorState.legPainEdema) || 'no'
+          );
+          calculationResult = genevaResult.score;
+          const genevaComponents = [];
+          if (genevaResult.components.age > 0) genevaComponents.push(`Age >65: +${genevaResult.components.age}`);
+          if (genevaResult.components.previousPeDvt > 0) genevaComponents.push(`Previous PE/DVT: +${genevaResult.components.previousPeDvt}`);
+          if (genevaResult.components.surgery > 0) genevaComponents.push(`Surgery/fracture: +${genevaResult.components.surgery}`);
+          if (genevaResult.components.malignancy > 0) genevaComponents.push(`Malignancy: +${genevaResult.components.malignancy}`);
+          if (genevaResult.components.unilateralPain > 0) genevaComponents.push(`Unilateral leg pain: +${genevaResult.components.unilateralPain}`);
+          if (genevaResult.components.hemoptysis > 0) genevaComponents.push(`Hemoptysis: +${genevaResult.components.hemoptysis}`);
+          if (genevaResult.components.heartRate > 0) genevaComponents.push(`Heart rate: +${genevaResult.components.heartRate}`);
+          if (genevaResult.components.legPainEdema > 0) genevaComponents.push(`Leg pain/edema: +${genevaResult.components.legPainEdema}`);
+          let probability = 'LOW';
+          let prevalence = '~8%';
+          if (genevaResult.score >= 11) { probability = 'HIGH'; prevalence = '~74%'; }
+          else if (genevaResult.score >= 4) { probability = 'INTERMEDIATE'; prevalence = '~28%'; }
+          setResultInterpretation(
+            `${probability} PROBABILITY (PE prevalence ${prevalence})\n\nPoint Breakdown:\n${genevaComponents.length > 0 ? genevaComponents.join('\n') : 'No risk factors identified'}`
+          );
+          break;
+        }
+
         default:
           calculationResult = undefined;
       }

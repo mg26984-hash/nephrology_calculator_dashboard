@@ -209,6 +209,12 @@ export function getResultColorCoding(calculatorId: string, value: number, inputs
     case 'apache2':
       return getAPACHEIIColor(value);
 
+    case 'sirs':
+      return getSIRSColor(value);
+
+    case 'genevaRevised':
+      return getGenevaRevisedColor(value);
+
     default:
       return null;
   }
@@ -1777,6 +1783,81 @@ export function getAPACHEIIColor(value: number): ColorResult {
     textClass: 'text-red-700 dark:text-red-500',
     borderClass: 'border-red-600',
     label: 'Critical (~75%+ mortality)',
+    severity: 'danger'
+  };
+}
+
+
+export function getSIRSColor(value: number): ColorResult {
+  if (value === 0) {
+    return {
+      bgClass: 'bg-emerald-500/10',
+      textClass: 'text-emerald-600 dark:text-emerald-400',
+      borderClass: 'border-emerald-500',
+      label: 'No SIRS Criteria Met',
+      severity: 'success'
+    };
+  }
+  if (value === 1) {
+    return {
+      bgClass: 'bg-yellow-500/10',
+      textClass: 'text-yellow-600 dark:text-yellow-400',
+      borderClass: 'border-yellow-500',
+      label: '1 Criterion - Monitor',
+      severity: 'warning'
+    };
+  }
+  if (value === 2) {
+    return {
+      bgClass: 'bg-orange-500/10',
+      textClass: 'text-orange-600 dark:text-orange-400',
+      borderClass: 'border-orange-500',
+      label: 'SIRS Positive (2 criteria)',
+      severity: 'warning'
+    };
+  }
+  if (value === 3) {
+    return {
+      bgClass: 'bg-red-500/10',
+      textClass: 'text-red-600 dark:text-red-400',
+      borderClass: 'border-red-500',
+      label: 'SIRS Positive (3 criteria)',
+      severity: 'danger'
+    };
+  }
+  return {
+    bgClass: 'bg-red-600/10',
+    textClass: 'text-red-700 dark:text-red-500',
+    borderClass: 'border-red-600',
+    label: 'SIRS Positive (All 4 criteria)',
+    severity: 'danger'
+  };
+}
+
+export function getGenevaRevisedColor(value: number): ColorResult {
+  if (value <= 3) {
+    return {
+      bgClass: 'bg-emerald-500/10',
+      textClass: 'text-emerald-600 dark:text-emerald-400',
+      borderClass: 'border-emerald-500',
+      label: 'Low Probability (~8%)',
+      severity: 'success'
+    };
+  }
+  if (value <= 10) {
+    return {
+      bgClass: 'bg-yellow-500/10',
+      textClass: 'text-yellow-600 dark:text-yellow-400',
+      borderClass: 'border-yellow-500',
+      label: 'Intermediate Probability (~28%)',
+      severity: 'warning'
+    };
+  }
+  return {
+    bgClass: 'bg-red-500/10',
+    textClass: 'text-red-600 dark:text-red-400',
+    borderClass: 'border-red-500',
+    label: 'High Probability (~74%)',
     severity: 'danger'
   };
 }
