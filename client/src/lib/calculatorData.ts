@@ -2010,6 +2010,144 @@ export const calculators: Calculator[] = [
       "Wells PS et al. N Engl J Med. 2003;349(13):1227-1235",
     ],
   },
+  {
+    id: "gcs",
+    name: "Glasgow Coma Scale (GCS)",
+    description: "Standardized neurological assessment for level of consciousness",
+    category: "Critical Care",
+    inputs: [
+      { id: "eyeOpening", label: "Eye Opening", type: "select", options: [
+        { value: "4", label: "4 - Spontaneous" },
+        { value: "3", label: "3 - To verbal command" },
+        { value: "2", label: "2 - To pain" },
+        { value: "1", label: "1 - No response" },
+      ], required: true },
+      { id: "verbalResponse", label: "Verbal Response", type: "select", options: [
+        { value: "5", label: "5 - Oriented" },
+        { value: "4", label: "4 - Confused" },
+        { value: "3", label: "3 - Inappropriate words" },
+        { value: "2", label: "2 - Incomprehensible sounds" },
+        { value: "1", label: "1 - No response" },
+      ], required: true },
+      { id: "motorResponse", label: "Motor Response", type: "select", options: [
+        { value: "6", label: "6 - Obeys commands" },
+        { value: "5", label: "5 - Localizes pain" },
+        { value: "4", label: "4 - Withdraws from pain" },
+        { value: "3", label: "3 - Abnormal flexion (decorticate)" },
+        { value: "2", label: "2 - Extension (decerebrate)" },
+        { value: "1", label: "1 - No response" },
+      ], required: true },
+    ],
+    resultLabel: "GCS Score",
+    resultUnit: "points",
+    interpretation: (value) => {
+      if (value <= 8) return "SEVERE - Coma. Intubation usually indicated for airway protection.";
+      if (value <= 12) return "MODERATE - Significant impairment. Close monitoring required.";
+      return "MILD - Minor impairment (13-15). Continue neurological monitoring.";
+    },
+    clinicalPearls: [
+      "GCS 3-8: Severe brain injury - consider intubation for airway protection",
+      "GCS 9-12: Moderate brain injury",
+      "GCS 13-15: Mild brain injury",
+      "Report as E_V_M_ (e.g., E4V5M6 = 15) for component detail",
+      "Motor score is most predictive of outcome",
+      "Cannot assess verbal in intubated patients - use GCS-E+M or note 'T'",
+    ],
+    references: [
+      "Teasdale G, Jennett B. Lancet. 1974;2(7872):81-84",
+      "Teasdale G et al. J Neurosurg. 2014;120(6):1241-1249",
+    ],
+  },
+  {
+    id: "pesi",
+    name: "PESI (Pulmonary Embolism Severity Index)",
+    description: "Risk stratification for 30-day mortality in confirmed PE",
+    category: "Critical Care",
+    inputs: [
+      { id: "age", label: "Age", type: "number", unit: "years", placeholder: "65", required: true, min: 0, max: 120 },
+      { id: "sex", label: "Sex", type: "select", options: [{ value: "female", label: "Female" }, { value: "male", label: "Male (+10)" }], required: true },
+      { id: "cancer", label: "Cancer (active or within 6 months)", type: "select", options: [{ value: "no", label: "No" }, { value: "yes", label: "Yes (+30)" }], required: true },
+      { id: "heartFailure", label: "Heart failure (history)", type: "select", options: [{ value: "no", label: "No" }, { value: "yes", label: "Yes (+10)" }], required: true },
+      { id: "chronicLungDisease", label: "Chronic lung disease", type: "select", options: [{ value: "no", label: "No" }, { value: "yes", label: "Yes (+10)" }], required: true },
+      { id: "pulse", label: "Pulse ≥110/min", type: "select", options: [{ value: "no", label: "No" }, { value: "yes", label: "Yes (+20)" }], required: true },
+      { id: "systolicBPLow", label: "Systolic BP <100 mmHg", type: "select", options: [{ value: "no", label: "No" }, { value: "yes", label: "Yes (+30)" }], required: true },
+      { id: "respiratoryRateHigh", label: "Respiratory rate ≥30/min", type: "select", options: [{ value: "no", label: "No" }, { value: "yes", label: "Yes (+20)" }], required: true },
+      { id: "tempLow", label: "Temperature <36°C", type: "select", options: [{ value: "no", label: "No" }, { value: "yes", label: "Yes (+20)" }], required: true },
+      { id: "alteredMentalStatus", label: "Altered mental status (disorientation, lethargy, stupor, coma)", type: "select", options: [{ value: "no", label: "No" }, { value: "yes", label: "Yes (+60)" }], required: true },
+      { id: "spo2Low", label: "Arterial oxygen saturation <90%", type: "select", options: [{ value: "no", label: "No" }, { value: "yes", label: "Yes (+20)" }], required: true },
+    ],
+    resultLabel: "PESI Score",
+    resultUnit: "points",
+    interpretation: (value) => {
+      if (value > 125) return "CLASS V (Very High Risk) - 10-25% 30-day mortality. ICU admission recommended.";
+      if (value > 105) return "CLASS IV (High Risk) - 4-11% 30-day mortality. Inpatient treatment required.";
+      if (value > 85) return "CLASS III (Intermediate Risk) - 3-7% 30-day mortality. Consider inpatient care.";
+      if (value > 65) return "CLASS II (Low Risk) - 1.7-3.5% 30-day mortality. Consider early discharge.";
+      return "CLASS I (Very Low Risk) - 0-1.6% 30-day mortality. Outpatient treatment may be appropriate.";
+    },
+    clinicalPearls: [
+      "PESI is used AFTER PE is confirmed (not for diagnosis)",
+      "Class I-II: Consider outpatient treatment if no contraindications",
+      "Class III-V: Inpatient treatment recommended",
+      "sPESI (simplified) uses 6 variables with equal weighting",
+      "Age contributes directly to score (1 point per year)",
+      "Combine with troponin/BNP and RV function for risk assessment",
+    ],
+    references: [
+      "Aujesky D et al. Am J Respir Crit Care Med. 2005;172(8):1041-1046",
+      "Jiménez D et al. Arch Intern Med. 2010;170(15):1383-1389",
+    ],
+  },
+  {
+    id: "apache2",
+    name: "APACHE II Score",
+    description: "ICU mortality prediction based on acute physiology and chronic health",
+    category: "Critical Care",
+    inputs: [
+      { id: "age", label: "Age", type: "number", unit: "years", placeholder: "55", required: true, min: 0, max: 120 },
+      { id: "temperature", label: "Temperature (highest in 24h)", type: "number", unit: "°C", placeholder: "37.5", required: true, min: 25, max: 45, step: 0.1 },
+      { id: "map", label: "Mean Arterial Pressure", type: "number", unit: "mmHg", placeholder: "80", required: true, min: 0, max: 200 },
+      { id: "heartRate", label: "Heart Rate (highest in 24h)", type: "number", unit: "beats/min", placeholder: "85", required: true, min: 0, max: 250 },
+      { id: "respiratoryRate", label: "Respiratory Rate (highest in 24h)", type: "number", unit: "breaths/min", placeholder: "18", required: true, min: 0, max: 60 },
+      { id: "fio2", label: "FiO₂", type: "number", unit: "%", placeholder: "21", required: true, min: 21, max: 100 },
+      { id: "pao2", label: "PaO₂ (if FiO₂ <50%)", type: "number", unit: "mmHg", placeholder: "95", required: false, min: 0 },
+      { id: "aaGradient", label: "A-a Gradient (if FiO₂ ≥50%)", type: "number", unit: "mmHg", placeholder: "100", required: false, min: 0 },
+      { id: "arterialPH", label: "Arterial pH", type: "number", unit: "", placeholder: "7.40", required: true, min: 6.5, max: 8.0, step: 0.01 },
+      { id: "sodium", label: "Serum Sodium", type: "number", unit: "mEq/L", placeholder: "140", required: true, min: 100, max: 200 },
+      { id: "potassium", label: "Serum Potassium", type: "number", unit: "mEq/L", placeholder: "4.0", required: true, min: 1, max: 10, step: 0.1 },
+      { id: "creatinine", label: "Serum Creatinine", type: "number", unit: "mg/dL", placeholder: "1.0", required: true, min: 0, max: 20, step: 0.1 },
+      { id: "acuteRenalFailure", label: "Acute Renal Failure", type: "select", options: [{ value: "no", label: "No" }, { value: "yes", label: "Yes (doubles creatinine points)" }], required: true },
+      { id: "hematocrit", label: "Hematocrit", type: "number", unit: "%", placeholder: "40", required: true, min: 0, max: 70 },
+      { id: "wbc", label: "White Blood Count", type: "number", unit: "×10³/μL", placeholder: "10", required: true, min: 0, max: 100, step: 0.1 },
+      { id: "gcs", label: "Glasgow Coma Scale", type: "number", unit: "points", placeholder: "15", required: true, min: 3, max: 15 },
+      { id: "chronicHealth", label: "Chronic Health Status", type: "select", options: [
+        { value: "none", label: "No severe organ insufficiency" },
+        { value: "elective", label: "Elective postop with severe organ insufficiency (+2)" },
+        { value: "emergency", label: "Emergency/nonoperative with severe organ insufficiency (+5)" },
+      ], required: true },
+    ],
+    resultLabel: "APACHE II Score",
+    resultUnit: "points",
+    interpretation: (value) => {
+      if (value >= 35) return "VERY HIGH RISK - ~85% predicted mortality. Maximum ICU support indicated.";
+      if (value >= 25) return "HIGH RISK - ~55% predicted mortality. Aggressive ICU management needed.";
+      if (value >= 15) return "MODERATE RISK - ~25% predicted mortality. Close ICU monitoring.";
+      if (value >= 10) return "LOW-MODERATE RISK - ~15% predicted mortality.";
+      return "LOW RISK - <10% predicted mortality. Continue standard ICU care.";
+    },
+    clinicalPearls: [
+      "Use worst values in first 24 hours of ICU admission",
+      "Score range 0-71; higher = worse prognosis",
+      "Chronic health points: severe organ insufficiency or immunocompromised",
+      "Severe organ insufficiency: cirrhosis, NYHA IV, dialysis, immunosuppression",
+      "Does not account for admission diagnosis - use disease-specific coefficients",
+      "APACHE IV is newer but APACHE II remains widely used",
+    ],
+    references: [
+      "Knaus WA et al. Crit Care Med. 1985;13(10):818-829",
+      "Zimmerman JE et al. Crit Care Med. 2006;34(5):1297-1310",
+    ],
+  },
 ];
 export function getCalculatorsByCategory(category: string): Calculator[] {
   return calculators.filter((calc) => calc.category === category);

@@ -1600,6 +1600,67 @@ export default function Dashboard() {
           break;
         }
 
+        case "gcs": {
+          const gcsResult = calc.glasgowComaScale(
+            parseInt(String(calculatorState.eyeOpening)) || 4,
+            parseInt(String(calculatorState.verbalResponse)) || 5,
+            parseInt(String(calculatorState.motorResponse)) || 6
+          );
+          calculationResult = gcsResult.score;
+          setResultInterpretation(
+            `${gcsResult.severity}\n\nComponents: E${gcsResult.components.eye}V${gcsResult.components.verbal}M${gcsResult.components.motor}`
+          );
+          break;
+        }
+
+        case "pesi": {
+          const pesiResult = calc.pesiScore(
+            parseFloat(String(calculatorState.age)) || 65,
+            calculatorState.sex === 'male',
+            calculatorState.cancer === 'yes',
+            calculatorState.heartFailure === 'yes',
+            calculatorState.chronicLungDisease === 'yes',
+            calculatorState.pulse === 'yes',
+            calculatorState.systolicBPLow === 'yes',
+            calculatorState.respiratoryRateHigh === 'yes',
+            calculatorState.tempLow === 'yes',
+            calculatorState.alteredMentalStatus === 'yes',
+            calculatorState.spo2Low === 'yes'
+          );
+          calculationResult = pesiResult.score;
+          setResultInterpretation(
+            `${pesiResult.riskClass}\n30-day mortality: ${pesiResult.mortality}\n\nScoring:\n${pesiResult.criteria.join('\n')}`
+          );
+          break;
+        }
+
+        case "apache2": {
+          const apache2Result = calc.apacheIIScore(
+            parseFloat(String(calculatorState.age)) || 55,
+            parseFloat(String(calculatorState.temperature)) || 37,
+            parseFloat(String(calculatorState.map)) || 80,
+            parseFloat(String(calculatorState.heartRate)) || 85,
+            parseFloat(String(calculatorState.respiratoryRate)) || 18,
+            parseFloat(String(calculatorState.fio2)) || 21,
+            calculatorState.pao2 ? parseFloat(String(calculatorState.pao2)) : null,
+            calculatorState.aaGradient ? parseFloat(String(calculatorState.aaGradient)) : null,
+            parseFloat(String(calculatorState.arterialPH)) || 7.4,
+            parseFloat(String(calculatorState.sodium)) || 140,
+            parseFloat(String(calculatorState.potassium)) || 4.0,
+            parseFloat(String(calculatorState.creatinine)) || 1.0,
+            calculatorState.acuteRenalFailure === 'yes',
+            parseFloat(String(calculatorState.hematocrit)) || 40,
+            parseFloat(String(calculatorState.wbc)) || 10,
+            parseFloat(String(calculatorState.gcs)) || 15,
+            (calculatorState.chronicHealth as 'none' | 'elective' | 'emergency') || 'none'
+          );
+          calculationResult = apache2Result.score;
+          setResultInterpretation(
+            `Predicted mortality: ${apache2Result.predictedMortality}\n\nComponents:\n• Acute Physiology Score: ${apache2Result.components.aps}\n• Age Points: ${apache2Result.components.age}\n• Chronic Health Points: ${apache2Result.components.chronic}`
+          );
+          break;
+        }
+
         default:
           calculationResult = undefined;
       }

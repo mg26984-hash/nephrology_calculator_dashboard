@@ -2344,3 +2344,281 @@ export function wellsDVT(
 
   return { score, criteria, interpretation, riskClass };
 }
+
+
+// Glasgow Coma Scale (GCS) Calculator
+export function glasgowComaScale(
+  eyeOpening: number,
+  verbalResponse: number,
+  motorResponse: number
+): { score: number; components: { eye: number; verbal: number; motor: number }; severity: string } {
+  const score = eyeOpening + verbalResponse + motorResponse;
+  
+  let severity = '';
+  if (score <= 8) {
+    severity = 'Severe (Coma)';
+  } else if (score <= 12) {
+    severity = 'Moderate';
+  } else {
+    severity = 'Mild';
+  }
+  
+  return {
+    score,
+    components: {
+      eye: eyeOpening,
+      verbal: verbalResponse,
+      motor: motorResponse
+    },
+    severity
+  };
+}
+
+// PESI (Pulmonary Embolism Severity Index) Calculator
+export function pesiScore(
+  age: number,
+  isMale: boolean,
+  hasCancer: boolean,
+  hasHeartFailure: boolean,
+  hasChronicLungDisease: boolean,
+  pulseOver110: boolean,
+  systolicBPLow: boolean,
+  respiratoryRateHigh: boolean,
+  tempLow: boolean,
+  alteredMentalStatus: boolean,
+  spo2Low: boolean
+): { score: number; riskClass: string; mortality: string; criteria: string[] } {
+  let score = age; // Age contributes directly to score
+  const criteria: string[] = [`Age: +${age}`];
+  
+  if (isMale) {
+    score += 10;
+    criteria.push('Male sex: +10');
+  }
+  if (hasCancer) {
+    score += 30;
+    criteria.push('Cancer: +30');
+  }
+  if (hasHeartFailure) {
+    score += 10;
+    criteria.push('Heart failure: +10');
+  }
+  if (hasChronicLungDisease) {
+    score += 10;
+    criteria.push('Chronic lung disease: +10');
+  }
+  if (pulseOver110) {
+    score += 20;
+    criteria.push('Pulse ≥110/min: +20');
+  }
+  if (systolicBPLow) {
+    score += 30;
+    criteria.push('Systolic BP <100 mmHg: +30');
+  }
+  if (respiratoryRateHigh) {
+    score += 20;
+    criteria.push('Respiratory rate ≥30/min: +20');
+  }
+  if (tempLow) {
+    score += 20;
+    criteria.push('Temperature <36°C: +20');
+  }
+  if (alteredMentalStatus) {
+    score += 60;
+    criteria.push('Altered mental status: +60');
+  }
+  if (spo2Low) {
+    score += 20;
+    criteria.push('Arterial O₂ saturation <90%: +20');
+  }
+  
+  let riskClass = '';
+  let mortality = '';
+  
+  if (score > 125) {
+    riskClass = 'Class V (Very High)';
+    mortality = '10.0-24.5%';
+  } else if (score > 105) {
+    riskClass = 'Class IV (High)';
+    mortality = '4.0-11.4%';
+  } else if (score > 85) {
+    riskClass = 'Class III (Intermediate)';
+    mortality = '3.2-7.1%';
+  } else if (score > 65) {
+    riskClass = 'Class II (Low)';
+    mortality = '1.7-3.5%';
+  } else {
+    riskClass = 'Class I (Very Low)';
+    mortality = '0-1.6%';
+  }
+  
+  return { score, riskClass, mortality, criteria };
+}
+
+// APACHE II Score Calculator
+export function apacheIIScore(
+  age: number,
+  temperature: number,
+  map: number,
+  heartRate: number,
+  respiratoryRate: number,
+  fio2: number,
+  pao2: number | null,
+  aaGradient: number | null,
+  arterialPH: number,
+  sodium: number,
+  potassium: number,
+  creatinine: number,
+  acuteRenalFailure: boolean,
+  hematocrit: number,
+  wbc: number,
+  gcs: number,
+  chronicHealth: 'none' | 'elective' | 'emergency'
+): { score: number; components: { aps: number; age: number; chronic: number }; predictedMortality: string } {
+  let apsScore = 0;
+  
+  // Temperature scoring
+  if (temperature >= 41) apsScore += 4;
+  else if (temperature >= 39) apsScore += 3;
+  else if (temperature >= 38.5) apsScore += 1;
+  else if (temperature >= 36) apsScore += 0;
+  else if (temperature >= 34) apsScore += 1;
+  else if (temperature >= 32) apsScore += 2;
+  else if (temperature >= 30) apsScore += 3;
+  else apsScore += 4;
+  
+  // MAP scoring
+  if (map >= 160) apsScore += 4;
+  else if (map >= 130) apsScore += 3;
+  else if (map >= 110) apsScore += 2;
+  else if (map >= 70) apsScore += 0;
+  else if (map >= 50) apsScore += 2;
+  else apsScore += 4;
+  
+  // Heart rate scoring
+  if (heartRate >= 180) apsScore += 4;
+  else if (heartRate >= 140) apsScore += 3;
+  else if (heartRate >= 110) apsScore += 2;
+  else if (heartRate >= 70) apsScore += 0;
+  else if (heartRate >= 55) apsScore += 2;
+  else if (heartRate >= 40) apsScore += 3;
+  else apsScore += 4;
+  
+  // Respiratory rate scoring
+  if (respiratoryRate >= 50) apsScore += 4;
+  else if (respiratoryRate >= 35) apsScore += 3;
+  else if (respiratoryRate >= 25) apsScore += 1;
+  else if (respiratoryRate >= 12) apsScore += 0;
+  else if (respiratoryRate >= 10) apsScore += 1;
+  else if (respiratoryRate >= 6) apsScore += 2;
+  else apsScore += 4;
+  
+  // Oxygenation scoring
+  if (fio2 >= 50 && aaGradient !== null) {
+    // Use A-a gradient
+    if (aaGradient >= 500) apsScore += 4;
+    else if (aaGradient >= 350) apsScore += 3;
+    else if (aaGradient >= 200) apsScore += 2;
+    else apsScore += 0;
+  } else if (pao2 !== null) {
+    // Use PaO2
+    if (pao2 >= 70) apsScore += 0;
+    else if (pao2 >= 61) apsScore += 1;
+    else if (pao2 >= 55) apsScore += 3;
+    else apsScore += 4;
+  }
+  
+  // Arterial pH scoring
+  if (arterialPH >= 7.7) apsScore += 4;
+  else if (arterialPH >= 7.6) apsScore += 3;
+  else if (arterialPH >= 7.5) apsScore += 1;
+  else if (arterialPH >= 7.33) apsScore += 0;
+  else if (arterialPH >= 7.25) apsScore += 2;
+  else if (arterialPH >= 7.15) apsScore += 3;
+  else apsScore += 4;
+  
+  // Sodium scoring
+  if (sodium >= 180) apsScore += 4;
+  else if (sodium >= 160) apsScore += 3;
+  else if (sodium >= 155) apsScore += 2;
+  else if (sodium >= 150) apsScore += 1;
+  else if (sodium >= 130) apsScore += 0;
+  else if (sodium >= 120) apsScore += 2;
+  else if (sodium >= 111) apsScore += 3;
+  else apsScore += 4;
+  
+  // Potassium scoring
+  if (potassium >= 7) apsScore += 4;
+  else if (potassium >= 6) apsScore += 3;
+  else if (potassium >= 5.5) apsScore += 1;
+  else if (potassium >= 3.5) apsScore += 0;
+  else if (potassium >= 3) apsScore += 1;
+  else if (potassium >= 2.5) apsScore += 2;
+  else apsScore += 4;
+  
+  // Creatinine scoring (double if ARF)
+  let creatPoints = 0;
+  if (creatinine >= 3.5) creatPoints = 4;
+  else if (creatinine >= 2) creatPoints = 3;
+  else if (creatinine >= 1.5) creatPoints = 2;
+  else if (creatinine >= 0.6) creatPoints = 0;
+  else creatPoints = 2;
+  
+  if (acuteRenalFailure) creatPoints *= 2;
+  apsScore += creatPoints;
+  
+  // Hematocrit scoring
+  if (hematocrit >= 60) apsScore += 4;
+  else if (hematocrit >= 50) apsScore += 2;
+  else if (hematocrit >= 46) apsScore += 1;
+  else if (hematocrit >= 30) apsScore += 0;
+  else if (hematocrit >= 20) apsScore += 2;
+  else apsScore += 4;
+  
+  // WBC scoring
+  if (wbc >= 40) apsScore += 4;
+  else if (wbc >= 20) apsScore += 2;
+  else if (wbc >= 15) apsScore += 1;
+  else if (wbc >= 3) apsScore += 0;
+  else if (wbc >= 1) apsScore += 2;
+  else apsScore += 4;
+  
+  // GCS scoring (15 - GCS)
+  apsScore += (15 - gcs);
+  
+  // Age points
+  let agePoints = 0;
+  if (age >= 75) agePoints = 6;
+  else if (age >= 65) agePoints = 5;
+  else if (age >= 55) agePoints = 3;
+  else if (age >= 45) agePoints = 2;
+  else agePoints = 0;
+  
+  // Chronic health points
+  let chronicPoints = 0;
+  if (chronicHealth === 'emergency') chronicPoints = 5;
+  else if (chronicHealth === 'elective') chronicPoints = 2;
+  
+  const totalScore = apsScore + agePoints + chronicPoints;
+  
+  // Predicted mortality estimation
+  let predictedMortality = '';
+  if (totalScore >= 35) predictedMortality = '~85%';
+  else if (totalScore >= 30) predictedMortality = '~75%';
+  else if (totalScore >= 25) predictedMortality = '~55%';
+  else if (totalScore >= 20) predictedMortality = '~40%';
+  else if (totalScore >= 15) predictedMortality = '~25%';
+  else if (totalScore >= 10) predictedMortality = '~15%';
+  else if (totalScore >= 5) predictedMortality = '~8%';
+  else predictedMortality = '~4%';
+  
+  return {
+    score: totalScore,
+    components: {
+      aps: apsScore,
+      age: agePoints,
+      chronic: chronicPoints
+    },
+    predictedMortality
+  };
+}

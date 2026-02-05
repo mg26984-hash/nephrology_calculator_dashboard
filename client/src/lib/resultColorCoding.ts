@@ -182,6 +182,33 @@ export function getResultColorCoding(calculatorId: string, value: number, inputs
     case 'frax':
       return getFRAXColor(value);
 
+    // ============================================================================
+    // CRITICAL CARE
+    // ============================================================================
+    case 'qsofa':
+      return getQSOFAColor(value);
+
+    case 'news2':
+      return getNEWS2Color(value);
+
+    case 'sofa':
+      return getSOFAColor(value);
+
+    case 'wellsPE':
+      return getWellsPEColor(value);
+
+    case 'wellsDVT':
+      return getWellsDVTColor(value);
+
+    case 'gcs':
+      return getGCSColor(value);
+
+    case 'pesi':
+      return getPESIColor(value);
+
+    case 'apache2':
+      return getAPACHEIIColor(value);
+
     default:
       return null;
   }
@@ -1458,6 +1485,298 @@ function getFRAXColor(value: number): ColorResult {
     textClass: 'text-red-600 dark:text-red-400',
     borderClass: 'border-red-500',
     label: 'High Fracture Risk',
+    severity: 'danger'
+  };
+}
+
+
+// ============================================================================
+// CRITICAL CARE CALCULATORS
+// ============================================================================
+
+export function getQSOFAColor(value: number): ColorResult {
+  if (value === 0) {
+    return {
+      bgClass: 'bg-emerald-500/10',
+      textClass: 'text-emerald-600 dark:text-emerald-400',
+      borderClass: 'border-emerald-500',
+      label: 'Low Risk',
+      severity: 'success'
+    };
+  }
+  if (value === 1) {
+    return {
+      bgClass: 'bg-yellow-500/10',
+      textClass: 'text-yellow-600 dark:text-yellow-400',
+      borderClass: 'border-yellow-500',
+      label: 'Intermediate Risk',
+      severity: 'warning'
+    };
+  }
+  return {
+    bgClass: 'bg-red-500/10',
+    textClass: 'text-red-600 dark:text-red-400',
+    borderClass: 'border-red-500',
+    label: 'High Risk - Sepsis Likely',
+    severity: 'danger'
+  };
+}
+
+export function getNEWS2Color(value: number): ColorResult {
+  if (value <= 4) {
+    return {
+      bgClass: 'bg-emerald-500/10',
+      textClass: 'text-emerald-600 dark:text-emerald-400',
+      borderClass: 'border-emerald-500',
+      label: 'Low Risk',
+      severity: 'success'
+    };
+  }
+  if (value <= 6) {
+    return {
+      bgClass: 'bg-yellow-500/10',
+      textClass: 'text-yellow-600 dark:text-yellow-400',
+      borderClass: 'border-yellow-500',
+      label: 'Medium Risk',
+      severity: 'warning'
+    };
+  }
+  return {
+    bgClass: 'bg-red-500/10',
+    textClass: 'text-red-600 dark:text-red-400',
+    borderClass: 'border-red-500',
+    label: 'High Risk - Urgent Response',
+    severity: 'danger'
+  };
+}
+
+export function getSOFAColor(value: number): ColorResult {
+  if (value <= 1) {
+    return {
+      bgClass: 'bg-emerald-500/10',
+      textClass: 'text-emerald-600 dark:text-emerald-400',
+      borderClass: 'border-emerald-500',
+      label: 'Minimal Dysfunction',
+      severity: 'success'
+    };
+  }
+  if (value <= 6) {
+    return {
+      bgClass: 'bg-yellow-500/10',
+      textClass: 'text-yellow-600 dark:text-yellow-400',
+      borderClass: 'border-yellow-500',
+      label: 'Mild-Moderate Dysfunction',
+      severity: 'warning'
+    };
+  }
+  if (value <= 10) {
+    return {
+      bgClass: 'bg-orange-500/10',
+      textClass: 'text-orange-600 dark:text-orange-400',
+      borderClass: 'border-orange-500',
+      label: 'Severe Dysfunction',
+      severity: 'warning'
+    };
+  }
+  return {
+    bgClass: 'bg-red-500/10',
+    textClass: 'text-red-600 dark:text-red-400',
+    borderClass: 'border-red-500',
+    label: 'Critical - High Mortality',
+    severity: 'danger'
+  };
+}
+
+export function getWellsPEColor(value: number): ColorResult {
+  if (value < 2) {
+    return {
+      bgClass: 'bg-emerald-500/10',
+      textClass: 'text-emerald-600 dark:text-emerald-400',
+      borderClass: 'border-emerald-500',
+      label: 'Low Probability',
+      severity: 'success'
+    };
+  }
+  if (value <= 6) {
+    return {
+      bgClass: 'bg-yellow-500/10',
+      textClass: 'text-yellow-600 dark:text-yellow-400',
+      borderClass: 'border-yellow-500',
+      label: 'Moderate Probability',
+      severity: 'warning'
+    };
+  }
+  return {
+    bgClass: 'bg-red-500/10',
+    textClass: 'text-red-600 dark:text-red-400',
+    borderClass: 'border-red-500',
+    label: 'High Probability - PE Likely',
+    severity: 'danger'
+  };
+}
+
+export function getWellsDVTColor(value: number): ColorResult {
+  if (value < 1) {
+    return {
+      bgClass: 'bg-emerald-500/10',
+      textClass: 'text-emerald-600 dark:text-emerald-400',
+      borderClass: 'border-emerald-500',
+      label: 'Low Probability',
+      severity: 'success'
+    };
+  }
+  if (value <= 2) {
+    return {
+      bgClass: 'bg-yellow-500/10',
+      textClass: 'text-yellow-600 dark:text-yellow-400',
+      borderClass: 'border-yellow-500',
+      label: 'Moderate Probability',
+      severity: 'warning'
+    };
+  }
+  return {
+    bgClass: 'bg-red-500/10',
+    textClass: 'text-red-600 dark:text-red-400',
+    borderClass: 'border-red-500',
+    label: 'High Probability - DVT Likely',
+    severity: 'danger'
+  };
+}
+
+export function getGCSColor(value: number): ColorResult {
+  if (value >= 13) {
+    return {
+      bgClass: 'bg-emerald-500/10',
+      textClass: 'text-emerald-600 dark:text-emerald-400',
+      borderClass: 'border-emerald-500',
+      label: 'Mild Brain Injury',
+      severity: 'success'
+    };
+  }
+  if (value >= 9) {
+    return {
+      bgClass: 'bg-yellow-500/10',
+      textClass: 'text-yellow-600 dark:text-yellow-400',
+      borderClass: 'border-yellow-500',
+      label: 'Moderate Brain Injury',
+      severity: 'warning'
+    };
+  }
+  return {
+    bgClass: 'bg-red-500/10',
+    textClass: 'text-red-600 dark:text-red-400',
+    borderClass: 'border-red-500',
+    label: 'Severe Brain Injury',
+    severity: 'danger'
+  };
+}
+
+export function getPESIColor(value: number): ColorResult {
+  if (value <= 65) {
+    return {
+      bgClass: 'bg-emerald-500/10',
+      textClass: 'text-emerald-600 dark:text-emerald-400',
+      borderClass: 'border-emerald-500',
+      label: 'Class I - Very Low Risk',
+      severity: 'success'
+    };
+  }
+  if (value <= 85) {
+    return {
+      bgClass: 'bg-green-500/10',
+      textClass: 'text-green-600 dark:text-green-400',
+      borderClass: 'border-green-500',
+      label: 'Class II - Low Risk',
+      severity: 'success'
+    };
+  }
+  if (value <= 105) {
+    return {
+      bgClass: 'bg-yellow-500/10',
+      textClass: 'text-yellow-600 dark:text-yellow-400',
+      borderClass: 'border-yellow-500',
+      label: 'Class III - Intermediate Risk',
+      severity: 'warning'
+    };
+  }
+  if (value <= 125) {
+    return {
+      bgClass: 'bg-orange-500/10',
+      textClass: 'text-orange-600 dark:text-orange-400',
+      borderClass: 'border-orange-500',
+      label: 'Class IV - High Risk',
+      severity: 'warning'
+    };
+  }
+  return {
+    bgClass: 'bg-red-500/10',
+    textClass: 'text-red-600 dark:text-red-400',
+    borderClass: 'border-red-500',
+    label: 'Class V - Very High Risk',
+    severity: 'danger'
+  };
+}
+
+export function getAPACHEIIColor(value: number): ColorResult {
+  if (value <= 4) {
+    return {
+      bgClass: 'bg-emerald-500/10',
+      textClass: 'text-emerald-600 dark:text-emerald-400',
+      borderClass: 'border-emerald-500',
+      label: 'Low Risk (~4% mortality)',
+      severity: 'success'
+    };
+  }
+  if (value <= 9) {
+    return {
+      bgClass: 'bg-green-500/10',
+      textClass: 'text-green-600 dark:text-green-400',
+      borderClass: 'border-green-500',
+      label: 'Low-Moderate (~8% mortality)',
+      severity: 'success'
+    };
+  }
+  if (value <= 14) {
+    return {
+      bgClass: 'bg-yellow-500/10',
+      textClass: 'text-yellow-600 dark:text-yellow-400',
+      borderClass: 'border-yellow-500',
+      label: 'Moderate (~15% mortality)',
+      severity: 'warning'
+    };
+  }
+  if (value <= 19) {
+    return {
+      bgClass: 'bg-orange-500/10',
+      textClass: 'text-orange-600 dark:text-orange-400',
+      borderClass: 'border-orange-500',
+      label: 'Moderate-High (~25% mortality)',
+      severity: 'warning'
+    };
+  }
+  if (value <= 24) {
+    return {
+      bgClass: 'bg-red-400/10',
+      textClass: 'text-red-500 dark:text-red-400',
+      borderClass: 'border-red-400',
+      label: 'High (~40% mortality)',
+      severity: 'danger'
+    };
+  }
+  if (value <= 29) {
+    return {
+      bgClass: 'bg-red-500/10',
+      textClass: 'text-red-600 dark:text-red-400',
+      borderClass: 'border-red-500',
+      label: 'Very High (~55% mortality)',
+      severity: 'danger'
+    };
+  }
+  return {
+    bgClass: 'bg-red-600/10',
+    textClass: 'text-red-700 dark:text-red-500',
+    borderClass: 'border-red-600',
+    label: 'Critical (~75%+ mortality)',
     severity: 'danger'
   };
 }
