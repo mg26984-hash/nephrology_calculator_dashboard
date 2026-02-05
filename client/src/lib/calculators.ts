@@ -1929,3 +1929,418 @@ function getFasQValue(age: number, sex: "M" | "F"): number {
     return sex === "M" ? maleAdultQ : femaleAdultQ;
   }
 }
+
+
+// ============================================================================
+// CRITICAL CARE CALCULATORS
+// ============================================================================
+
+/**
+ * qSOFA (Quick SOFA) Score
+ * Quick bedside sepsis screening tool
+ */
+export function qsofa(
+  respiratoryRate: number,
+  systolicBP: number,
+  gcs: number
+): { score: number; criteria: string[]; interpretation: string; riskClass: string } {
+  let score = 0;
+  const criteria: string[] = [];
+
+  // Respiratory Rate ≥22
+  if (respiratoryRate >= 22) {
+    score += 1;
+    criteria.push(`RR ≥22: +1 (${respiratoryRate} breaths/min)`);
+  } else {
+    criteria.push(`RR <22: 0 (${respiratoryRate} breaths/min)`);
+  }
+
+  // Systolic BP ≤100
+  if (systolicBP <= 100) {
+    score += 1;
+    criteria.push(`SBP ≤100: +1 (${systolicBP} mmHg)`);
+  } else {
+    criteria.push(`SBP >100: 0 (${systolicBP} mmHg)`);
+  }
+
+  // GCS <15
+  if (gcs < 15) {
+    score += 1;
+    criteria.push(`GCS <15: +1 (GCS ${gcs})`);
+  } else {
+    criteria.push(`GCS 15: 0 (GCS ${gcs})`);
+  }
+
+  let interpretation = '';
+  let riskClass = '';
+
+  if (score >= 2) {
+    interpretation = 'HIGH RISK';
+    riskClass = 'high';
+  } else if (score === 1) {
+    interpretation = 'Intermediate';
+    riskClass = 'medium';
+  } else {
+    interpretation = 'Low Score';
+    riskClass = 'low';
+  }
+
+  return { score, criteria, interpretation, riskClass };
+}
+
+/**
+ * NEWS2 (National Early Warning Score 2)
+ * Standardized early warning score for clinical deterioration
+ */
+export function news2(
+  respiratoryRate: number,
+  spo2: number,
+  supplementalO2: boolean,
+  systolicBP: number,
+  heartRate: number,
+  temperature: number,
+  consciousness: 'A' | 'C' | 'V' | 'P' | 'U'
+): { score: number; breakdown: string[]; interpretation: string; riskClass: string } {
+  let score = 0;
+  const breakdown: string[] = [];
+
+  // Respiratory Rate scoring
+  let rrScore = 0;
+  if (respiratoryRate <= 8) rrScore = 3;
+  else if (respiratoryRate >= 9 && respiratoryRate <= 11) rrScore = 1;
+  else if (respiratoryRate >= 12 && respiratoryRate <= 20) rrScore = 0;
+  else if (respiratoryRate >= 21 && respiratoryRate <= 24) rrScore = 2;
+  else if (respiratoryRate >= 25) rrScore = 3;
+  score += rrScore;
+  breakdown.push(`RR: ${rrScore} (${respiratoryRate}/min)`);
+
+  // SpO2 scoring (Scale 1 - normal)
+  let spo2Score = 0;
+  if (spo2 <= 91) spo2Score = 3;
+  else if (spo2 >= 92 && spo2 <= 93) spo2Score = 2;
+  else if (spo2 >= 94 && spo2 <= 95) spo2Score = 1;
+  else if (spo2 >= 96) spo2Score = 0;
+  score += spo2Score;
+  breakdown.push(`SpO₂: ${spo2Score} (${spo2}%)`);
+
+  // Supplemental O2
+  let o2Score = supplementalO2 ? 2 : 0;
+  score += o2Score;
+  breakdown.push(`O₂ therapy: ${o2Score} (${supplementalO2 ? 'Yes' : 'No'})`);
+
+  // Systolic BP scoring
+  let sbpScore = 0;
+  if (systolicBP <= 90) sbpScore = 3;
+  else if (systolicBP >= 91 && systolicBP <= 100) sbpScore = 2;
+  else if (systolicBP >= 101 && systolicBP <= 110) sbpScore = 1;
+  else if (systolicBP >= 111 && systolicBP <= 219) sbpScore = 0;
+  else if (systolicBP >= 220) sbpScore = 3;
+  score += sbpScore;
+  breakdown.push(`SBP: ${sbpScore} (${systolicBP} mmHg)`);
+
+  // Heart Rate scoring
+  let hrScore = 0;
+  if (heartRate <= 40) hrScore = 3;
+  else if (heartRate >= 41 && heartRate <= 50) hrScore = 1;
+  else if (heartRate >= 51 && heartRate <= 90) hrScore = 0;
+  else if (heartRate >= 91 && heartRate <= 110) hrScore = 1;
+  else if (heartRate >= 111 && heartRate <= 130) hrScore = 2;
+  else if (heartRate >= 131) hrScore = 3;
+  score += hrScore;
+  breakdown.push(`HR: ${hrScore} (${heartRate}/min)`);
+
+  // Temperature scoring
+  let tempScore = 0;
+  if (temperature <= 35.0) tempScore = 3;
+  else if (temperature >= 35.1 && temperature <= 36.0) tempScore = 1;
+  else if (temperature >= 36.1 && temperature <= 38.0) tempScore = 0;
+  else if (temperature >= 38.1 && temperature <= 39.0) tempScore = 1;
+  else if (temperature >= 39.1) tempScore = 2;
+  score += tempScore;
+  breakdown.push(`Temp: ${tempScore} (${temperature}°C)`);
+
+  // Consciousness (AVPU) scoring
+  let avpuScore = consciousness === 'A' ? 0 : 3;
+  score += avpuScore;
+  breakdown.push(`AVPU: ${avpuScore} (${consciousness})`);
+
+  let interpretation = '';
+  let riskClass = '';
+
+  if (score >= 7) {
+    interpretation = 'HIGH RISK';
+    riskClass = 'high';
+  } else if (score >= 5) {
+    interpretation = 'MEDIUM RISK';
+    riskClass = 'medium';
+  } else if (score >= 1) {
+    interpretation = 'Low-Medium Risk';
+    riskClass = 'low';
+  } else {
+    interpretation = 'Low Risk';
+    riskClass = 'low';
+  }
+
+  return { score, breakdown, interpretation, riskClass };
+}
+
+/**
+ * SOFA (Sequential Organ Failure Assessment) Score
+ * Assesses organ dysfunction in critically ill patients
+ */
+export function sofa(
+  pao2: number,
+  fio2: number,
+  platelets: number,
+  bilirubin: number,
+  bilirubinUnit: 'μmol/L' | 'mg/dL',
+  map: number,
+  vasopressor: 'none' | 'dopa_low' | 'dopa_mid' | 'dopa_high',
+  gcs: number,
+  creatinine: number,
+  creatinineUnit: 'μmol/L' | 'mg/dL',
+  urineOutput: number
+): { score: number; organScores: Record<string, number>; interpretation: string; riskClass: string } {
+  let sofaTotal = 0;
+  const organScores: Record<string, number> = {};
+
+  // Convert bilirubin to μmol/L if needed
+  let bilirubinSI = bilirubin;
+  if (bilirubinUnit === 'mg/dL') {
+    bilirubinSI = bilirubin * 17.1; // mg/dL to μmol/L
+  }
+
+  // Convert creatinine to μmol/L if needed
+  let creatinineSI = creatinine;
+  if (creatinineUnit === 'mg/dL') {
+    creatinineSI = creatinine * 88.4; // mg/dL to μmol/L
+  }
+
+  // Respiratory (PaO2/FiO2 ratio)
+  const pfRatio = pao2 / (fio2 / 100);
+  let respScore = 0;
+  if (pfRatio < 100) respScore = 4;
+  else if (pfRatio >= 100 && pfRatio < 200) respScore = 3;
+  else if (pfRatio >= 200 && pfRatio < 300) respScore = 2;
+  else if (pfRatio >= 300 && pfRatio < 400) respScore = 1;
+  else respScore = 0;
+  organScores.respiratory = respScore;
+  sofaTotal += respScore;
+
+  // Coagulation (Platelets)
+  let coagScore = 0;
+  if (platelets < 20) coagScore = 4;
+  else if (platelets >= 20 && platelets < 50) coagScore = 3;
+  else if (platelets >= 50 && platelets < 100) coagScore = 2;
+  else if (platelets >= 100 && platelets < 150) coagScore = 1;
+  else coagScore = 0;
+  organScores.coagulation = coagScore;
+  sofaTotal += coagScore;
+
+  // Liver (Bilirubin μmol/L)
+  let liverScore = 0;
+  if (bilirubinSI >= 204) liverScore = 4;
+  else if (bilirubinSI >= 102 && bilirubinSI < 204) liverScore = 3;
+  else if (bilirubinSI >= 34 && bilirubinSI < 102) liverScore = 2;
+  else if (bilirubinSI >= 20 && bilirubinSI < 34) liverScore = 1;
+  else liverScore = 0;
+  organScores.liver = liverScore;
+  sofaTotal += liverScore;
+
+  // Cardiovascular (MAP and vasopressors)
+  let cvScore = 0;
+  if (vasopressor === 'dopa_high') cvScore = 4;
+  else if (vasopressor === 'dopa_mid') cvScore = 3;
+  else if (vasopressor === 'dopa_low') cvScore = 2;
+  else if (map < 70) cvScore = 1;
+  else cvScore = 0;
+  organScores.cardiovascular = cvScore;
+  sofaTotal += cvScore;
+
+  // CNS (GCS)
+  let cnsScore = 0;
+  if (gcs >= 13 && gcs <= 15) cnsScore = 0;
+  else if (gcs >= 10 && gcs <= 12) cnsScore = 1;
+  else if (gcs >= 6 && gcs <= 9) cnsScore = 2;
+  else if (gcs >= 3 && gcs < 6) cnsScore = 3;
+  else cnsScore = 4;
+  organScores.cns = cnsScore;
+  sofaTotal += cnsScore;
+
+  // Renal (Creatinine μmol/L or UOP)
+  let renalScore = 0;
+  if (creatinineSI >= 442 || urineOutput < 200) renalScore = 4;
+  else if (creatinineSI >= 354 && creatinineSI < 442) renalScore = 3;
+  else if ((creatinineSI >= 221 && creatinineSI < 354) || urineOutput < 500) renalScore = 2;
+  else if (creatinineSI >= 110 && creatinineSI < 221) renalScore = 1;
+  else renalScore = 0;
+  organScores.renal = renalScore;
+  sofaTotal += renalScore;
+
+  let interpretation = '';
+  let riskClass = '';
+
+  if (sofaTotal >= 11) {
+    interpretation = 'VERY HIGH';
+    riskClass = 'high';
+  } else if (sofaTotal >= 6) {
+    interpretation = 'HIGH';
+    riskClass = 'high';
+  } else if (sofaTotal >= 2) {
+    interpretation = 'MODERATE';
+    riskClass = 'medium';
+  } else {
+    interpretation = 'Low';
+    riskClass = 'low';
+  }
+
+  return { score: sofaTotal, organScores, interpretation, riskClass };
+}
+
+/**
+ * Wells Score for Pulmonary Embolism (PE)
+ * Clinical prediction rule for PE probability
+ */
+export function wellsPE(
+  dvtSigns: boolean,
+  peTopDiagnosis: boolean,
+  heartRateOver100: boolean,
+  immobilization: boolean,
+  previousPeDvt: boolean,
+  hemoptysis: boolean,
+  malignancy: boolean
+): { score: number; criteria: string[]; interpretation: string; riskClass: string; simplified: string } {
+  let score = 0;
+  const criteria: string[] = [];
+
+  if (dvtSigns) {
+    score += 3.0;
+    criteria.push('Clinical signs/symptoms of DVT: +3.0');
+  }
+  if (peTopDiagnosis) {
+    score += 3.0;
+    criteria.push('PE is #1 diagnosis or equally likely: +3.0');
+  }
+  if (heartRateOver100) {
+    score += 1.5;
+    criteria.push('Heart rate >100: +1.5');
+  }
+  if (immobilization) {
+    score += 1.5;
+    criteria.push('Immobilization ≥3 days or surgery in past 4 weeks: +1.5');
+  }
+  if (previousPeDvt) {
+    score += 1.5;
+    criteria.push('Previous PE or DVT: +1.5');
+  }
+  if (hemoptysis) {
+    score += 1.0;
+    criteria.push('Hemoptysis: +1.0');
+  }
+  if (malignancy) {
+    score += 1.0;
+    criteria.push('Malignancy: +1.0');
+  }
+
+  let interpretation = '';
+  let riskClass = '';
+  let simplified = '';
+
+  // Traditional three-tier interpretation
+  if (score > 6) {
+    interpretation = 'HIGH PROBABILITY';
+    riskClass = 'high';
+  } else if (score >= 2) {
+    interpretation = 'MODERATE PROBABILITY';
+    riskClass = 'medium';
+  } else {
+    interpretation = 'LOW PROBABILITY';
+    riskClass = 'low';
+  }
+
+  // Simplified two-tier interpretation
+  if (score > 4) {
+    simplified = 'PE Likely';
+  } else {
+    simplified = 'PE Unlikely';
+  }
+
+  return { score, criteria, interpretation, riskClass, simplified };
+}
+
+/**
+ * Wells Score for Deep Vein Thrombosis (DVT)
+ * Clinical prediction rule for DVT probability
+ */
+export function wellsDVT(
+  activeCancer: boolean,
+  paralysis: boolean,
+  bedridden: boolean,
+  localizedTenderness: boolean,
+  entireLegSwollen: boolean,
+  calfSwelling: boolean,
+  pittingEdema: boolean,
+  collateralVeins: boolean,
+  previousDvt: boolean,
+  alternativeDiagnosis: boolean
+): { score: number; criteria: string[]; interpretation: string; riskClass: string } {
+  let score = 0;
+  const criteria: string[] = [];
+
+  if (activeCancer) {
+    score += 1;
+    criteria.push('Active cancer: +1');
+  }
+  if (paralysis) {
+    score += 1;
+    criteria.push('Paralysis/paresis/recent cast: +1');
+  }
+  if (bedridden) {
+    score += 1;
+    criteria.push('Recently bedridden ≥3 days or major surgery: +1');
+  }
+  if (localizedTenderness) {
+    score += 1;
+    criteria.push('Localized tenderness along deep venous system: +1');
+  }
+  if (entireLegSwollen) {
+    score += 1;
+    criteria.push('Entire leg swollen: +1');
+  }
+  if (calfSwelling) {
+    score += 1;
+    criteria.push('Calf swelling ≥3 cm vs asymptomatic leg: +1');
+  }
+  if (pittingEdema) {
+    score += 1;
+    criteria.push('Pitting edema confined to symptomatic leg: +1');
+  }
+  if (collateralVeins) {
+    score += 1;
+    criteria.push('Collateral superficial veins (non-varicose): +1');
+  }
+  if (previousDvt) {
+    score += 1;
+    criteria.push('Previously documented DVT: +1');
+  }
+  if (alternativeDiagnosis) {
+    score -= 2;
+    criteria.push('Alternative diagnosis at least as likely: -2');
+  }
+
+  let interpretation = '';
+  let riskClass = '';
+
+  if (score >= 3) {
+    interpretation = 'HIGH PROBABILITY';
+    riskClass = 'high';
+  } else if (score >= 1) {
+    interpretation = 'MODERATE PROBABILITY';
+    riskClass = 'medium';
+  } else {
+    interpretation = 'LOW PROBABILITY';
+    riskClass = 'low';
+  }
+
+  return { score, criteria, interpretation, riskClass };
+}

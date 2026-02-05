@@ -93,6 +93,7 @@ const categoryIcons: { [key: string]: React.ReactNode } = {
   "CKD-Mineral Bone Disease": <Bone className="w-4 h-4" />,
   "Systemic Diseases & Scores": <Brain className="w-4 h-4" />,
   "Bone & Fracture Risk": <Bone className="w-4 h-4" />,
+  "Critical Care": <AlertTriangle className="w-4 h-4" />,
 };
 
 // Category descriptions for clinical context
@@ -108,6 +109,7 @@ const categoryDescriptions: { [key: string]: string } = {
   "CKD-Mineral Bone Disease": "Tools for managing mineral bone disorder in CKD, including calcium-phosphate product calculation.",
   "Systemic Diseases & Scores": "Disease activity scores and classification criteria for systemic conditions affecting the kidney, including lupus nephritis and frailty assessment.",
   "Bone & Fracture Risk": "Fracture risk assessment tools including FRAX for osteoporosis screening in CKD patients.",
+  "Critical Care": "Sepsis screening and organ failure assessment tools including qSOFA, NEWS2, SOFA, and Wells scores for PE/DVT. Essential for early recognition of clinical deterioration.",
 };
 
 // Define which inputs support unit conversion and their options
@@ -149,6 +151,8 @@ const unitOptions: { [inputId: string]: { conventional: string; si: string; conv
   ratioValue: { conventional: "mg/mg", si: "mg/mmol", conversionFactor: 113.12 },
   proteinValue: { conventional: "mg/dL", si: "g/L", conversionFactor: 0.01 },
   creatinineValue: { conventional: "mg/dL", si: "mmol/L", conversionFactor: 0.0884 },
+  // Critical Care - SOFA inputs
+  bilirubin: { conventional: "mg/dL", si: "μmol/L", conversionFactor: 17.1 },
 };
 
 // BUN/Urea inputs that need 4-option toggle
@@ -1497,6 +1501,103 @@ export default function Dashboard() {
           setResult(mehranScore);
           setResultInterpretation('');
           return;
+        }
+
+        // ============================================================================
+        // CRITICAL CARE CALCULATORS
+        // ============================================================================
+        case "qsofa": {
+          const qsofaResult = calc.qsofa(
+            calculatorState.respiratoryRate as number,
+            calculatorState.systolicBP as number,
+            calculatorState.gcs as number
+          );
+          calculationResult = qsofaResult.score;
+          setResultInterpretation(
+            `${qsofaResult.interpretation}\n\nCriteria:\n${qsofaResult.criteria.join('\n')}`
+          );
+          break;
+        }
+
+        case "news2": {
+          const news2Result = calc.news2(
+            calculatorState.respiratoryRate as number,
+            calculatorState.spo2 as number,
+            calculatorState.supplementalO2 === 'yes',
+            calculatorState.systolicBP as number,
+            calculatorState.heartRate as number,
+            calculatorState.temperature as number,
+            calculatorState.consciousness as 'A' | 'C' | 'V' | 'P' | 'U'
+          );
+          calculationResult = news2Result.score;
+          setResultInterpretation(
+            `${news2Result.interpretation}\n\nBreakdown:\n${news2Result.breakdown.join('\n')}`
+          );
+          break;
+        }
+
+        case "sofa": {
+          const sofaResult = calc.sofa(
+            calculatorState.pao2 as number,
+            calculatorState.fio2 as number,
+            calculatorState.platelets as number,
+            calculatorState.bilirubin as number,
+            (unitState.bilirubin || 'μmol/L') as 'μmol/L' | 'mg/dL',
+            calculatorState.map as number,
+            calculatorState.vasopressor as 'none' | 'dopa_low' | 'dopa_mid' | 'dopa_high',
+            calculatorState.gcs as number,
+            calculatorState.creatinine as number,
+            (unitState.creatinine || 'mg/dL') as 'μmol/L' | 'mg/dL',
+            calculatorState.urineOutput as number
+          );
+          calculationResult = sofaResult.score;
+          setResultInterpretation(
+            `${sofaResult.interpretation}\n\nOrgan Scores:\n` +
+            `• Respiratory: ${sofaResult.organScores.respiratory}\n` +
+            `• Coagulation: ${sofaResult.organScores.coagulation}\n` +
+            `• Liver: ${sofaResult.organScores.liver}\n` +
+            `• Cardiovascular: ${sofaResult.organScores.cardiovascular}\n` +
+            `• CNS: ${sofaResult.organScores.cns}\n` +
+            `• Renal: ${sofaResult.organScores.renal}`
+          );
+          break;
+        }
+
+        case "wells-pe": {
+          const wellsPeResult = calc.wellsPE(
+            calculatorState.dvtSigns === 'yes',
+            calculatorState.peTopDiagnosis === 'yes',
+            calculatorState.heartRateOver100 === 'yes',
+            calculatorState.immobilization === 'yes',
+            calculatorState.previousPeDvt === 'yes',
+            calculatorState.hemoptysis === 'yes',
+            calculatorState.malignancy === 'yes'
+          );
+          calculationResult = wellsPeResult.score;
+          setResultInterpretation(
+            `${wellsPeResult.interpretation} (${wellsPeResult.simplified})\n\nCriteria:\n${wellsPeResult.criteria.join('\n')}`
+          );
+          break;
+        }
+
+        case "wells-dvt": {
+          const wellsDvtResult = calc.wellsDVT(
+            calculatorState.activeCancer === 'yes',
+            calculatorState.paralysis === 'yes',
+            calculatorState.bedridden === 'yes',
+            calculatorState.localizedTenderness === 'yes',
+            calculatorState.entireLegSwollen === 'yes',
+            calculatorState.calfSwelling === 'yes',
+            calculatorState.pittingEdema === 'yes',
+            calculatorState.collateralVeins === 'yes',
+            calculatorState.previousDvt === 'yes',
+            calculatorState.alternativeDiagnosis === 'yes'
+          );
+          calculationResult = wellsDvtResult.score;
+          setResultInterpretation(
+            `${wellsDvtResult.interpretation}\n\nCriteria:\n${wellsDvtResult.criteria.join('\n')}`
+          );
+          break;
         }
 
         default:

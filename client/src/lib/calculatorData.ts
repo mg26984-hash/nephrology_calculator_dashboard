@@ -1836,6 +1836,180 @@ export const calculators: Calculator[] = [
       "Pottel H et al. Nephrol Dial Transplant. 2017;32(3):497-507",
     ],
   },
+  // ============================================================================
+  // CRITICAL CARE
+  // ============================================================================
+  {
+    id: "qsofa",
+    name: "qSOFA (Quick SOFA)",
+    description: "Quick bedside sepsis screening tool using vital signs and mental status",
+    category: "Critical Care",
+    inputs: [
+      { id: "respiratoryRate", label: "Respiratory Rate", type: "number", unit: "breaths/min", placeholder: "18", required: true, min: 0, max: 60 },
+      { id: "systolicBP", label: "Systolic Blood Pressure", type: "number", unit: "mmHg", placeholder: "120", required: true, min: 0, max: 300 },
+      { id: "gcs", label: "Glasgow Coma Scale (GCS)", type: "number", unit: "points", placeholder: "15", required: true, min: 3, max: 15 },
+    ],
+    resultLabel: "qSOFA Score",
+    resultUnit: "points",
+    interpretation: (value) => {
+      if (value >= 2) return "HIGH RISK - High risk of poor outcome. Escalate care immediately.";
+      if (value === 1) return "Intermediate - Monitor closely. qSOFA has low sensitivity.";
+      return "Low Score - Does not exclude sepsis. Continue clinical assessment.";
+    },
+    clinicalPearls: [
+      "qSOFA ≥2 indicates high risk for poor outcomes in infection",
+      "Should NOT be used alone to exclude sepsis (low sensitivity)",
+      "NEWS2 is more sensitive for early sepsis detection",
+      "Criteria: RR ≥22, SBP ≤100, GCS <15 (each +1 point)",
+      "Useful for rapid bedside assessment outside ICU",
+    ],
+    references: [
+      "Singer M et al. JAMA. 2016;315(8):801-810 (Sepsis-3 definitions)",
+      "Seymour CW et al. JAMA. 2016;315(8):762-774",
+    ],
+  },
+  {
+    id: "news2",
+    name: "NEWS2 (National Early Warning Score 2)",
+    description: "Standardized early warning score for detecting clinical deterioration",
+    category: "Critical Care",
+    inputs: [
+      { id: "respiratoryRate", label: "Respiratory Rate", type: "number", unit: "breaths/min", placeholder: "18", required: true, min: 0, max: 60 },
+      { id: "spo2", label: "Oxygen Saturation (SpO₂)", type: "number", unit: "%", placeholder: "96", required: true, min: 0, max: 100 },
+      { id: "supplementalO2", label: "Supplemental Oxygen", type: "select", options: [{ value: "no", label: "No (Room Air)" }, { value: "yes", label: "Yes (Any O₂)" }], required: true },
+      { id: "systolicBP", label: "Systolic Blood Pressure", type: "number", unit: "mmHg", placeholder: "120", required: true, min: 0, max: 300 },
+      { id: "heartRate", label: "Heart Rate", type: "number", unit: "beats/min", placeholder: "80", required: true, min: 0, max: 250 },
+      { id: "temperature", label: "Temperature", type: "number", unit: "°C", placeholder: "37.0", required: true, min: 30, max: 45, step: 0.1 },
+      { id: "consciousness", label: "Consciousness (AVPU)", type: "select", options: [{ value: "A", label: "Alert" }, { value: "C", label: "Confused/New confusion" }, { value: "V", label: "Voice responsive" }, { value: "P", label: "Pain responsive" }, { value: "U", label: "Unresponsive" }], required: true },
+    ],
+    resultLabel: "NEWS2 Score",
+    resultUnit: "points",
+    interpretation: (value) => {
+      if (value >= 7) return "HIGH RISK - Emergency assessment by critical care team. ICU referral likely.";
+      if (value >= 5) return "MEDIUM RISK - Urgent review within 30-60 min. Consider sepsis bundle.";
+      if (value >= 1) return "Low-Medium Risk - Assess by registered nurse. Consider increased monitoring.";
+      return "Low Risk - Continue routine monitoring per ward protocol.";
+    },
+    clinicalPearls: [
+      "NEWS2 ≥5: Medium risk - urgent clinical review within 30-60 min",
+      "NEWS2 ≥7: High risk - immediate senior review, ICU assessment",
+      "Score of 3 in any single parameter also triggers urgent review",
+      "More sensitive than qSOFA for early sepsis detection",
+      "In transplant patients: immunosuppression may blunt fever response",
+    ],
+    references: [
+      "Royal College of Physicians. NEWS2 (2017)",
+      "NICE NG51: Sepsis recognition, diagnosis and early management (2024)",
+    ],
+  },
+  {
+    id: "sofa",
+    name: "SOFA (Sequential Organ Failure Assessment)",
+    description: "Assesses organ dysfunction in critically ill patients; defines sepsis-3",
+    category: "Critical Care",
+    inputs: [
+      { id: "pao2", label: "PaO₂", type: "number", unit: "mmHg", placeholder: "95", required: true, min: 0 },
+      { id: "fio2", label: "FiO₂", type: "number", unit: "%", placeholder: "21", required: true, min: 21, max: 100 },
+      { id: "platelets", label: "Platelets", type: "number", unit: "×10⁹/L", placeholder: "200", required: true, min: 0 },
+      { id: "bilirubin", label: "Bilirubin", type: "number", unit: "μmol/L or mg/dL", placeholder: "15", required: true, min: 0 },
+      { id: "bilirubinUnit", label: "Bilirubin Unit", type: "select", options: [{ value: "μmol/L", label: "μmol/L (SI)" }, { value: "mg/dL", label: "mg/dL (conventional)" }], required: true },
+      { id: "map", label: "Mean Arterial Pressure (MAP)", type: "number", unit: "mmHg", placeholder: "80", required: true, min: 0 },
+      { id: "vasopressor", label: "Vasopressor Support", type: "select", options: [{ value: "none", label: "None" }, { value: "dopa_low", label: "Dopamine ≤5 or Dobutamine (any)" }, { value: "dopa_mid", label: "Dopamine >5 or Norepi/Epi ≤0.1" }, { value: "dopa_high", label: "Dopamine >15 or Norepi/Epi >0.1" }], required: true },
+      { id: "gcs", label: "Glasgow Coma Scale (GCS)", type: "number", unit: "points", placeholder: "15", required: true, min: 3, max: 15 },
+      { id: "creatinine", label: "Creatinine", type: "number", unit: "μmol/L or mg/dL", placeholder: "90", required: true, min: 0 },
+      { id: "creatinineUnit", label: "Creatinine Unit", type: "select", options: [{ value: "μmol/L", label: "μmol/L (SI)" }, { value: "mg/dL", label: "mg/dL (conventional)" }], required: true },
+      { id: "urineOutput", label: "Urine Output (24h)", type: "number", unit: "mL/day", placeholder: "2000", required: true, min: 0 },
+    ],
+    resultLabel: "SOFA Score",
+    resultUnit: "points",
+    interpretation: (value) => {
+      if (value >= 11) return "VERY HIGH - Critical organ dysfunction (~50%+ mortality). Maximum support needed.";
+      if (value >= 6) return "HIGH - Significant organ dysfunction. ICU-level care required.";
+      if (value >= 2) return "MODERATE - Organ dysfunction present. If acute rise ≥2 + infection = sepsis.";
+      return "Low - Minimal organ dysfunction. Continue routine assessment.";
+    },
+    clinicalPearls: [
+      "SOFA ≥2 from baseline + suspected infection = Sepsis-3 definition",
+      "Each point increase associated with ~7-9% mortality rise",
+      "Scores 6 organ systems: respiratory, coagulation, liver, cardiovascular, CNS, renal",
+      "Daily SOFA trending useful for prognosis in ICU",
+      "Vasopressor doses in μg/kg/min for cardiovascular scoring",
+    ],
+    references: [
+      "Singer M et al. JAMA. 2016;315(8):801-810 (Sepsis-3)",
+      "Vincent JL et al. Intensive Care Med. 1996;22(7):707-710",
+    ],
+  },
+  {
+    id: "wells-pe",
+    name: "Wells Score for Pulmonary Embolism (PE)",
+    description: "Clinical prediction rule for estimating probability of PE",
+    category: "Critical Care",
+    inputs: [
+      { id: "dvtSigns", label: "Clinical signs/symptoms of DVT", type: "select", options: [{ value: "no", label: "No" }, { value: "yes", label: "Yes (+3.0)" }], required: true },
+      { id: "peTopDiagnosis", label: "PE is #1 diagnosis or equally likely", type: "select", options: [{ value: "no", label: "No" }, { value: "yes", label: "Yes (+3.0)" }], required: true },
+      { id: "heartRateOver100", label: "Heart rate >100 bpm", type: "select", options: [{ value: "no", label: "No" }, { value: "yes", label: "Yes (+1.5)" }], required: true },
+      { id: "immobilization", label: "Immobilization ≥3 days or surgery in past 4 weeks", type: "select", options: [{ value: "no", label: "No" }, { value: "yes", label: "Yes (+1.5)" }], required: true },
+      { id: "previousPeDvt", label: "Previous PE or DVT", type: "select", options: [{ value: "no", label: "No" }, { value: "yes", label: "Yes (+1.5)" }], required: true },
+      { id: "hemoptysis", label: "Hemoptysis", type: "select", options: [{ value: "no", label: "No" }, { value: "yes", label: "Yes (+1.0)" }], required: true },
+      { id: "malignancy", label: "Malignancy (treatment within 6 months or palliative)", type: "select", options: [{ value: "no", label: "No" }, { value: "yes", label: "Yes (+1.0)" }], required: true },
+    ],
+    resultLabel: "Wells PE Score",
+    resultUnit: "points",
+    interpretation: (value) => {
+      if (value > 6) return "HIGH PROBABILITY - >50% risk of PE. Consider immediate anticoagulation and imaging.";
+      if (value >= 2) return "MODERATE PROBABILITY - 20-50% risk. D-dimer or imaging recommended.";
+      return "LOW PROBABILITY - <10% risk. D-dimer to rule out; if negative, PE unlikely.";
+    },
+    clinicalPearls: [
+      "Traditional interpretation: >6 high, 2-6 moderate, <2 low probability",
+      "Simplified (two-tier): >4 PE likely, ≤4 PE unlikely",
+      "If PE unlikely + negative D-dimer: PE can be safely ruled out",
+      "If PE likely: proceed directly to CT pulmonary angiography",
+      "Consider age-adjusted D-dimer cutoff in patients >50 years",
+    ],
+    references: [
+      "Wells PS et al. Ann Intern Med. 2001;135(2):98-107",
+      "van Belle A et al. JAMA. 2006;295(2):172-179",
+    ],
+  },
+  {
+    id: "wells-dvt",
+    name: "Wells Score for Deep Vein Thrombosis (DVT)",
+    description: "Clinical prediction rule for estimating probability of DVT",
+    category: "Critical Care",
+    inputs: [
+      { id: "activeCancer", label: "Active cancer (treatment within 6 months or palliative)", type: "select", options: [{ value: "no", label: "No" }, { value: "yes", label: "Yes (+1)" }], required: true },
+      { id: "paralysis", label: "Paralysis, paresis, or recent cast of lower extremity", type: "select", options: [{ value: "no", label: "No" }, { value: "yes", label: "Yes (+1)" }], required: true },
+      { id: "bedridden", label: "Recently bedridden ≥3 days or major surgery within 12 weeks", type: "select", options: [{ value: "no", label: "No" }, { value: "yes", label: "Yes (+1)" }], required: true },
+      { id: "localizedTenderness", label: "Localized tenderness along deep venous system", type: "select", options: [{ value: "no", label: "No" }, { value: "yes", label: "Yes (+1)" }], required: true },
+      { id: "entireLegSwollen", label: "Entire leg swollen", type: "select", options: [{ value: "no", label: "No" }, { value: "yes", label: "Yes (+1)" }], required: true },
+      { id: "calfSwelling", label: "Calf swelling ≥3 cm compared to asymptomatic leg", type: "select", options: [{ value: "no", label: "No" }, { value: "yes", label: "Yes (+1)" }], required: true },
+      { id: "pittingEdema", label: "Pitting edema confined to symptomatic leg", type: "select", options: [{ value: "no", label: "No" }, { value: "yes", label: "Yes (+1)" }], required: true },
+      { id: "collateralVeins", label: "Collateral superficial veins (non-varicose)", type: "select", options: [{ value: "no", label: "No" }, { value: "yes", label: "Yes (+1)" }], required: true },
+      { id: "previousDvt", label: "Previously documented DVT", type: "select", options: [{ value: "no", label: "No" }, { value: "yes", label: "Yes (+1)" }], required: true },
+      { id: "alternativeDiagnosis", label: "Alternative diagnosis at least as likely as DVT", type: "select", options: [{ value: "no", label: "No" }, { value: "yes", label: "Yes (-2)" }], required: true },
+    ],
+    resultLabel: "Wells DVT Score",
+    resultUnit: "points",
+    interpretation: (value) => {
+      if (value >= 3) return "HIGH PROBABILITY - ~75% risk of DVT. Ultrasound recommended.";
+      if (value >= 1) return "MODERATE PROBABILITY - ~17% risk. D-dimer or ultrasound recommended.";
+      return "LOW PROBABILITY - ~3% risk. D-dimer to rule out; if negative, DVT unlikely.";
+    },
+    clinicalPearls: [
+      "Score ≥3: High probability (~75% prevalence)",
+      "Score 1-2: Moderate probability (~17% prevalence)",
+      "Score ≤0: Low probability (~3% prevalence)",
+      "If DVT unlikely (≤1) + negative D-dimer: DVT can be safely ruled out",
+      "Measure calf circumference 10 cm below tibial tuberosity",
+      "Alternative diagnosis (-2 points) is the only negative criterion",
+    ],
+    references: [
+      "Wells PS et al. Lancet. 1997;350(9094):1795-1798",
+      "Wells PS et al. N Engl J Med. 2003;349(13):1227-1235",
+    ],
+  },
 ];
 export function getCalculatorsByCategory(category: string): Calculator[] {
   return calculators.filter((calc) => calc.category === category);
