@@ -3113,3 +3113,243 @@ export function anticoagulationReversal(
       };
   }
 }
+
+
+// ============================================================================
+// MISCELLANEOUS CALCULATORS
+// ============================================================================
+
+/**
+ * Steroid Conversion Calculator
+ * Converts between equivalent doses of different corticosteroids
+ */
+export interface SteroidConversionResult {
+  fromSteroid: string;
+  fromDose: number;
+  equivalentDoses: {
+    steroid: string;
+    dose: number;
+    unit: string;
+    relativeGlucocorticoidPotency: number;
+    relativeMineralocorticoidPotency: number;
+    biologicalHalfLife: string;
+  }[];
+}
+
+export function steroidConversion(
+  fromSteroid: string,
+  dose: number
+): SteroidConversionResult {
+  // Steroid equivalency data (relative to hydrocortisone 20mg = 1)
+  // Reference: Schimmer BP, Funder JW. ACTH, Adrenal Steroids, and Pharmacology of the Adrenal Cortex.
+  const steroids: Record<string, {
+    equivalentDose: number; // mg equivalent to hydrocortisone 20mg
+    glucocorticoidPotency: number;
+    mineralocorticoidPotency: number;
+    halfLife: string;
+    displayName: string;
+  }> = {
+    hydrocortisone: {
+      equivalentDose: 20,
+      glucocorticoidPotency: 1,
+      mineralocorticoidPotency: 1,
+      halfLife: '8-12 hours',
+      displayName: 'Hydrocortisone (Cortef)'
+    },
+    cortisone: {
+      equivalentDose: 25,
+      glucocorticoidPotency: 0.8,
+      mineralocorticoidPotency: 0.8,
+      halfLife: '8-12 hours',
+      displayName: 'Cortisone'
+    },
+    prednisone: {
+      equivalentDose: 5,
+      glucocorticoidPotency: 4,
+      mineralocorticoidPotency: 0.8,
+      halfLife: '12-36 hours',
+      displayName: 'Prednisone'
+    },
+    prednisolone: {
+      equivalentDose: 5,
+      glucocorticoidPotency: 4,
+      mineralocorticoidPotency: 0.8,
+      halfLife: '12-36 hours',
+      displayName: 'Prednisolone'
+    },
+    methylprednisolone: {
+      equivalentDose: 4,
+      glucocorticoidPotency: 5,
+      mineralocorticoidPotency: 0.5,
+      halfLife: '12-36 hours',
+      displayName: 'Methylprednisolone (Medrol, Solu-Medrol)'
+    },
+    triamcinolone: {
+      equivalentDose: 4,
+      glucocorticoidPotency: 5,
+      mineralocorticoidPotency: 0,
+      halfLife: '12-36 hours',
+      displayName: 'Triamcinolone (Kenalog)'
+    },
+    dexamethasone: {
+      equivalentDose: 0.75,
+      glucocorticoidPotency: 25,
+      mineralocorticoidPotency: 0,
+      halfLife: '36-54 hours',
+      displayName: 'Dexamethasone (Decadron)'
+    },
+    betamethasone: {
+      equivalentDose: 0.6,
+      glucocorticoidPotency: 25,
+      mineralocorticoidPotency: 0,
+      halfLife: '36-54 hours',
+      displayName: 'Betamethasone (Celestone)'
+    },
+    fludrocortisone: {
+      equivalentDose: 0, // Not used for glucocorticoid replacement
+      glucocorticoidPotency: 10,
+      mineralocorticoidPotency: 125,
+      halfLife: '18-36 hours',
+      displayName: 'Fludrocortisone (Florinef)'
+    }
+  };
+
+  const fromData = steroids[fromSteroid];
+  if (!fromData || fromData.equivalentDose === 0) {
+    return {
+      fromSteroid: fromSteroid,
+      fromDose: dose,
+      equivalentDoses: []
+    };
+  }
+
+  // Calculate hydrocortisone equivalent first
+  const hydrocortisoneEquivalent = (dose / fromData.equivalentDose) * 20;
+
+  // Calculate equivalent doses for all steroids
+  const equivalentDoses = Object.entries(steroids)
+    .filter(([key, data]) => data.equivalentDose > 0) // Exclude fludrocortisone
+    .map(([key, data]) => ({
+      steroid: data.displayName,
+      dose: Math.round((hydrocortisoneEquivalent / 20) * data.equivalentDose * 100) / 100,
+      unit: 'mg',
+      relativeGlucocorticoidPotency: data.glucocorticoidPotency,
+      relativeMineralocorticoidPotency: data.mineralocorticoidPotency,
+      biologicalHalfLife: data.halfLife
+    }));
+
+  return {
+    fromSteroid: fromData.displayName,
+    fromDose: dose,
+    equivalentDoses
+  };
+}
+
+/**
+ * Plasma Exchange (Plasmapheresis) Dosing Calculator
+ * Calculates plasma volume and exchange parameters
+ */
+export interface PlasmaExchangeResult {
+  totalPlasmaVolume: number; // mL
+  plasmaVolumePerKg: number; // mL/kg
+  exchangeVolume: number; // mL for one plasma volume exchange
+  estimatedDuration: number; // minutes
+  replacementFluid: {
+    type: string;
+    volume: number;
+    notes: string;
+  }[];
+  accessRecommendation: string;
+  anticoagulationRecommendation: string;
+  expectedIgGRemoval: number; // percentage per session
+  sessionsForTarget: {
+    target50: number;
+    target75: number;
+    target90: number;
+  };
+}
+
+export function plasmaExchangeDosing(
+  weight: number, // kg
+  height: number, // cm
+  hematocrit: number, // %
+  sex: 'M' | 'F',
+  exchangeVolumes: number = 1, // Number of plasma volumes to exchange (typically 1-1.5)
+  indication?: string
+): PlasmaExchangeResult {
+  // Calculate Total Blood Volume using Nadler's formula
+  let totalBloodVolume: number;
+  if (sex === 'M') {
+    totalBloodVolume = (0.3669 * Math.pow(height / 100, 3)) + (0.03219 * weight) + 0.6041;
+  } else {
+    totalBloodVolume = (0.3561 * Math.pow(height / 100, 3)) + (0.03308 * weight) + 0.1833;
+  }
+  totalBloodVolume = totalBloodVolume * 1000; // Convert to mL
+
+  // Calculate Plasma Volume
+  // PV = TBV × (1 - Hct)
+  const plasmaVolume = totalBloodVolume * (1 - hematocrit / 100);
+  const plasmaVolumePerKg = plasmaVolume / weight;
+
+  // Exchange volume for specified number of plasma volumes
+  const exchangeVolume = plasmaVolume * exchangeVolumes;
+
+  // Estimated duration (typical flow rate 30-40 mL/min for plasma)
+  const flowRate = 35; // mL/min average
+  const estimatedDuration = Math.round(exchangeVolume / flowRate);
+
+  // Replacement fluid recommendations
+  const replacementFluid = [
+    {
+      type: '5% Albumin',
+      volume: Math.round(exchangeVolume),
+      notes: 'Standard replacement for most indications. Safe, no coagulation factors.'
+    },
+    {
+      type: 'Fresh Frozen Plasma (FFP)',
+      volume: Math.round(exchangeVolume),
+      notes: 'Use for TTP, coagulopathy, or when coagulation factors needed. Risk of allergic reactions, TRALI.'
+    },
+    {
+      type: 'Albumin/FFP Mix (2:1)',
+      volume: Math.round(exchangeVolume),
+      notes: 'Common for TTP: 2/3 albumin, 1/3 FFP. Balances cost and coagulation support.'
+    }
+  ];
+
+  // Access recommendations based on indication
+  let accessRecommendation = 'Central venous catheter (dialysis catheter) preferred for adequate flow rates.';
+  if (weight < 50) {
+    accessRecommendation = 'Smaller bore catheter may be needed. Consider femoral access for better flow.';
+  }
+
+  // Anticoagulation
+  let anticoagulationRecommendation = 'Regional citrate anticoagulation preferred (ACD-A). Heparin alternative if citrate contraindicated.';
+  if (indication === 'ttp') {
+    anticoagulationRecommendation = 'Citrate strongly preferred for TTP. Avoid heparin due to HIT risk.';
+  }
+
+  // Expected IgG removal per session (approximately 60-70% per 1 PV exchange)
+  const expectedIgGRemoval = Math.round((1 - Math.exp(-exchangeVolumes)) * 100);
+
+  // Sessions needed for cumulative removal targets
+  // Using exponential decay model: remaining = initial × e^(-n×efficiency)
+  const efficiencyPerSession = 0.63; // ~63% removal per 1 PV exchange
+  const sessionsForTarget = {
+    target50: Math.ceil(Math.log(0.5) / Math.log(1 - efficiencyPerSession)),
+    target75: Math.ceil(Math.log(0.25) / Math.log(1 - efficiencyPerSession)),
+    target90: Math.ceil(Math.log(0.1) / Math.log(1 - efficiencyPerSession))
+  };
+
+  return {
+    totalPlasmaVolume: Math.round(plasmaVolume),
+    plasmaVolumePerKg: Math.round(plasmaVolumePerKg * 10) / 10,
+    exchangeVolume: Math.round(exchangeVolume),
+    estimatedDuration,
+    replacementFluid,
+    accessRecommendation,
+    anticoagulationRecommendation,
+    expectedIgGRemoval,
+    sessionsForTarget
+  };
+}

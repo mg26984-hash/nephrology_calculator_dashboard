@@ -2476,6 +2476,101 @@ export const calculators: Calculator[] = [
       "Levy JH et al. Thromb Haemost. 2016;116(1):13-21",
     ],
   },
+  // ============================================================================
+  // MISCELLANEOUS
+  // ============================================================================
+  {
+    id: "steroid-conversion",
+    name: "Steroid Conversion Calculator",
+    description: "Convert between equivalent doses of corticosteroids",
+    category: "Miscellaneous",
+    inputs: [
+      { id: "fromSteroid", label: "From Steroid", type: "select", options: [
+        { value: "hydrocortisone", label: "Hydrocortisone (Cortef)" },
+        { value: "cortisone", label: "Cortisone" },
+        { value: "prednisone", label: "Prednisone" },
+        { value: "prednisolone", label: "Prednisolone" },
+        { value: "methylprednisolone", label: "Methylprednisolone (Medrol, Solu-Medrol)" },
+        { value: "triamcinolone", label: "Triamcinolone (Kenalog)" },
+        { value: "dexamethasone", label: "Dexamethasone (Decadron)" },
+        { value: "betamethasone", label: "Betamethasone (Celestone)" },
+      ], required: true },
+      { id: "dose", label: "Dose", type: "number", unit: "mg", placeholder: "40", required: true, min: 0 },
+    ],
+    resultLabel: "Equivalent Doses",
+    resultUnit: "",
+    interpretation: () => "See equivalent doses for all corticosteroids below.",
+    clinicalPearls: [
+      "Equivalencies are based on anti-inflammatory (glucocorticoid) potency",
+      "Mineralocorticoid effects vary significantly between steroids",
+      "Dexamethasone and betamethasone have NO mineralocorticoid activity",
+      "Prednisone is a prodrug converted to prednisolone in the liver",
+      "Duration of action: Short (8-12h): hydrocortisone, cortisone; Intermediate (12-36h): prednisone, methylprednisolone; Long (36-54h): dexamethasone",
+      "For adrenal insufficiency, hydrocortisone preferred due to physiologic mineralocorticoid activity",
+      "High-dose steroids (>20mg prednisone equivalent/day) require stress dosing for procedures",
+      "Consider bone protection (calcium, vitamin D, bisphosphonates) for chronic steroid use",
+    ],
+    references: [
+      "Schimmer BP, Funder JW. ACTH, Adrenal Steroids. Goodman & Gilman's Pharmacological Basis of Therapeutics.",
+      "Liu D et al. J Allergy Clin Immunol Pract. 2013;1(4):305-316",
+      "Buttgereit F et al. Lancet. 2020;396(10252):714-726",
+    ],
+  },
+  {
+    id: "plasma-exchange",
+    name: "Plasma Exchange (PLEX) Dosing",
+    description: "Calculate plasma volume and exchange parameters for plasmapheresis",
+    category: "Miscellaneous",
+    inputs: [
+      { id: "weight", label: "Weight", type: "number", unit: "kg", placeholder: "70", required: true, min: 1 },
+      { id: "height", label: "Height", type: "number", unit: "cm", placeholder: "170", required: true, min: 50 },
+      { id: "hematocrit", label: "Hematocrit", type: "number", unit: "%", placeholder: "40", required: true, min: 10, max: 70 },
+      { id: "sex", label: "Sex", type: "select", options: [
+        { value: "M", label: "Male" },
+        { value: "F", label: "Female" },
+      ], required: true },
+      { id: "exchangeVolumes", label: "Plasma Volumes to Exchange", type: "select", options: [
+        { value: "1", label: "1.0 PV (standard)" },
+        { value: "1.5", label: "1.5 PV (intensive)" },
+        { value: "2", label: "2.0 PV (rare)" },
+      ], required: true },
+      { id: "indication", label: "Indication", type: "select", options: [
+        { value: "ttp", label: "TTP/HUS" },
+        { value: "gbs", label: "Guillain-Barré Syndrome" },
+        { value: "myasthenia", label: "Myasthenia Gravis" },
+        { value: "anca", label: "ANCA Vasculitis" },
+        { value: "antiGBM", label: "Anti-GBM Disease (Goodpasture)" },
+        { value: "cryoglobulinemia", label: "Cryoglobulinemia" },
+        { value: "rejection", label: "Antibody-Mediated Rejection" },
+        { value: "other", label: "Other" },
+      ], required: true },
+    ],
+    resultLabel: "Plasma Volume",
+    resultUnit: "mL",
+    interpretation: (value) => {
+      if (value < 2000) return "Low plasma volume. Verify patient parameters.";
+      if (value < 3000) return "Typical plasma volume for smaller patients.";
+      if (value < 4000) return "Normal plasma volume range.";
+      return "High plasma volume. Typical for larger patients.";
+    },
+    clinicalPearls: [
+      "Standard exchange: 1-1.5 plasma volumes per session",
+      "Typical course: 5-7 sessions over 10-14 days (varies by indication)",
+      "TTP: Daily PLEX until platelet count >150,000 for 2+ days",
+      "Guillain-Barré: 5 exchanges over 1-2 weeks",
+      "ANCA vasculitis: Consider for severe disease (Cr >5.7 or DAH)",
+      "Anti-GBM: Daily PLEX for 14 days or until antibody negative",
+      "Replace coagulation factors (FFP) if bleeding risk or TTP",
+      "Monitor calcium (citrate anticoagulation causes hypocalcemia)",
+      "Administer medications AFTER PLEX when possible (especially IVIg, rituximab)",
+      "Rebound antibody production occurs; often combine with immunosuppression",
+    ],
+    references: [
+      "Schwartz J et al. J Clin Apher. 2016;31(3):149-162 (ASFA Guidelines)",
+      "Padmanabhan A et al. J Clin Apher. 2019;34(3):171-354",
+      "Kaplan AA. UpToDate. Therapeutic apheresis (plasma exchange or cytapheresis): Indications and technology.",
+    ],
+  },
 ];
 export function getCalculatorsByCategory(category: string): Calculator[] {
   return calculators.filter((calc) => calc.category === category);

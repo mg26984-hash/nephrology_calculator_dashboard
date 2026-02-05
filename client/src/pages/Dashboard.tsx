@@ -292,6 +292,8 @@ export default function Dashboard() {
   } | null>(null);
   const [fraxResult, setFraxResult] = useState<{ majorFracture: number; hipFracture: number } | null>(null);
   const [anticoagReversalResult, setAnticoagReversalResult] = useState<calc.AnticoagulantReversalResult | null>(null);
+  const [steroidConversionResult, setSteroidConversionResult] = useState<calc.SteroidConversionResult | null>(null);
+  const [plasmaExchangeResult, setPlasmaExchangeResult] = useState<calc.PlasmaExchangeResult | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [viewingCategoryList, setViewingCategoryList] = useState<string | null>(null);
@@ -1813,6 +1815,32 @@ export default function Dashboard() {
           calculationResult = 1; // Placeholder for display
           setAnticoagReversalResult(reversalResult);
           setResultInterpretation(`Reversal protocol generated for ${reversalResult.anticoagulant}. See detailed action plan below.`);
+          break;
+        }
+
+        case "steroid-conversion": {
+          const steroidResult = calc.steroidConversion(
+            String(calculatorState.fromSteroid) || 'prednisone',
+            parseFloat(String(calculatorState.dose)) || 0
+          );
+          setSteroidConversionResult(steroidResult);
+          calculationResult = steroidResult.fromDose;
+          setResultInterpretation(`Equivalent doses calculated for ${steroidResult.fromDose} mg of ${steroidResult.fromSteroid}. See conversion table below.`);
+          break;
+        }
+
+        case "plasma-exchange": {
+          const plexResult = calc.plasmaExchangeDosing(
+            parseFloat(String(calculatorState.weight)) || 70,
+            parseFloat(String(calculatorState.height)) || 170,
+            parseFloat(String(calculatorState.hematocrit)) || 40,
+            (String(calculatorState.sex) || 'M') as 'M' | 'F',
+            parseFloat(String(calculatorState.exchangeVolumes)) || 1,
+            String(calculatorState.indication) || 'other'
+          );
+          setPlasmaExchangeResult(plexResult);
+          calculationResult = plexResult.totalPlasmaVolume;
+          setResultInterpretation(`Plasma volume: ${plexResult.totalPlasmaVolume} mL (${plexResult.plasmaVolumePerKg} mL/kg). Exchange volume: ${plexResult.exchangeVolume} mL. See detailed protocol below.`);
           break;
         }
 
@@ -3775,6 +3803,230 @@ export default function Dashboard() {
                             <p className="text-sm text-blue-600 dark:text-blue-400">
                               <strong>References:</strong> Tomaselli GF et al. J Am Coll Cardiol. 2020;76(5):594-622. Frontera JA et al. Neurocrit Care. 2016;24(1):6-46. Cuker A et al. Am J Hematol. 2019;94(6):697-709.
                             </p>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Custom Steroid Conversion Display */}
+                    {selectedCalculator.id === 'steroid-conversion' && steroidConversionResult && (
+                      <div className="mt-4 space-y-4">
+                        {/* Header */}
+                        <div className="p-4 rounded-lg bg-purple-500/10 border-2 border-purple-500">
+                          <div className="flex items-center gap-3">
+                            <Pill className="w-6 h-6 text-purple-500" />
+                            <div>
+                              <h3 className="text-lg font-bold text-purple-600 dark:text-purple-400">
+                                Steroid Conversion: {steroidConversionResult.fromDose} mg {steroidConversionResult.fromSteroid}
+                              </h3>
+                              <p className="text-sm text-purple-600/80 dark:text-purple-400/80">
+                                Equivalent doses based on anti-inflammatory potency
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Conversion Table */}
+                        <div className="p-4 rounded-lg bg-muted/50 border border-border">
+                          <h4 className="font-semibold mb-3 flex items-center gap-2">
+                            <Activity className="w-4 h-4" />
+                            Equivalent Doses
+                          </h4>
+                          <div className="overflow-x-auto">
+                            <table className="w-full text-sm">
+                              <thead>
+                                <tr className="border-b border-border">
+                                  <th className="text-left py-2 px-3 font-semibold">Corticosteroid</th>
+                                  <th className="text-right py-2 px-3 font-semibold">Equivalent Dose</th>
+                                  <th className="text-center py-2 px-3 font-semibold">GC Potency</th>
+                                  <th className="text-center py-2 px-3 font-semibold">MC Potency</th>
+                                  <th className="text-center py-2 px-3 font-semibold">Half-Life</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {steroidConversionResult.equivalentDoses.map((eq, idx) => (
+                                  <tr key={idx} className={`border-b border-border/50 ${eq.steroid === steroidConversionResult.fromSteroid ? 'bg-purple-500/10' : ''}`}>
+                                    <td className="py-2 px-3">
+                                      <span className={eq.steroid === steroidConversionResult.fromSteroid ? 'font-bold text-purple-600 dark:text-purple-400' : ''}>
+                                        {eq.steroid}
+                                        {eq.steroid === steroidConversionResult.fromSteroid && ' (input)'}
+                                      </span>
+                                    </td>
+                                    <td className="text-right py-2 px-3 font-mono font-semibold">
+                                      {eq.dose} {eq.unit}
+                                    </td>
+                                    <td className="text-center py-2 px-3">
+                                      {eq.relativeGlucocorticoidPotency}x
+                                    </td>
+                                    <td className="text-center py-2 px-3">
+                                      {eq.relativeMineralocorticoidPotency === 0 ? 'None' : `${eq.relativeMineralocorticoidPotency}x`}
+                                    </td>
+                                    <td className="text-center py-2 px-3 text-muted-foreground">
+                                      {eq.biologicalHalfLife}
+                                    </td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+                        </div>
+
+                        {/* Legend */}
+                        <div className="p-3 rounded-lg bg-muted/30 border border-border/50">
+                          <p className="text-xs text-muted-foreground">
+                            <strong>GC</strong> = Glucocorticoid (anti-inflammatory) potency relative to hydrocortisone. 
+                            <strong>MC</strong> = Mineralocorticoid (salt-retaining) potency relative to hydrocortisone.
+                          </p>
+                        </div>
+
+                        {/* Clinical Notes */}
+                        <div className="p-4 rounded-lg bg-amber-500/10 border border-amber-500/30">
+                          <div className="flex items-start gap-2">
+                            <AlertTriangle className="w-4 h-4 text-amber-500 mt-0.5 flex-shrink-0" />
+                            <div className="text-sm text-amber-700 dark:text-amber-300">
+                              <p className="font-semibold mb-1">Clinical Considerations:</p>
+                              <ul className="list-disc list-inside space-y-1 text-amber-600 dark:text-amber-400">
+                                <li>These are approximate equivalencies for anti-inflammatory effects</li>
+                                <li>Individual patient response may vary</li>
+                                <li>Consider duration of action when selecting agent</li>
+                                <li>Monitor for adrenal suppression with prolonged use</li>
+                              </ul>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Custom Plasma Exchange Display */}
+                    {selectedCalculator.id === 'plasma-exchange' && plasmaExchangeResult && (
+                      <div className="mt-4 space-y-4">
+                        {/* Header */}
+                        <div className="p-4 rounded-lg bg-cyan-500/10 border-2 border-cyan-500">
+                          <div className="flex items-center gap-3">
+                            <Droplets className="w-6 h-6 text-cyan-500" />
+                            <div>
+                              <h3 className="text-lg font-bold text-cyan-600 dark:text-cyan-400">
+                                Plasma Exchange Protocol
+                              </h3>
+                              <p className="text-sm text-cyan-600/80 dark:text-cyan-400/80">
+                                Calculated plasma volume and exchange parameters
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Key Metrics */}
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                          <div className="p-3 rounded-lg bg-cyan-500/10 border border-cyan-500/30 text-center">
+                            <p className="text-2xl font-bold text-cyan-600 dark:text-cyan-400">
+                              {plasmaExchangeResult.totalPlasmaVolume}
+                            </p>
+                            <p className="text-xs text-muted-foreground">Plasma Volume (mL)</p>
+                          </div>
+                          <div className="p-3 rounded-lg bg-cyan-500/10 border border-cyan-500/30 text-center">
+                            <p className="text-2xl font-bold text-cyan-600 dark:text-cyan-400">
+                              {plasmaExchangeResult.plasmaVolumePerKg}
+                            </p>
+                            <p className="text-xs text-muted-foreground">mL/kg</p>
+                          </div>
+                          <div className="p-3 rounded-lg bg-cyan-500/10 border border-cyan-500/30 text-center">
+                            <p className="text-2xl font-bold text-cyan-600 dark:text-cyan-400">
+                              {plasmaExchangeResult.exchangeVolume}
+                            </p>
+                            <p className="text-xs text-muted-foreground">Exchange Volume (mL)</p>
+                          </div>
+                          <div className="p-3 rounded-lg bg-cyan-500/10 border border-cyan-500/30 text-center">
+                            <p className="text-2xl font-bold text-cyan-600 dark:text-cyan-400">
+                              ~{plasmaExchangeResult.estimatedDuration}
+                            </p>
+                            <p className="text-xs text-muted-foreground">Est. Duration (min)</p>
+                          </div>
+                        </div>
+
+                        {/* IgG Removal */}
+                        <div className="p-4 rounded-lg bg-green-500/10 border border-green-500/30">
+                          <h4 className="font-semibold mb-2 flex items-center gap-2 text-green-700 dark:text-green-400">
+                            <Activity className="w-4 h-4" />
+                            Expected IgG Removal
+                          </h4>
+                          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
+                            <div className="text-center">
+                              <p className="text-xl font-bold text-green-600 dark:text-green-400">
+                                ~{plasmaExchangeResult.expectedIgGRemoval}%
+                              </p>
+                              <p className="text-xs text-muted-foreground">Per Session</p>
+                            </div>
+                            <div className="text-center">
+                              <p className="text-xl font-bold text-green-600 dark:text-green-400">
+                                {plasmaExchangeResult.sessionsForTarget.target50}
+                              </p>
+                              <p className="text-xs text-muted-foreground">Sessions for 50%</p>
+                            </div>
+                            <div className="text-center">
+                              <p className="text-xl font-bold text-green-600 dark:text-green-400">
+                                {plasmaExchangeResult.sessionsForTarget.target75}
+                              </p>
+                              <p className="text-xs text-muted-foreground">Sessions for 75%</p>
+                            </div>
+                            <div className="text-center">
+                              <p className="text-xl font-bold text-green-600 dark:text-green-400">
+                                {plasmaExchangeResult.sessionsForTarget.target90}
+                              </p>
+                              <p className="text-xs text-muted-foreground">Sessions for 90%</p>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Replacement Fluid Options */}
+                        <div className="p-4 rounded-lg bg-muted/50 border border-border">
+                          <h4 className="font-semibold mb-3 flex items-center gap-2">
+                            <Droplets className="w-4 h-4" />
+                            Replacement Fluid Options
+                          </h4>
+                          <div className="space-y-3">
+                            {plasmaExchangeResult.replacementFluid.map((fluid, idx) => (
+                              <div key={idx} className="p-3 rounded bg-background border border-border/50">
+                                <div className="flex justify-between items-start">
+                                  <span className="font-medium">{fluid.type}</span>
+                                  <span className="text-sm font-mono bg-muted px-2 py-0.5 rounded">
+                                    {fluid.volume} mL
+                                  </span>
+                                </div>
+                                <p className="text-xs text-muted-foreground mt-1">{fluid.notes}</p>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+
+                        {/* Access and Anticoagulation */}
+                        <div className="grid md:grid-cols-2 gap-4">
+                          <div className="p-4 rounded-lg bg-blue-500/10 border border-blue-500/30">
+                            <h4 className="font-semibold mb-2 text-blue-700 dark:text-blue-400">Vascular Access</h4>
+                            <p className="text-sm text-blue-600 dark:text-blue-300">
+                              {plasmaExchangeResult.accessRecommendation}
+                            </p>
+                          </div>
+                          <div className="p-4 rounded-lg bg-purple-500/10 border border-purple-500/30">
+                            <h4 className="font-semibold mb-2 text-purple-700 dark:text-purple-400">Anticoagulation</h4>
+                            <p className="text-sm text-purple-600 dark:text-purple-300">
+                              {plasmaExchangeResult.anticoagulationRecommendation}
+                            </p>
+                          </div>
+                        </div>
+
+                        {/* Warning */}
+                        <div className="p-4 rounded-lg bg-amber-500/10 border border-amber-500/30">
+                          <div className="flex items-start gap-2">
+                            <AlertTriangle className="w-4 h-4 text-amber-500 mt-0.5 flex-shrink-0" />
+                            <div className="text-sm text-amber-700 dark:text-amber-300">
+                              <p className="font-semibold mb-1">Important Reminders:</p>
+                              <ul className="list-disc list-inside space-y-1 text-amber-600 dark:text-amber-400">
+                                <li>Monitor calcium levels closely with citrate anticoagulation</li>
+                                <li>Administer medications AFTER PLEX when possible</li>
+                                <li>Check coagulation parameters if using FFP</li>
+                                <li>Consult apheresis medicine for complex cases</li>
+                              </ul>
+                            </div>
                           </div>
                         </div>
                       </div>
