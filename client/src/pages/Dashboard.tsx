@@ -12,6 +12,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Switch } from "@/components/ui/switch";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { Sheet, SheetContent, SheetTrigger, SheetTitle, SheetDescription, SheetHeader } from "@/components/ui/sheet";
@@ -69,6 +70,7 @@ import { CSS } from '@dnd-kit/utilities';
 import { EGFRComparison } from "@/components/EGFRComparison";
 import { getResultColorCoding } from "@/lib/resultColorCoding";
 import { UnitConversionTooltip, hasUnitConversion } from "@/components/UnitConversionTooltip";
+import { isBinaryYesNoInput, getYesNoLabel } from "@/lib/inputHelpers";
 import ConversionReferenceCard from "@/components/ConversionReferenceCard";
 
 interface CalculatorState {
@@ -289,6 +291,7 @@ export default function Dashboard() {
     breakdown: { factor: string; points: number; present: boolean }[];
   } | null>(null);
   const [fraxResult, setFraxResult] = useState<{ majorFracture: number; hipFracture: number } | null>(null);
+  const [anticoagReversalResult, setAnticoagReversalResult] = useState<calc.AnticoagulantReversalResult | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [viewingCategoryList, setViewingCategoryList] = useState<string | null>(null);
@@ -1711,6 +1714,90 @@ export default function Dashboard() {
           break;
         }
 
+        case "hasbled": {
+          const hasbledResult = calc.hasbledScore(
+            String(calculatorState.hypertension) || 'no',
+            String(calculatorState.renalDisease) || 'no',
+            String(calculatorState.liverDisease) || 'no',
+            String(calculatorState.strokeHistory) || 'no',
+            String(calculatorState.priorBleeding) || 'no',
+            String(calculatorState.labileINR) || 'no',
+            String(calculatorState.age) || 'no',
+            String(calculatorState.medications) || 'no',
+            String(calculatorState.alcoholUse) || 'no'
+          );
+          calculationResult = hasbledResult.score;
+          const hasbledComponents = [];
+          if (hasbledResult.components.hypertension > 0) hasbledComponents.push('H - Hypertension: +1');
+          if (hasbledResult.components.renal > 0) hasbledComponents.push('A - Abnormal renal function: +1');
+          if (hasbledResult.components.liver > 0) hasbledComponents.push('A - Abnormal liver function: +1');
+          if (hasbledResult.components.stroke > 0) hasbledComponents.push('S - Stroke history: +1');
+          if (hasbledResult.components.bleeding > 0) hasbledComponents.push('B - Bleeding history: +1');
+          if (hasbledResult.components.labileINR > 0) hasbledComponents.push('L - Labile INR: +1');
+          if (hasbledResult.components.age > 0) hasbledComponents.push('E - Elderly (>65): +1');
+          if (hasbledResult.components.medications > 0) hasbledComponents.push('D - Drugs (antiplatelets/NSAIDs): +1');
+          if (hasbledResult.components.alcohol > 0) hasbledComponents.push('D - Drinking (alcohol): +1');
+          let riskLevel = 'LOW';
+          if (hasbledResult.score >= 4) riskLevel = 'VERY HIGH';
+          else if (hasbledResult.score === 3) riskLevel = 'HIGH';
+          else if (hasbledResult.score === 2) riskLevel = 'MODERATE';
+          setResultInterpretation(
+            `${riskLevel} BLEEDING RISK\nAnnual major bleeding risk: ${hasbledResult.annualBleedingRisk}\n\nComponents (HAS-BLED):\n${hasbledComponents.length > 0 ? hasbledComponents.join('\n') : 'No risk factors identified'}`
+          );
+          break;
+        }
+
+        case "perc": {
+          const percResult = calc.percRule(
+            String(calculatorState.age) || 'no',
+            String(calculatorState.heartRate) || 'no',
+            String(calculatorState.oxygenSaturation) || 'no',
+            String(calculatorState.unilateralLegSwelling) || 'no',
+            String(calculatorState.hemoptysis) || 'no',
+            String(calculatorState.recentSurgeryTrauma) || 'no',
+            String(calculatorState.priorPeDvt) || 'no',
+            String(calculatorState.hormoneUse) || 'no'
+          );
+          calculationResult = percResult.criteriaCount;
+          const percPositive = [];
+          const percNegative = [];
+          if (percResult.criteria.age) percPositive.push('Age \u226550 years');
+          else percNegative.push('Age <50 years');
+          if (percResult.criteria.heartRate) percPositive.push('HR \u2265100 bpm');
+          else percNegative.push('HR <100 bpm');
+          if (percResult.criteria.oxygenSaturation) percPositive.push('SpO\u2082 <95%');
+          else percNegative.push('SpO\u2082 \u226595%');
+          if (percResult.criteria.unilateralLegSwelling) percPositive.push('Unilateral leg swelling');
+          else percNegative.push('No leg swelling');
+          if (percResult.criteria.hemoptysis) percPositive.push('Hemoptysis');
+          else percNegative.push('No hemoptysis');
+          if (percResult.criteria.recentSurgeryTrauma) percPositive.push('Recent surgery/trauma');
+          else percNegative.push('No recent surgery');
+          if (percResult.criteria.priorPeDvt) percPositive.push('Prior PE/DVT');
+          else percNegative.push('No prior PE/DVT');
+          if (percResult.criteria.hormoneUse) percPositive.push('Hormone use');
+          else percNegative.push('No hormone use');
+          const percStatus = percResult.allNegative ? 'PERC NEGATIVE - PE Ruled Out' : 'PERC POSITIVE - Cannot Rule Out PE';
+          setResultInterpretation(
+            `${percStatus}\n\n${percResult.allNegative ? '\u2713 All 8 criteria negative. In LOW pretest probability patients, PE can be safely ruled out without D-dimer.' : '\u2717 ' + percResult.criteriaCount + ' criteria positive. Proceed with D-dimer or imaging.'}\n\nPositive Criteria:\n${percPositive.length > 0 ? percPositive.map(c => '\u2717 ' + c).join('\n') : 'None'}\n\nNegative Criteria:\n${percNegative.map(c => '\u2713 ' + c).join('\n')}`
+          );
+          break;
+        }
+
+        case "anticoagReversal": {
+          const reversalResult = calc.anticoagulationReversal(
+            String(calculatorState.anticoagulant) || 'warfarin',
+            String(calculatorState.indication) || 'major',
+            String(calculatorState.renalFunction) || 'normal',
+            String(calculatorState.bleedingSeverity) || 'major',
+            calculatorState.weight ? parseFloat(String(calculatorState.weight)) : undefined
+          );
+          calculationResult = 1; // Placeholder for display
+          setAnticoagReversalResult(reversalResult);
+          setResultInterpretation(`Reversal protocol generated for ${reversalResult.anticoagulant}. See detailed action plan below.`);
+          break;
+        }
+
         default:
           calculationResult = undefined;
       }
@@ -1745,6 +1832,12 @@ export default function Dashboard() {
           initialState[input.id] = input.default ?? 0;
         } else if (input.default !== undefined) {
           initialState[input.id] = input.default;
+        } else if (input.type === 'select' && input.options && input.options.length === 2) {
+          // Initialize Yes/No toggle inputs to 'no' by default
+          const values = input.options.map(o => o.value.toLowerCase());
+          if (values.includes('yes') && values.includes('no')) {
+            initialState[input.id] = 'no';
+          }
         }
       });
     }
@@ -2665,21 +2758,37 @@ export default function Dashboard() {
                         )}
 
                         {input.type === "select" && (
-                          <Select
-                            value={String(calculatorState[input.id] ?? "")}
-                            onValueChange={(value) => handleInputChange(input.id, value)}
-                          >
-                            <SelectTrigger>
-                              <SelectValue placeholder="Select..." />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {input.options?.map((opt) => (
-                                <SelectItem key={opt.value} value={opt.value}>
-                                  {opt.label}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
+                          isBinaryYesNoInput(input) ? (
+                            <div className="flex items-center justify-between p-3 bg-muted/30 rounded-lg border">
+                              <Switch
+                                checked={calculatorState[input.id] === "yes"}
+                                onCheckedChange={(checked) => handleInputChange(input.id, checked ? "yes" : "no")}
+                                className="data-[state=checked]:bg-primary"
+                              />
+                              <span className="text-sm font-medium ml-3 flex-1">
+                                {calculatorState[input.id] === "yes" 
+                                  ? getYesNoLabel(input, 'yes')
+                                  : getYesNoLabel(input, 'no')
+                                }
+                              </span>
+                            </div>
+                          ) : (
+                            <Select
+                              value={String(calculatorState[input.id] ?? "")}
+                              onValueChange={(value) => handleInputChange(input.id, value)}
+                            >
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select..." />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {input.options?.map((opt) => (
+                                  <SelectItem key={opt.value} value={opt.value}>
+                                    {opt.label}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          )
                         )}
 
                         {input.type === "checkbox" && (
@@ -3454,6 +3563,186 @@ export default function Dashboard() {
                             <Info className="w-4 h-4 text-blue-500 mt-0.5 flex-shrink-0" />
                             <p className="text-sm text-blue-600 dark:text-blue-400">
                               <strong>Note:</strong> This is a simplified FRAX calculation. For official FRAX scores, use the FRAX tool at <a href="https://www.sheffield.ac.uk/FRAX/" target="_blank" rel="noopener noreferrer" className="underline">www.sheffield.ac.uk/FRAX</a>. Treatment decisions should incorporate clinical judgment and patient preferences.
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Custom Anticoagulation Reversal Display */}
+                    {selectedCalculator.id === 'anticoagReversal' && anticoagReversalResult && (
+                      <div className="mt-4 space-y-4">
+                        {/* Header with Urgency Indicator */}
+                        <div className="p-4 rounded-lg bg-red-500/10 border-2 border-red-500">
+                          <div className="flex items-center gap-3">
+                            <AlertTriangle className="w-6 h-6 text-red-500 animate-pulse" />
+                            <div>
+                              <h3 className="text-lg font-bold text-red-600 dark:text-red-400">
+                                URGENT: Reversal Protocol for {anticoagReversalResult.anticoagulant}
+                              </h3>
+                              <p className="text-sm text-red-600/80 dark:text-red-400/80">
+                                ⏱ Time to Effect: {anticoagReversalResult.timeToEffect}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Step 1: Immediate Actions */}
+                        <div className="p-4 rounded-lg bg-amber-500/10 border-l-4 border-amber-500">
+                          <div className="flex items-center gap-2 mb-3">
+                            <span className="flex items-center justify-center w-6 h-6 rounded-full bg-amber-500 text-white text-sm font-bold">1</span>
+                            <h4 className="font-semibold text-amber-700 dark:text-amber-400">IMMEDIATE ACTIONS</h4>
+                          </div>
+                          <ul className="space-y-2 ml-8">
+                            <li className="flex items-start gap-2">
+                              <span className="text-amber-600 dark:text-amber-400 font-bold">•</span>
+                              <span className="text-sm">STOP anticoagulant immediately</span>
+                            </li>
+                            <li className="flex items-start gap-2">
+                              <span className="text-amber-600 dark:text-amber-400 font-bold">•</span>
+                              <span className="text-sm">Establish IV access (large bore)</span>
+                            </li>
+                            <li className="flex items-start gap-2">
+                              <span className="text-amber-600 dark:text-amber-400 font-bold">•</span>
+                              <span className="text-sm">Type and crossmatch blood products</span>
+                            </li>
+                            <li className="flex items-start gap-2">
+                              <span className="text-amber-600 dark:text-amber-400 font-bold">•</span>
+                              <span className="text-sm">Identify and address bleeding source</span>
+                            </li>
+                          </ul>
+                        </div>
+
+                        {/* Step 2: Reversal Agents */}
+                        <div className="p-4 rounded-lg bg-blue-500/10 border-l-4 border-blue-500">
+                          <div className="flex items-center gap-2 mb-3">
+                            <span className="flex items-center justify-center w-6 h-6 rounded-full bg-blue-500 text-white text-sm font-bold">2</span>
+                            <h4 className="font-semibold text-blue-700 dark:text-blue-400">REVERSAL AGENTS</h4>
+                          </div>
+                          <div className="space-y-3 ml-8">
+                            {anticoagReversalResult.reversalAgents.map((agent, idx) => (
+                              <div key={idx} className={`p-3 rounded-lg border ${
+                                idx === 0 
+                                  ? 'bg-emerald-500/10 border-emerald-500/50' 
+                                  : 'bg-muted/50 border-border'
+                              }`}>
+                                <div className="flex items-center gap-2 mb-2">
+                                  {idx === 0 && (
+                                    <span className="px-2 py-0.5 text-xs font-bold bg-emerald-500 text-white rounded">FIRST LINE</span>
+                                  )}
+                                  {idx === 1 && (
+                                    <span className="px-2 py-0.5 text-xs font-medium bg-muted text-muted-foreground rounded">ADJUNCT</span>
+                                  )}
+                                  {idx > 1 && (
+                                    <span className="px-2 py-0.5 text-xs font-medium bg-muted text-muted-foreground rounded">ALTERNATIVE</span>
+                                  )}
+                                  <span className={`font-semibold ${
+                                    idx === 0 ? 'text-emerald-700 dark:text-emerald-400' : 'text-foreground'
+                                  }`}>{agent.primary}</span>
+                                </div>
+                                <div className="space-y-1 text-sm">
+                                  <div className="flex items-start gap-2">
+                                    <span className="font-medium text-muted-foreground min-w-[50px]">Dose:</span>
+                                    <span className="whitespace-pre-line">{agent.dose}</span>
+                                  </div>
+                                  <div className="flex items-start gap-2">
+                                    <span className="font-medium text-muted-foreground min-w-[50px]">Note:</span>
+                                    <span className="text-muted-foreground italic">{agent.notes}</span>
+                                  </div>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+
+                        {/* Step 3: Supportive Measures */}
+                        <div className="p-4 rounded-lg bg-purple-500/10 border-l-4 border-purple-500">
+                          <div className="flex items-center gap-2 mb-3">
+                            <span className="flex items-center justify-center w-6 h-6 rounded-full bg-purple-500 text-white text-sm font-bold">3</span>
+                            <h4 className="font-semibold text-purple-700 dark:text-purple-400">SUPPORTIVE MEASURES</h4>
+                          </div>
+                          <ul className="space-y-2 ml-8">
+                            {anticoagReversalResult.supportiveMeasures.map((measure, idx) => (
+                              <li key={idx} className="flex items-start gap-2">
+                                <span className="text-purple-600 dark:text-purple-400 font-bold">•</span>
+                                <span className="text-sm">{measure}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+
+                        {/* Step 4: Monitoring */}
+                        <div className="p-4 rounded-lg bg-cyan-500/10 border-l-4 border-cyan-500">
+                          <div className="flex items-center gap-2 mb-3">
+                            <span className="flex items-center justify-center w-6 h-6 rounded-full bg-cyan-500 text-white text-sm font-bold">4</span>
+                            <h4 className="font-semibold text-cyan-700 dark:text-cyan-400">MONITORING PARAMETERS</h4>
+                          </div>
+                          <ul className="space-y-2 ml-8">
+                            {anticoagReversalResult.monitoringParameters.map((param, idx) => (
+                              <li key={idx} className="flex items-start gap-2">
+                                <span className="text-cyan-600 dark:text-cyan-400 font-bold">•</span>
+                                <span className="text-sm">{param}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+
+                        {/* Special Considerations */}
+                        <div className="p-4 rounded-lg bg-orange-500/10 border border-orange-500/50">
+                          <div className="flex items-center gap-2 mb-3">
+                            <AlertTriangle className="w-5 h-5 text-orange-600 dark:text-orange-400" />
+                            <h4 className="font-semibold text-orange-700 dark:text-orange-400">SPECIAL CONSIDERATIONS</h4>
+                          </div>
+                          <ul className="space-y-2">
+                            {anticoagReversalResult.specialConsiderations.map((consideration, idx) => (
+                              <li key={idx} className="flex items-start gap-2">
+                                <span className="text-orange-600 dark:text-orange-400 font-bold">⚠</span>
+                                <span className="text-sm text-orange-700 dark:text-orange-300">{consideration}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+
+                        {/* Quick Reference Card */}
+                        <div className="p-4 rounded-lg bg-muted/50 border border-border">
+                          <h4 className="font-semibold mb-3 flex items-center gap-2">
+                            <Activity className="w-4 h-4" />
+                            Quick Reference: Anticoagulant Half-Lives
+                          </h4>
+                          <div className="grid grid-cols-2 gap-2 text-sm">
+                            <div className="p-2 rounded bg-background border border-border/50">
+                              <p className="font-medium">Warfarin</p>
+                              <p className="text-muted-foreground">36-42 hours</p>
+                            </div>
+                            <div className="p-2 rounded bg-background border border-border/50">
+                              <p className="font-medium">Dabigatran</p>
+                              <p className="text-muted-foreground">12-17 hours (normal renal)</p>
+                            </div>
+                            <div className="p-2 rounded bg-background border border-border/50">
+                              <p className="font-medium">Rivaroxaban</p>
+                              <p className="text-muted-foreground">5-9 hours</p>
+                            </div>
+                            <div className="p-2 rounded bg-background border border-border/50">
+                              <p className="font-medium">Apixaban</p>
+                              <p className="text-muted-foreground">8-15 hours</p>
+                            </div>
+                            <div className="p-2 rounded bg-background border border-border/50">
+                              <p className="font-medium">UFH</p>
+                              <p className="text-muted-foreground">60-90 minutes</p>
+                            </div>
+                            <div className="p-2 rounded bg-background border border-border/50">
+                              <p className="font-medium">LMWH</p>
+                              <p className="text-muted-foreground">4-6 hours</p>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Info Note */}
+                        <div className="p-4 rounded-lg bg-blue-500/10 border border-blue-500/30">
+                          <div className="flex items-start gap-2">
+                            <Info className="w-4 h-4 text-blue-500 mt-0.5 flex-shrink-0" />
+                            <p className="text-sm text-blue-600 dark:text-blue-400">
+                              <strong>References:</strong> Tomaselli GF et al. J Am Coll Cardiol. 2020;76(5):594-622. Frontera JA et al. Neurocrit Care. 2016;24(1):6-46. Cuker A et al. Am J Hematol. 2019;94(6):697-709.
                             </p>
                           </div>
                         </div>

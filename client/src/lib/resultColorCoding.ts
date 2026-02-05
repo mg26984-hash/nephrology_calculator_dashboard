@@ -215,6 +215,12 @@ export function getResultColorCoding(calculatorId: string, value: number, inputs
     case 'genevaRevised':
       return getGenevaRevisedColor(value);
 
+    case 'hasbled':
+      return getHASBLEDColor(value);
+
+    case 'perc':
+      return getPERCColor(value);
+
     default:
       return null;
   }
@@ -1858,6 +1864,63 @@ export function getGenevaRevisedColor(value: number): ColorResult {
     textClass: 'text-red-600 dark:text-red-400',
     borderClass: 'border-red-500',
     label: 'High Probability (~74%)',
+    severity: 'danger'
+  };
+}
+
+
+export function getHASBLEDColor(value: number): ColorResult {
+  if (value <= 1) {
+    return {
+      bgClass: 'bg-emerald-500/10',
+      textClass: 'text-emerald-600 dark:text-emerald-400',
+      borderClass: 'border-emerald-500',
+      label: 'Low Bleeding Risk',
+      severity: 'success'
+    };
+  }
+  if (value === 2) {
+    return {
+      bgClass: 'bg-yellow-500/10',
+      textClass: 'text-yellow-600 dark:text-yellow-400',
+      borderClass: 'border-yellow-500',
+      label: 'Moderate Bleeding Risk',
+      severity: 'warning'
+    };
+  }
+  if (value === 3) {
+    return {
+      bgClass: 'bg-orange-500/10',
+      textClass: 'text-orange-600 dark:text-orange-400',
+      borderClass: 'border-orange-500',
+      label: 'High Bleeding Risk',
+      severity: 'warning'
+    };
+  }
+  return {
+    bgClass: 'bg-red-500/10',
+    textClass: 'text-red-600 dark:text-red-400',
+    borderClass: 'border-red-500',
+    label: 'Very High Bleeding Risk',
+    severity: 'danger'
+  };
+}
+
+export function getPERCColor(value: number): ColorResult {
+  if (value === 0) {
+    return {
+      bgClass: 'bg-emerald-500/10',
+      textClass: 'text-emerald-600 dark:text-emerald-400',
+      borderClass: 'border-emerald-500',
+      label: 'PERC Negative - PE Ruled Out',
+      severity: 'success'
+    };
+  }
+  return {
+    bgClass: 'bg-red-500/10',
+    textClass: 'text-red-600 dark:text-red-400',
+    borderClass: 'border-red-500',
+    label: 'PERC Positive - Cannot Rule Out PE',
     severity: 'danger'
   };
 }

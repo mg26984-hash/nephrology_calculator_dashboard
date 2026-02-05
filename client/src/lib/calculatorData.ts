@@ -2250,6 +2250,184 @@ export const calculators: Calculator[] = [
       "Klok FA et al. Arch Intern Med. 2008;168(21):2131-2136",
     ],
   },
+  {
+    id: "hasbled",
+    name: "HAS-BLED Score",
+    description: "Bleeding risk assessment for patients on anticoagulation",
+    category: "Critical Care",
+    inputs: [
+      { id: "hypertension", label: "Hypertension (uncontrolled, >160 mmHg systolic)", type: "select", options: [
+        { value: "no", label: "No (0)" },
+        { value: "yes", label: "Yes (+1)" },
+      ], required: true },
+      { id: "renalDisease", label: "Renal disease (dialysis, transplant, Cr >2.26 mg/dL)", type: "select", options: [
+        { value: "no", label: "No (0)" },
+        { value: "yes", label: "Yes (+1)" },
+      ], required: true },
+      { id: "liverDisease", label: "Liver disease (cirrhosis, bilirubin >2x, AST/ALT >3x)", type: "select", options: [
+        { value: "no", label: "No (0)" },
+        { value: "yes", label: "Yes (+1)" },
+      ], required: true },
+      { id: "strokeHistory", label: "Stroke history", type: "select", options: [
+        { value: "no", label: "No (0)" },
+        { value: "yes", label: "Yes (+1)" },
+      ], required: true },
+      { id: "priorBleeding", label: "Prior major bleeding or predisposition", type: "select", options: [
+        { value: "no", label: "No (0)" },
+        { value: "yes", label: "Yes (+1)" },
+      ], required: true },
+      { id: "labileINR", label: "Labile INR (unstable/high INRs, TTR <60%)", type: "select", options: [
+        { value: "no", label: "No (0)" },
+        { value: "yes", label: "Yes (+1)" },
+      ], required: true },
+      { id: "age", label: "Age >65 years", type: "select", options: [
+        { value: "no", label: "No (0)" },
+        { value: "yes", label: "Yes (+1)" },
+      ], required: true },
+      { id: "medications", label: "Medications (antiplatelet agents, NSAIDs)", type: "select", options: [
+        { value: "no", label: "No (0)" },
+        { value: "yes", label: "Yes (+1)" },
+      ], required: true },
+      { id: "alcoholUse", label: "Alcohol use (≥8 drinks/week)", type: "select", options: [
+        { value: "no", label: "No (0)" },
+        { value: "yes", label: "Yes (+1)" },
+      ], required: true },
+    ],
+    resultLabel: "HAS-BLED Score",
+    resultUnit: "points",
+    interpretation: (value) => {
+      if (value <= 1) return "LOW BLEEDING RISK - Annual major bleeding risk ~1-3%. Anticoagulation generally safe.";
+      if (value === 2) return "MODERATE BLEEDING RISK - Annual major bleeding risk ~4%. Consider modifiable risk factors.";
+      if (value === 3) return "HIGH BLEEDING RISK - Annual major bleeding risk ~6%. Caution with anticoagulation, address modifiable factors.";
+      return "VERY HIGH BLEEDING RISK - Annual major bleeding risk >9%. Carefully weigh risks vs benefits. Consider alternatives.";
+    },
+    clinicalPearls: [
+      "HAS-BLED ≥3 indicates high bleeding risk but is NOT a contraindication to anticoagulation",
+      "Focus on modifiable risk factors: hypertension, labile INR, medications, alcohol",
+      "Score validated primarily for warfarin; applies to DOACs with some limitations",
+      "Use alongside stroke risk scores (CHA₂DS₂-VASc) for shared decision-making",
+      "High HAS-BLED should prompt closer monitoring, not necessarily stopping anticoagulation",
+      "Mnemonic: Hypertension, Abnormal renal/liver, Stroke, Bleeding, Labile INR, Elderly, Drugs/alcohol",
+    ],
+    references: [
+      "Pisters R et al. Chest. 2010;138(5):1093-1100",
+      "Lip GY et al. J Am Coll Cardiol. 2011;57(2):173-180",
+    ],
+  },
+  {
+    id: "perc",
+    name: "PERC Rule",
+    description: "Pulmonary Embolism Rule-out Criteria for low-risk patients",
+    category: "Critical Care",
+    inputs: [
+      { id: "age", label: "Age ≥50 years", type: "select", options: [
+        { value: "no", label: "No" },
+        { value: "yes", label: "Yes" },
+      ], required: true },
+      { id: "heartRate", label: "Heart rate ≥100 bpm", type: "select", options: [
+        { value: "no", label: "No" },
+        { value: "yes", label: "Yes" },
+      ], required: true },
+      { id: "oxygenSaturation", label: "SpO₂ <95% on room air", type: "select", options: [
+        { value: "no", label: "No" },
+        { value: "yes", label: "Yes" },
+      ], required: true },
+      { id: "unilateralLegSwelling", label: "Unilateral leg swelling", type: "select", options: [
+        { value: "no", label: "No" },
+        { value: "yes", label: "Yes" },
+      ], required: true },
+      { id: "hemoptysis", label: "Hemoptysis", type: "select", options: [
+        { value: "no", label: "No" },
+        { value: "yes", label: "Yes" },
+      ], required: true },
+      { id: "recentSurgeryTrauma", label: "Recent surgery or trauma (≤4 weeks)", type: "select", options: [
+        { value: "no", label: "No" },
+        { value: "yes", label: "Yes" },
+      ], required: true },
+      { id: "priorPeDvt", label: "Prior PE or DVT", type: "select", options: [
+        { value: "no", label: "No" },
+        { value: "yes", label: "Yes" },
+      ], required: true },
+      { id: "hormoneUse", label: "Hormone use (OCP, HRT, or estrogen)", type: "select", options: [
+        { value: "no", label: "No" },
+        { value: "yes", label: "Yes" },
+      ], required: true },
+    ],
+    resultLabel: "PERC Criteria Positive",
+    resultUnit: "of 8",
+    interpretation: (value) => {
+      if (value === 0) return "PERC NEGATIVE - All 8 criteria negative. In low pretest probability patients, PE can be ruled out without D-dimer testing. <2% miss rate.";
+      return "PERC POSITIVE - Cannot rule out PE with PERC alone. Proceed with D-dimer testing or further workup based on clinical probability.";
+    },
+    clinicalPearls: [
+      "ONLY apply PERC to LOW pretest probability patients (gestalt <15% or Wells ≤4)",
+      "ALL 8 criteria must be negative to rule out PE",
+      "If ANY criterion is positive, proceed with D-dimer or imaging",
+      "PERC reduces unnecessary D-dimer testing in low-risk patients",
+      "Not validated for inpatients or high-risk populations",
+      "Sensitivity ~97%, specificity ~22% in appropriate population",
+      "Do NOT use PERC in moderate or high pretest probability",
+    ],
+    references: [
+      "Kline JA et al. J Thromb Haemost. 2004;2(8):1247-1255",
+      "Kline JA et al. Ann Emerg Med. 2008;52(4):408-415",
+      "Singh B et al. JAMA Intern Med. 2013;173(18):1715-1722",
+    ],
+  },
+  {
+    id: "anticoagReversal",
+    name: "Anticoagulation Reversal Guide",
+    description: "Evidence-based reversal strategies for major bleeding",
+    category: "Critical Care",
+    inputs: [
+      { id: "anticoagulant", label: "Anticoagulant", type: "select", options: [
+        { value: "warfarin", label: "Warfarin (Coumadin)" },
+        { value: "dabigatran", label: "Dabigatran (Pradaxa)" },
+        { value: "rivaroxaban", label: "Rivaroxaban (Xarelto)" },
+        { value: "apixaban", label: "Apixaban (Eliquis)" },
+        { value: "edoxaban", label: "Edoxaban (Savaysa)" },
+        { value: "heparin", label: "Unfractionated Heparin" },
+        { value: "enoxaparin", label: "LMWH (Enoxaparin/Lovenox)" },
+      ], required: true },
+      { id: "indication", label: "Indication for Reversal", type: "select", options: [
+        { value: "life-threatening", label: "Life-threatening bleeding (ICH, massive GI)" },
+        { value: "major", label: "Major bleeding (requiring transfusion)" },
+        { value: "urgent-surgery", label: "Urgent surgery (<24 hours)" },
+        { value: "elective", label: "Elective procedure planning" },
+      ], required: true },
+      { id: "renalFunction", label: "Renal Function", type: "select", options: [
+        { value: "normal", label: "Normal (CrCl >60 mL/min)" },
+        { value: "moderate", label: "Moderate impairment (CrCl 30-60)" },
+        { value: "severe", label: "Severe impairment (CrCl <30)" },
+        { value: "dialysis", label: "Dialysis-dependent" },
+      ], required: true },
+      { id: "bleedingSeverity", label: "Bleeding Severity", type: "select", options: [
+        { value: "life-threatening", label: "Life-threatening (ICH, hemodynamic instability)" },
+        { value: "major", label: "Major (Hgb drop ≥2, transfusion needed)" },
+        { value: "minor", label: "Minor (clinically significant but stable)" },
+      ], required: true },
+      { id: "weight", label: "Patient Weight", type: "number", unit: "kg", placeholder: "70", required: false },
+    ],
+    resultLabel: "Reversal Strategy",
+    resultUnit: "",
+    interpretation: () => "See detailed reversal recommendations below.",
+    clinicalPearls: [
+      "Always hold the anticoagulant and identify/treat the bleeding source",
+      "Specific reversal agents preferred over non-specific when available",
+      "PCC (4-factor) preferred over FFP for warfarin reversal",
+      "Idarucizumab is specific for dabigatran; andexanet for factor Xa inhibitors",
+      "Consider timing of last anticoagulant dose when planning reversal",
+      "Renal function significantly affects DOAC clearance and reversal strategy",
+      "Consult hematology/pharmacy for complex cases",
+      "Plan for anticoagulation resumption once bleeding controlled",
+    ],
+    references: [
+      "Tomaselli GF et al. J Am Coll Cardiol. 2020;76(5):594-622",
+      "Frontera JA et al. Neurocrit Care. 2016;24(1):6-46",
+      "Cuker A et al. Am J Hematol. 2019;94(6):697-709",
+      "Levy JH et al. Thromb Haemost. 2016;116(1):13-21",
+    ],
+  },
 ];
 export function getCalculatorsByCategory(category: string): Calculator[] {
   return calculators.filter((calc) => calc.category === category);

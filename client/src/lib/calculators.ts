@@ -2688,3 +2688,347 @@ export function genevaRevisedScore(
     }
   };
 }
+
+
+// ============================================================================
+// HAS-BLED Score for Bleeding Risk in Anticoagulated Patients
+// ============================================================================
+
+export function hasbledScore(
+  hypertension: string,
+  renalDisease: string,
+  liverDisease: string,
+  strokeHistory: string,
+  priorBleeding: string,
+  labileINR: string,
+  age: string,
+  medications: string,
+  alcoholUse: string
+): { score: number; components: Record<string, number>; annualBleedingRisk: string } {
+  const hypertensionPoints = hypertension === 'yes' ? 1 : 0;
+  const renalPoints = renalDisease === 'yes' ? 1 : 0;
+  const liverPoints = liverDisease === 'yes' ? 1 : 0;
+  const strokePoints = strokeHistory === 'yes' ? 1 : 0;
+  const bleedingPoints = priorBleeding === 'yes' ? 1 : 0;
+  const inrPoints = labileINR === 'yes' ? 1 : 0;
+  const agePoints = age === 'yes' ? 1 : 0;
+  const medsPoints = medications === 'yes' ? 1 : 0;
+  const alcoholPoints = alcoholUse === 'yes' ? 1 : 0;
+  
+  const score = hypertensionPoints + renalPoints + liverPoints + strokePoints + 
+                bleedingPoints + inrPoints + agePoints + medsPoints + alcoholPoints;
+  
+  // Annual major bleeding risk based on score
+  let annualBleedingRisk: string;
+  if (score === 0) annualBleedingRisk = '0.9%';
+  else if (score === 1) annualBleedingRisk = '3.4%';
+  else if (score === 2) annualBleedingRisk = '4.1%';
+  else if (score === 3) annualBleedingRisk = '5.8%';
+  else if (score === 4) annualBleedingRisk = '8.9%';
+  else annualBleedingRisk = '>10%';
+  
+  return {
+    score,
+    components: {
+      hypertension: hypertensionPoints,
+      renal: renalPoints,
+      liver: liverPoints,
+      stroke: strokePoints,
+      bleeding: bleedingPoints,
+      labileINR: inrPoints,
+      age: agePoints,
+      medications: medsPoints,
+      alcohol: alcoholPoints
+    },
+    annualBleedingRisk
+  };
+}
+
+// ============================================================================
+// PERC Rule (Pulmonary Embolism Rule-out Criteria)
+// ============================================================================
+
+export function percRule(
+  age: string,
+  heartRate: string,
+  oxygenSaturation: string,
+  unilateralLegSwelling: string,
+  hemoptysis: string,
+  recentSurgeryTrauma: string,
+  priorPeDvt: string,
+  hormoneUse: string
+): { allNegative: boolean; criteria: Record<string, boolean>; criteriaCount: number } {
+  const agePositive = age === 'yes';
+  const hrPositive = heartRate === 'yes';
+  const spo2Positive = oxygenSaturation === 'yes';
+  const legSwellingPositive = unilateralLegSwelling === 'yes';
+  const hemoptysisPositive = hemoptysis === 'yes';
+  const surgeryPositive = recentSurgeryTrauma === 'yes';
+  const priorPeDvtPositive = priorPeDvt === 'yes';
+  const hormonePositive = hormoneUse === 'yes';
+  
+  const criteriaCount = [agePositive, hrPositive, spo2Positive, legSwellingPositive, 
+                         hemoptysisPositive, surgeryPositive, priorPeDvtPositive, hormonePositive]
+                         .filter(Boolean).length;
+  
+  return {
+    allNegative: criteriaCount === 0,
+    criteria: {
+      age: agePositive,
+      heartRate: hrPositive,
+      oxygenSaturation: spo2Positive,
+      unilateralLegSwelling: legSwellingPositive,
+      hemoptysis: hemoptysisPositive,
+      recentSurgeryTrauma: surgeryPositive,
+      priorPeDvt: priorPeDvtPositive,
+      hormoneUse: hormonePositive
+    },
+    criteriaCount
+  };
+}
+
+// ============================================================================
+// Anticoagulation Reversal Guide
+// ============================================================================
+
+export interface AnticoagulantReversalResult {
+  anticoagulant: string;
+  reversalAgents: {
+    primary: string;
+    dose: string;
+    notes: string;
+  }[];
+  supportiveMeasures: string[];
+  monitoringParameters: string[];
+  timeToEffect: string;
+  specialConsiderations: string[];
+}
+
+export function anticoagulationReversal(
+  anticoagulant: string,
+  indication: string,
+  renalFunction: string,
+  bleedingSeverity: string,
+  weight?: number
+): AnticoagulantReversalResult {
+  const weightKg = weight || 70;
+  
+  switch (anticoagulant) {
+    case 'warfarin':
+      return {
+        anticoagulant: 'Warfarin',
+        reversalAgents: [
+          {
+            primary: '4-Factor PCC (Kcentra)',
+            dose: bleedingSeverity === 'life-threatening' 
+              ? 'INR 2-4: 25 units/kg (max 2500 units)\nINR 4-6: 35 units/kg (max 3500 units)\nINR >6: 50 units/kg (max 5000 units)'
+              : 'Consider lower doses for non-life-threatening bleeding',
+            notes: 'Preferred for rapid reversal. Contains factors II, VII, IX, X, protein C and S'
+          },
+          {
+            primary: 'Vitamin K (Phytonadione)',
+            dose: 'IV: 10 mg slow infusion over 20-60 min\nPO: 2.5-10 mg',
+            notes: 'Always give with PCC for sustained reversal. IV onset 6-12 hours, PO onset 24-48 hours'
+          },
+          {
+            primary: 'Fresh Frozen Plasma (FFP)',
+            dose: '10-15 mL/kg (typically 4-6 units)',
+            notes: 'Use if PCC unavailable. Slower onset, volume overload risk'
+          }
+        ],
+        supportiveMeasures: [
+          'Hold warfarin',
+          'Identify and treat bleeding source',
+          'Transfuse PRBCs if hemoglobin <7-8 g/dL',
+          'Consider platelets if <50,000 or on antiplatelet therapy'
+        ],
+        monitoringParameters: [
+          'INR every 30-60 min until stable',
+          'Hemoglobin/hematocrit every 4-6 hours',
+          'Clinical bleeding assessment'
+        ],
+        timeToEffect: 'PCC: 10-15 minutes; Vitamin K IV: 6-12 hours',
+        specialConsiderations: [
+          'PCC is prothrombotic - use caution in recent VTE, DIC',
+          'Vitamin K may cause anaphylaxis (rare) - slow IV infusion',
+          'Consider heparin bridging when restarting anticoagulation'
+        ]
+      };
+      
+    case 'dabigatran':
+      return {
+        anticoagulant: 'Dabigatran (Pradaxa)',
+        reversalAgents: [
+          {
+            primary: 'Idarucizumab (Praxbind)',
+            dose: '5 g IV (two 2.5 g vials) as bolus or infusion',
+            notes: 'Specific reversal agent. Complete reversal within minutes. May redose if needed'
+          },
+          {
+            primary: 'Hemodialysis',
+            dose: '4-hour session removes ~60% of drug',
+            notes: 'Consider if idarucizumab unavailable. Dabigatran is 35% protein bound'
+          },
+          {
+            primary: '4-Factor PCC (if specific agent unavailable)',
+            dose: '50 units/kg',
+            notes: 'Less effective than idarucizumab. May provide hemostatic support'
+          }
+        ],
+        supportiveMeasures: [
+          'Hold dabigatran',
+          'Activated charcoal if ingestion <2 hours',
+          'Maintain adequate urine output',
+          'Transfuse blood products as needed'
+        ],
+        monitoringParameters: [
+          'Thrombin time (TT) - most sensitive',
+          'aPTT - elevated but not linear',
+          'Ecarin clotting time if available',
+          'Clinical bleeding assessment'
+        ],
+        timeToEffect: 'Idarucizumab: immediate (within minutes)',
+        specialConsiderations: [
+          'Renal impairment prolongs half-life significantly',
+          'CrCl <30: half-life 18-27 hours vs 12-17 hours normal',
+          'Drug levels peak 1-2 hours post-dose',
+          'Consider timing of last dose'
+        ]
+      };
+      
+    case 'rivaroxaban':
+    case 'apixaban':
+    case 'edoxaban':
+      const xaName = anticoagulant === 'rivaroxaban' ? 'Rivaroxaban (Xarelto)' :
+                     anticoagulant === 'apixaban' ? 'Apixaban (Eliquis)' : 'Edoxaban (Savaysa)';
+      return {
+        anticoagulant: xaName,
+        reversalAgents: [
+          {
+            primary: 'Andexanet alfa (Andexxa)',
+            dose: anticoagulant === 'apixaban' 
+              ? 'Low dose (≤5 mg or >8h since dose): 400 mg bolus + 480 mg infusion\nHigh dose (>5 mg and ≤8h): 800 mg bolus + 960 mg infusion'
+              : 'Low dose (≤10 mg rivaroxaban or >8h): 400 mg bolus + 480 mg infusion\nHigh dose (>10 mg and ≤8h): 800 mg bolus + 960 mg infusion',
+            notes: 'Specific reversal agent for factor Xa inhibitors. Bolus over 15-30 min, infusion over 2 hours'
+          },
+          {
+            primary: '4-Factor PCC (Kcentra)',
+            dose: '50 units/kg (max 5000 units)',
+            notes: 'Use if andexanet unavailable. Provides hemostatic support but not true reversal'
+          },
+          {
+            primary: 'Activated PCC (FEIBA)',
+            dose: '50 units/kg (max 5000 units)',
+            notes: 'Alternative to 4F-PCC. Higher thrombotic risk'
+          }
+        ],
+        supportiveMeasures: [
+          `Hold ${anticoagulant}`,
+          'Activated charcoal if ingestion <2-4 hours',
+          'Transfuse blood products as needed',
+          'Consider tranexamic acid for mucosal bleeding'
+        ],
+        monitoringParameters: [
+          'Anti-Xa activity (drug-specific calibration)',
+          'PT may be prolonged (especially rivaroxaban)',
+          'Clinical bleeding assessment',
+          'Note: Standard coagulation tests unreliable'
+        ],
+        timeToEffect: 'Andexanet: within minutes; PCC: 15-30 minutes',
+        specialConsiderations: [
+          'Andexanet has black box warning for thrombosis',
+          anticoagulant === 'rivaroxaban' ? 'Rivaroxaban: take with food for absorption' : '',
+          anticoagulant === 'apixaban' ? 'Apixaban: least renal elimination (27%)' : '',
+          'Half-life: 5-12 hours depending on agent and renal function',
+          'Hemodialysis NOT effective (high protein binding)'
+        ].filter(s => s !== '')
+      };
+      
+    case 'heparin':
+      return {
+        anticoagulant: 'Unfractionated Heparin (UFH)',
+        reversalAgents: [
+          {
+            primary: 'Protamine sulfate',
+            dose: `1 mg protamine per 100 units heparin given in last 2-3 hours\nMax single dose: 50 mg\nEstimated dose: ${Math.min(50, Math.round(weightKg * 0.5))} mg for recent full anticoagulation`,
+            notes: 'Give slowly IV over 10 min. May repeat if aPTT remains elevated'
+          }
+        ],
+        supportiveMeasures: [
+          'Stop heparin infusion immediately',
+          'Heparin half-life: 60-90 minutes',
+          'Transfuse blood products as needed'
+        ],
+        monitoringParameters: [
+          'aPTT every 15-30 min until normalized',
+          'Watch for protamine reactions',
+          'Clinical bleeding assessment'
+        ],
+        timeToEffect: 'Protamine: 5 minutes',
+        specialConsiderations: [
+          'Protamine can cause hypotension, bradycardia, anaphylaxis',
+          'Higher risk of reaction in fish allergy, prior protamine exposure, vasectomy',
+          'Protamine itself has mild anticoagulant effect at high doses',
+          'Consider waiting if heparin stopped >2-3 hours ago'
+        ]
+      };
+      
+    case 'enoxaparin':
+    case 'lmwh':
+      return {
+        anticoagulant: 'Low Molecular Weight Heparin (LMWH/Enoxaparin)',
+        reversalAgents: [
+          {
+            primary: 'Protamine sulfate',
+            dose: 'If LMWH given <8 hours ago: 1 mg protamine per 1 mg enoxaparin (or 100 anti-Xa units)\nIf 8-12 hours ago: 0.5 mg per 1 mg enoxaparin\nMax: 50 mg',
+            notes: 'Only ~60% reversal of anti-Xa activity. May need second dose of 0.5 mg/1 mg enoxaparin'
+          }
+        ],
+        supportiveMeasures: [
+          'Hold LMWH',
+          'LMWH half-life: 4-6 hours (longer in renal impairment)',
+          'Transfuse blood products as needed',
+          'Consider tranexamic acid'
+        ],
+        monitoringParameters: [
+          'Anti-Xa activity (if available)',
+          'aPTT less reliable for LMWH',
+          'Clinical bleeding assessment'
+        ],
+        timeToEffect: 'Protamine: 5 minutes (partial reversal)',
+        specialConsiderations: [
+          'Protamine only partially reverses LMWH (~60%)',
+          'Renal impairment significantly prolongs half-life',
+          'Consider dialysis in severe renal failure',
+          'Same protamine precautions as for UFH'
+        ]
+      };
+      
+    default:
+      return {
+        anticoagulant: 'Unknown Anticoagulant',
+        reversalAgents: [
+          {
+            primary: 'Identify specific anticoagulant',
+            dose: 'N/A',
+            notes: 'Reversal strategy depends on specific agent'
+          }
+        ],
+        supportiveMeasures: [
+          'Hold anticoagulant',
+          'Supportive care',
+          'Transfuse as needed'
+        ],
+        monitoringParameters: [
+          'PT/INR, aPTT, TT',
+          'Anti-Xa activity',
+          'Clinical assessment'
+        ],
+        timeToEffect: 'Varies by agent',
+        specialConsiderations: [
+          'Obtain detailed medication history',
+          'Consider pharmacy/toxicology consultation'
+        ]
+      };
+  }
+}
