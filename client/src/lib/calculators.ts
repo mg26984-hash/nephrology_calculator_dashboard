@@ -2874,6 +2874,7 @@ export function percRule(
 
 export interface AnticoagulantReversalResult {
   anticoagulant: string;
+  indication: 'bleeding' | 'surgery';
   reversalAgents: {
     primary: string;
     dose: string;
@@ -2883,6 +2884,15 @@ export interface AnticoagulantReversalResult {
   monitoringParameters: string[];
   timeToEffect: string;
   specialConsiderations: string[];
+  // Pre-procedural fields (only for surgery indications)
+  preProceduralGuidance?: {
+    holdTime: string;
+    lastDoseToSurgery: string;
+    bridgingRequired: boolean;
+    bridgingProtocol?: string;
+    preOpLabs: string[];
+    resumptionGuidance: string;
+  };
 }
 
 export function anticoagulationReversal(
@@ -2893,11 +2903,78 @@ export function anticoagulationReversal(
   weight?: number
 ): AnticoagulantReversalResult {
   const weightKg = weight || 70;
+  const isSurgery = indication === 'urgent-surgery' || indication === 'elective';
+  const isUrgentSurgery = indication === 'urgent-surgery';
+  
+  // Pre-procedural hold times based on renal function
+  const getHoldTime = (normalHold: string, moderateHold: string, severeHold: string): string => {
+    switch (renalFunction) {
+      case 'normal': return normalHold;
+      case 'moderate': return moderateHold;
+      case 'severe':
+      case 'dialysis': return severeHold;
+      default: return normalHold;
+    }
+  };
   
   switch (anticoagulant) {
     case 'warfarin':
+      if (isSurgery) {
+        return {
+          anticoagulant: 'Warfarin',
+          indication: 'surgery',
+          reversalAgents: isUrgentSurgery ? [
+            {
+              primary: 'Vitamin K (Phytonadione)',
+              dose: 'PO: 2.5-5 mg (INR reversal in 24-48h)\nIV: 1-2.5 mg (faster onset, 6-12h)',
+              notes: 'For urgent surgery, low-dose vitamin K preferred to avoid over-correction'
+            },
+            {
+              primary: '4-Factor PCC (if surgery <6 hours)',
+              dose: 'INR 2-4: 25 units/kg\nINR 4-6: 35 units/kg',
+              notes: 'Use only if surgery cannot wait for vitamin K effect'
+            }
+          ] : [
+            {
+              primary: 'Hold warfarin',
+              dose: 'Stop 5 days before procedure',
+              notes: 'INR typically normalizes in 5 days. Check INR day before surgery.'
+            },
+            {
+              primary: 'Vitamin K (if INR elevated day before)',
+              dose: 'PO: 1-2.5 mg',
+              notes: 'Give if INR >1.5 the day before surgery'
+            }
+          ],
+          supportiveMeasures: [
+            'Check INR 1-2 days before procedure',
+            'Ensure INR <1.5 for most procedures',
+            'Higher INR may be acceptable for minor procedures'
+          ],
+          monitoringParameters: [
+            'INR day before surgery (target <1.5)',
+            'INR on day of surgery if concern',
+            'Post-op bleeding assessment'
+          ],
+          timeToEffect: isUrgentSurgery ? 'Vitamin K IV: 6-12 hours; PCC: immediate' : 'Warfarin cessation: 5 days',
+          specialConsiderations: [
+            'High thrombotic risk patients may need bridging (see bridging protocol)',
+            'Low-risk procedures may not require warfarin interruption',
+            'Dental procedures: consider continuing warfarin with local hemostasis'
+          ],
+          preProceduralGuidance: {
+            holdTime: '5 days before procedure',
+            lastDoseToSurgery: 'Last dose 5 days (120 hours) before surgery',
+            bridgingRequired: false, // Depends on thrombotic risk - see notes
+            bridgingProtocol: 'HIGH THROMBOTIC RISK (mechanical valve, recent VTE <3mo, CHADS2 ≥5):\n- Start LMWH 3 days before surgery when INR <2\n- Last prophylactic dose: 24h before surgery\n- Last therapeutic dose: 24h before surgery\n\nMODERATE RISK: Consider bridging case-by-case\n\nLOW RISK: No bridging needed',
+            preOpLabs: ['INR (day before surgery, target <1.5)', 'CBC', 'Type and screen if major surgery'],
+            resumptionGuidance: 'Resume warfarin 12-24 hours post-op if adequate hemostasis. Bridge with LMWH until INR therapeutic if high thrombotic risk.'
+          }
+        };
+      }
       return {
         anticoagulant: 'Warfarin',
+        indication: 'bleeding',
         reversalAgents: [
           {
             primary: '4-Factor PCC (Kcentra)',
@@ -2937,8 +3014,53 @@ export function anticoagulationReversal(
       };
       
     case 'dabigatran':
+      if (isSurgery) {
+        const dabiHoldTime = getHoldTime('24-48 hours', '48-72 hours', '72-96 hours');
+        return {
+          anticoagulant: 'Dabigatran (Pradaxa)',
+          indication: 'surgery',
+          reversalAgents: isUrgentSurgery ? [
+            {
+              primary: 'Idarucizumab (Praxbind)',
+              dose: '5 g IV (two 2.5 g vials) as bolus',
+              notes: 'For urgent surgery when dabigatran cannot be held adequately. Complete reversal within minutes.'
+            }
+          ] : [
+            {
+              primary: 'Hold dabigatran',
+              dose: `Stop ${dabiHoldTime} before procedure`,
+              notes: 'Hold time depends on renal function and bleeding risk of procedure'
+            }
+          ],
+          supportiveMeasures: [
+            'No bridging anticoagulation needed (short half-life)',
+            'Ensure adequate hydration to maintain renal clearance',
+            'Avoid NSAIDs perioperatively'
+          ],
+          monitoringParameters: [
+            'Renal function (CrCl) to determine hold time',
+            'Thrombin time or aPTT if concerned about residual effect',
+            'Post-op bleeding assessment'
+          ],
+          timeToEffect: isUrgentSurgery ? 'Idarucizumab: immediate' : `Drug clearance: ${dabiHoldTime}`,
+          specialConsiderations: [
+            'NO BRIDGING NEEDED - dabigatran has rapid onset/offset',
+            'Renal function is critical for determining hold time',
+            'CrCl >80: 24h hold; CrCl 50-80: 36h; CrCl 30-50: 48h; CrCl <30: 72-96h',
+            'High bleeding risk procedures: add 24h to hold time'
+          ],
+          preProceduralGuidance: {
+            holdTime: dabiHoldTime,
+            lastDoseToSurgery: `Last dose ${dabiHoldTime} before surgery`,
+            bridgingRequired: false,
+            preOpLabs: ['CrCl/eGFR', 'aPTT or TT (optional, to confirm clearance)', 'CBC'],
+            resumptionGuidance: 'Resume 24-72 hours post-op depending on bleeding risk. No bridging needed.'
+          }
+        };
+      }
       return {
         anticoagulant: 'Dabigatran (Pradaxa)',
+        indication: 'bleeding',
         reversalAgents: [
           {
             primary: 'Idarucizumab (Praxbind)',
@@ -2979,11 +3101,67 @@ export function anticoagulationReversal(
       
     case 'rivaroxaban':
     case 'apixaban':
-    case 'edoxaban':
+    case 'edoxaban': {
       const xaName = anticoagulant === 'rivaroxaban' ? 'Rivaroxaban (Xarelto)' :
                      anticoagulant === 'apixaban' ? 'Apixaban (Eliquis)' : 'Edoxaban (Savaysa)';
+      if (isSurgery) {
+        // Factor Xa inhibitors: hold time based on renal function
+        // Apixaban: 24-48h (less renal dependent)
+        // Rivaroxaban/Edoxaban: 24-48h normal, longer if renal impairment
+        const xaHoldTime = anticoagulant === 'apixaban' 
+          ? getHoldTime('24-48 hours', '36-48 hours', '48 hours')
+          : getHoldTime('24-48 hours', '48-72 hours', '72+ hours');
+        return {
+          anticoagulant: xaName,
+          indication: 'surgery',
+          reversalAgents: isUrgentSurgery ? [
+            {
+              primary: 'Andexanet alfa (Andexxa) - if available',
+              dose: 'Low dose: 400 mg bolus + 480 mg infusion\nHigh dose: 800 mg bolus + 960 mg infusion',
+              notes: 'For urgent surgery when drug cannot be held adequately'
+            },
+            {
+              primary: '4-Factor PCC (if andexanet unavailable)',
+              dose: '50 units/kg',
+              notes: 'Provides hemostatic support but not true reversal'
+            }
+          ] : [
+            {
+              primary: `Hold ${anticoagulant}`,
+              dose: `Stop ${xaHoldTime} before procedure`,
+              notes: 'Hold time depends on renal function and bleeding risk'
+            }
+          ],
+          supportiveMeasures: [
+            'No bridging anticoagulation needed (short half-life)',
+            'Ensure adequate hydration',
+            'Avoid NSAIDs perioperatively'
+          ],
+          monitoringParameters: [
+            'Renal function (CrCl)',
+            'Anti-Xa level if concerned about residual effect',
+            'Post-op bleeding assessment'
+          ],
+          timeToEffect: isUrgentSurgery ? 'Andexanet: immediate' : `Drug clearance: ${xaHoldTime}`,
+          specialConsiderations: [
+            'NO BRIDGING NEEDED - rapid onset/offset',
+            anticoagulant === 'apixaban' ? 'Apixaban: least affected by renal function (27% renal elimination)' : '',
+            anticoagulant === 'rivaroxaban' ? 'Rivaroxaban: 33% renal elimination' : '',
+            anticoagulant === 'edoxaban' ? 'Edoxaban: 50% renal elimination' : '',
+            'High bleeding risk procedures: add 24h to hold time'
+          ].filter(s => s !== ''),
+          preProceduralGuidance: {
+            holdTime: xaHoldTime,
+            lastDoseToSurgery: `Last dose ${xaHoldTime} before surgery`,
+            bridgingRequired: false,
+            preOpLabs: ['CrCl/eGFR', 'Anti-Xa level (optional)', 'CBC'],
+            resumptionGuidance: 'Resume 24-72 hours post-op depending on bleeding risk. No bridging needed.'
+          }
+        };
+      }
       return {
         anticoagulant: xaName,
+        indication: 'bleeding',
         reversalAgents: [
           {
             primary: 'Andexanet alfa (Andexxa)',
@@ -3024,10 +3202,53 @@ export function anticoagulationReversal(
           'Hemodialysis NOT effective (high protein binding)'
         ].filter(s => s !== '')
       };
+    }
       
     case 'heparin':
+      if (isSurgery) {
+        return {
+          anticoagulant: 'Unfractionated Heparin (UFH)',
+          indication: 'surgery',
+          reversalAgents: isUrgentSurgery ? [
+            {
+              primary: 'Protamine sulfate (if needed)',
+              dose: '1 mg per 100 units heparin given recently',
+              notes: 'Usually not needed - just stop infusion and wait 4-6 hours'
+            }
+          ] : [
+            {
+              primary: 'Stop heparin infusion',
+              dose: '4-6 hours before procedure',
+              notes: 'Short half-life (60-90 min) allows natural clearance'
+            }
+          ],
+          supportiveMeasures: [
+            'Stop infusion 4-6 hours before surgery',
+            'No bridging needed - very short half-life',
+            'Can restart 12-24 hours post-op'
+          ],
+          monitoringParameters: [
+            'aPTT before surgery (should be normal)',
+            'Post-op bleeding assessment'
+          ],
+          timeToEffect: 'Drug clearance: 4-6 hours after stopping',
+          specialConsiderations: [
+            'Very short half-life - usually just stop and wait',
+            'Protamine rarely needed for elective surgery',
+            'Can restart quickly post-op if needed'
+          ],
+          preProceduralGuidance: {
+            holdTime: '4-6 hours before procedure',
+            lastDoseToSurgery: 'Stop infusion 4-6 hours before surgery',
+            bridgingRequired: false,
+            preOpLabs: ['aPTT (should normalize)', 'CBC'],
+            resumptionGuidance: 'Resume 12-24 hours post-op if adequate hemostasis'
+          }
+        };
+      }
       return {
         anticoagulant: 'Unfractionated Heparin (UFH)',
+        indication: 'bleeding',
         reversalAgents: [
           {
             primary: 'Protamine sulfate',
@@ -3056,8 +3277,53 @@ export function anticoagulationReversal(
       
     case 'enoxaparin':
     case 'lmwh':
+      if (isSurgery) {
+        const lmwhHoldTime = getHoldTime('12 hours (prophylactic) / 24 hours (therapeutic)', '24 hours (prophylactic) / 36-48 hours (therapeutic)', '36-48 hours (prophylactic) / 48-72 hours (therapeutic)');
+        return {
+          anticoagulant: 'Low Molecular Weight Heparin (LMWH/Enoxaparin)',
+          indication: 'surgery',
+          reversalAgents: isUrgentSurgery ? [
+            {
+              primary: 'Protamine sulfate',
+              dose: '1 mg per 1 mg enoxaparin (if <8h since dose)\n0.5 mg per 1 mg (if 8-12h since dose)',
+              notes: 'Only ~60% reversal - may need to delay surgery if possible'
+            }
+          ] : [
+            {
+              primary: 'Hold LMWH',
+              dose: `Stop ${lmwhHoldTime} before procedure`,
+              notes: 'Prophylactic dosing: 12h hold; Therapeutic dosing: 24h hold (normal renal function)'
+            }
+          ],
+          supportiveMeasures: [
+            'Prophylactic dose: hold 12 hours before',
+            'Therapeutic dose: hold 24 hours before',
+            'Adjust for renal function'
+          ],
+          monitoringParameters: [
+            'Renal function (CrCl)',
+            'Anti-Xa level if concerned (optional)',
+            'Post-op bleeding assessment'
+          ],
+          timeToEffect: isUrgentSurgery ? 'Protamine: partial reversal in 5 min' : `Drug clearance: ${lmwhHoldTime}`,
+          specialConsiderations: [
+            'PROPHYLACTIC (e.g., 40mg daily): Hold 12 hours',
+            'THERAPEUTIC (e.g., 1mg/kg BID): Hold 24 hours',
+            'Renal impairment: extend hold time',
+            'No complete reversal agent available'
+          ],
+          preProceduralGuidance: {
+            holdTime: lmwhHoldTime,
+            lastDoseToSurgery: `Last dose ${lmwhHoldTime} before surgery`,
+            bridgingRequired: false,
+            preOpLabs: ['CrCl/eGFR', 'Anti-Xa level (optional)', 'CBC'],
+            resumptionGuidance: 'Resume prophylactic dose 12-24h post-op; therapeutic dose 48-72h post-op or when hemostasis assured'
+          }
+        };
+      }
       return {
         anticoagulant: 'Low Molecular Weight Heparin (LMWH/Enoxaparin)',
+        indication: 'bleeding',
         reversalAgents: [
           {
             primary: 'Protamine sulfate',
@@ -3088,6 +3354,7 @@ export function anticoagulationReversal(
     default:
       return {
         anticoagulant: 'Unknown Anticoagulant',
+        indication: isSurgery ? 'surgery' : 'bleeding',
         reversalAgents: [
           {
             primary: 'Identify specific anticoagulant',

@@ -1950,6 +1950,13 @@ export default function Dashboard() {
         .every((input) => {
           // Skip unit selector inputs
           if (input.id.endsWith("Unit")) return true;
+          // Skip bleeding severity for surgery indications in anticoag reversal
+          if (selectedCalculator.id === 'anticoagReversal' && input.id === 'bleedingSeverity') {
+            const indication = calculatorState['indication'] as string;
+            if (indication === 'urgent-surgery' || indication === 'elective') {
+              return true; // Skip this required field for surgery indications
+            }
+          }
           return calculatorState[input.id] !== undefined && calculatorState[input.id] !== "";
         })
     : false;
@@ -2755,6 +2762,14 @@ export default function Dashboard() {
                           } else {
                             // In raw mode, hide ratioValue
                             if (input.id === "ratioValue") return false;
+                          }
+                        }
+                        // For anticoagReversal calculator, hide bleeding severity for surgery indications
+                        if (selectedCalculator.id === "anticoagReversal") {
+                          const indication = calculatorState.indication;
+                          // Hide bleeding severity when indication is surgery-related (not active bleeding)
+                          if (input.id === "bleedingSeverity" && (indication === "urgent-surgery" || indication === "elective")) {
+                            return false;
                           }
                         }
                         return true;
@@ -3622,46 +3637,128 @@ export default function Dashboard() {
                     {/* Custom Anticoagulation Reversal Display */}
                     {selectedCalculator.id === 'anticoagReversal' && anticoagReversalResult && (
                       <div className="mt-4 space-y-4">
-                        {/* Header with Urgency Indicator */}
-                        <div className="p-4 rounded-lg bg-red-500/10 border-2 border-red-500">
-                          <div className="flex items-center gap-3">
-                            <AlertTriangle className="w-6 h-6 text-red-500 animate-pulse" />
-                            <div>
-                              <h3 className="text-lg font-bold text-red-600 dark:text-red-400">
-                                URGENT: Reversal Protocol for {anticoagReversalResult.anticoagulant}
-                              </h3>
-                              <p className="text-sm text-red-600/80 dark:text-red-400/80">
-                                ⏱ Time to Effect: {anticoagReversalResult.timeToEffect}
-                              </p>
+                        {/* Header - Different for Surgery vs Bleeding */}
+                        {anticoagReversalResult.indication === 'surgery' ? (
+                          <div className="p-4 rounded-lg bg-blue-500/10 border-2 border-blue-500">
+                            <div className="flex items-center gap-3">
+                              <Clock className="w-6 h-6 text-blue-500" />
+                              <div>
+                                <h3 className="text-lg font-bold text-blue-600 dark:text-blue-400">
+                                  Pre-Procedural Management: {anticoagReversalResult.anticoagulant}
+                                </h3>
+                                <p className="text-sm text-blue-600/80 dark:text-blue-400/80">
+                                  ⏱ {anticoagReversalResult.timeToEffect}
+                                </p>
+                              </div>
                             </div>
                           </div>
-                        </div>
-
-                        {/* Step 1: Immediate Actions */}
-                        <div className="p-4 rounded-lg bg-amber-500/10 border-l-4 border-amber-500">
-                          <div className="flex items-center gap-2 mb-3">
-                            <span className="flex items-center justify-center w-6 h-6 rounded-full bg-amber-500 text-white text-sm font-bold">1</span>
-                            <h4 className="font-semibold text-amber-700 dark:text-amber-400">IMMEDIATE ACTIONS</h4>
+                        ) : (
+                          <div className="p-4 rounded-lg bg-red-500/10 border-2 border-red-500">
+                            <div className="flex items-center gap-3">
+                              <AlertTriangle className="w-6 h-6 text-red-500 animate-pulse" />
+                              <div>
+                                <h3 className="text-lg font-bold text-red-600 dark:text-red-400">
+                                  URGENT: Reversal Protocol for {anticoagReversalResult.anticoagulant}
+                                </h3>
+                                <p className="text-sm text-red-600/80 dark:text-red-400/80">
+                                  ⏱ Time to Effect: {anticoagReversalResult.timeToEffect}
+                                </p>
+                              </div>
+                            </div>
                           </div>
-                          <ul className="space-y-2 ml-8">
-                            <li className="flex items-start gap-2">
-                              <span className="text-amber-600 dark:text-amber-400 font-bold">•</span>
-                              <span className="text-sm">STOP anticoagulant immediately</span>
-                            </li>
-                            <li className="flex items-start gap-2">
-                              <span className="text-amber-600 dark:text-amber-400 font-bold">•</span>
-                              <span className="text-sm">Establish IV access (large bore)</span>
-                            </li>
-                            <li className="flex items-start gap-2">
-                              <span className="text-amber-600 dark:text-amber-400 font-bold">•</span>
-                              <span className="text-sm">Type and crossmatch blood products</span>
-                            </li>
-                            <li className="flex items-start gap-2">
-                              <span className="text-amber-600 dark:text-amber-400 font-bold">•</span>
-                              <span className="text-sm">Identify and address bleeding source</span>
-                            </li>
-                          </ul>
-                        </div>
+                        )}
+
+                        {/* Pre-Procedural Guidance (Surgery Only) */}
+                        {anticoagReversalResult.indication === 'surgery' && anticoagReversalResult.preProceduralGuidance && (
+                          <div className="p-4 rounded-lg bg-emerald-500/10 border-l-4 border-emerald-500">
+                            <div className="flex items-center gap-2 mb-3">
+                              <span className="flex items-center justify-center w-6 h-6 rounded-full bg-emerald-500 text-white text-sm font-bold">1</span>
+                              <h4 className="font-semibold text-emerald-700 dark:text-emerald-400">PRE-PROCEDURAL TIMING</h4>
+                            </div>
+                            <div className="ml-8 space-y-3">
+                              <div className="p-3 rounded-lg bg-emerald-500/5 border border-emerald-500/30">
+                                <p className="font-semibold text-emerald-700 dark:text-emerald-400 text-lg">
+                                  ⏰ Hold Time: {anticoagReversalResult.preProceduralGuidance.holdTime}
+                                </p>
+                                <p className="text-sm text-muted-foreground mt-1">
+                                  {anticoagReversalResult.preProceduralGuidance.lastDoseToSurgery}
+                                </p>
+                              </div>
+                              {anticoagReversalResult.preProceduralGuidance.bridgingRequired === false && (
+                                <div className="p-2 rounded bg-green-500/10 border border-green-500/30">
+                                  <p className="text-sm text-green-700 dark:text-green-400 font-medium">
+                                    ✔ NO BRIDGING ANTICOAGULATION NEEDED
+                                  </p>
+                                </div>
+                              )}
+                              {anticoagReversalResult.preProceduralGuidance.bridgingProtocol && (
+                                <div className="p-3 rounded-lg bg-muted/50 border border-border">
+                                  <p className="font-medium text-sm mb-2">Bridging Protocol (if applicable):</p>
+                                  <p className="text-sm text-muted-foreground whitespace-pre-line">
+                                    {anticoagReversalResult.preProceduralGuidance.bridgingProtocol}
+                                  </p>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Pre-Op Labs (Surgery Only) */}
+                        {anticoagReversalResult.indication === 'surgery' && anticoagReversalResult.preProceduralGuidance?.preOpLabs && (
+                          <div className="p-4 rounded-lg bg-cyan-500/10 border-l-4 border-cyan-500">
+                            <div className="flex items-center gap-2 mb-3">
+                              <span className="flex items-center justify-center w-6 h-6 rounded-full bg-cyan-500 text-white text-sm font-bold">2</span>
+                              <h4 className="font-semibold text-cyan-700 dark:text-cyan-400">PRE-OPERATIVE LABS</h4>
+                            </div>
+                            <ul className="space-y-2 ml-8">
+                              {anticoagReversalResult.preProceduralGuidance.preOpLabs.map((lab, idx) => (
+                                <li key={idx} className="flex items-start gap-2">
+                                  <span className="text-cyan-600 dark:text-cyan-400 font-bold">•</span>
+                                  <span className="text-sm">{lab}</span>
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+
+                        {/* Resumption Guidance (Surgery Only) */}
+                        {anticoagReversalResult.indication === 'surgery' && anticoagReversalResult.preProceduralGuidance?.resumptionGuidance && (
+                          <div className="p-4 rounded-lg bg-purple-500/10 border-l-4 border-purple-500">
+                            <div className="flex items-center gap-2 mb-3">
+                              <span className="flex items-center justify-center w-6 h-6 rounded-full bg-purple-500 text-white text-sm font-bold">3</span>
+                              <h4 className="font-semibold text-purple-700 dark:text-purple-400">POST-OPERATIVE RESUMPTION</h4>
+                            </div>
+                            <p className="text-sm ml-8">{anticoagReversalResult.preProceduralGuidance.resumptionGuidance}</p>
+                          </div>
+                        )}
+
+                        {/* Step 1: Immediate Actions (Bleeding Only) */}
+                        {anticoagReversalResult.indication !== 'surgery' && (
+                          <div className="p-4 rounded-lg bg-amber-500/10 border-l-4 border-amber-500">
+                            <div className="flex items-center gap-2 mb-3">
+                              <span className="flex items-center justify-center w-6 h-6 rounded-full bg-amber-500 text-white text-sm font-bold">1</span>
+                              <h4 className="font-semibold text-amber-700 dark:text-amber-400">IMMEDIATE ACTIONS</h4>
+                            </div>
+                            <ul className="space-y-2 ml-8">
+                              <li className="flex items-start gap-2">
+                                <span className="text-amber-600 dark:text-amber-400 font-bold">•</span>
+                                <span className="text-sm">STOP anticoagulant immediately</span>
+                              </li>
+                              <li className="flex items-start gap-2">
+                                <span className="text-amber-600 dark:text-amber-400 font-bold">•</span>
+                                <span className="text-sm">Establish IV access (large bore)</span>
+                              </li>
+                              <li className="flex items-start gap-2">
+                                <span className="text-amber-600 dark:text-amber-400 font-bold">•</span>
+                                <span className="text-sm">Type and crossmatch blood products</span>
+                              </li>
+                              <li className="flex items-start gap-2">
+                                <span className="text-amber-600 dark:text-amber-400 font-bold">•</span>
+                                <span className="text-sm">Identify and address bleeding source</span>
+                              </li>
+                            </ul>
+                          </div>
+                        )}
 
                         {/* Step 2: Reversal Agents */}
                         <div className="p-4 rounded-lg bg-blue-500/10 border-l-4 border-blue-500">
