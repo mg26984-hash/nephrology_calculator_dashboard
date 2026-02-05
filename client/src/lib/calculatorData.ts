@@ -1194,6 +1194,54 @@ export const calculators: Calculator[] = [
     ],
     references: ["Goff DC Jr et al. Circulation. 2014;129(25 Suppl 2):S49-73"],
   },
+  {
+    id: "cha2ds2-vasc",
+    name: "CHA\u2082DS\u2082-VASc Score",
+    description: "Stroke risk stratification in atrial fibrillation",
+    category: "Cardiovascular Risk",
+    inputs: [
+      { id: "chf", label: "Congestive Heart Failure / LV Dysfunction", type: "select", options: [{ value: "0", label: "No" }, { value: "1", label: "Yes" }], required: true, description: "History of CHF or objective evidence of moderate-severe LV dysfunction" },
+      { id: "hypertension", label: "Hypertension", type: "select", options: [{ value: "0", label: "No" }, { value: "1", label: "Yes" }], required: true, description: "Resting BP >140/90 mmHg on at least 2 occasions or current antihypertensive treatment" },
+      { id: "age", label: "Age", type: "number", unit: "years", placeholder: "65", required: true, min: 18, max: 120 },
+      { id: "diabetes", label: "Diabetes Mellitus", type: "select", options: [{ value: "0", label: "No" }, { value: "1", label: "Yes" }], required: true, description: "Fasting glucose \u2265126 mg/dL or treatment with oral hypoglycemic/insulin" },
+      { id: "strokeTia", label: "Prior Stroke / TIA / Thromboembolism", type: "select", options: [{ value: "0", label: "No" }, { value: "1", label: "Yes" }], required: true, description: "History of stroke, TIA, or systemic embolism" },
+      { id: "vascularDisease", label: "Vascular Disease", type: "select", options: [{ value: "0", label: "No" }, { value: "1", label: "Yes" }], required: true, description: "Prior MI, peripheral artery disease, or aortic plaque" },
+      { id: "sex", label: "Sex", type: "select", options: [{ value: "M", label: "Male" }, { value: "F", label: "Female" }], required: true },
+    ],
+    resultLabel: "CHA\u2082DS\u2082-VASc Score",
+    resultUnit: "points",
+    interpretation: (value) => {
+      const strokeRisk: Record<number, string> = {
+        0: "0%", 1: "1.3%", 2: "2.2%", 3: "3.2%", 4: "4.0%",
+        5: "6.7%", 6: "9.8%", 7: "9.6%", 8: "6.7%", 9: "15.2%"
+      };
+      const risk = strokeRisk[Math.min(value, 9)] || ">15%";
+      if (value === 0) return `Score ${value} - Annual stroke risk: ${risk}. LOW RISK - No antithrombotic therapy recommended.`;
+      if (value === 1) return `Score ${value} - Annual stroke risk: ${risk}. LOW-MODERATE RISK - Consider oral anticoagulation (especially if male). Assess bleeding risk with HAS-BLED.`;
+      if (value === 2) return `Score ${value} - Annual stroke risk: ${risk}. MODERATE RISK - Oral anticoagulation recommended. DOACs preferred over warfarin.`;
+      return `Score ${value} - Annual stroke risk: ${risk}. HIGH RISK - Oral anticoagulation strongly recommended. DOACs preferred over warfarin.`;
+    },
+    referenceRanges: [
+      { label: "Low Risk", min: 0, max: 0, unit: "points", note: "No anticoagulation needed" },
+      { label: "Low-Moderate Risk", min: 1, max: 1, unit: "points", note: "Consider anticoagulation" },
+      { label: "Moderate Risk", min: 2, max: 2, unit: "points", note: "Anticoagulation recommended" },
+      { label: "High Risk", min: 3, max: 9, unit: "points", note: "Anticoagulation strongly recommended" },
+    ],
+    clinicalPearls: [
+      "C = CHF/LV dysfunction (1 pt), H = Hypertension (1 pt), A\u2082 = Age \u226575 (2 pts)",
+      "D = Diabetes (1 pt), S\u2082 = Stroke/TIA (2 pts), V = Vascular disease (1 pt)",
+      "A = Age 65-74 (1 pt), Sc = Sex category female (1 pt)",
+      "Female sex alone (score=1) does not warrant anticoagulation",
+      "DOACs (apixaban, rivaroxaban, dabigatran, edoxaban) preferred over warfarin in non-valvular AF",
+      "Always assess bleeding risk with HAS-BLED before starting anticoagulation",
+      "CKD patients: Adjust DOAC dosing based on CrCl; warfarin may be preferred in severe CKD/dialysis",
+    ],
+    references: [
+      "Lip GY et al. Chest. 2010;137(2):263-272",
+      "Hindricks G et al. Eur Heart J. 2021;42(5):373-498 (2020 ESC AF Guidelines)",
+      "January CT et al. Circulation. 2019;140(2):e125-e151 (2019 AHA/ACC/HRS Focused Update)",
+    ],
+  },
   // ============================================================================
   // ANTHROPOMETRIC & BODY COMPOSITION
   // ============================================================================

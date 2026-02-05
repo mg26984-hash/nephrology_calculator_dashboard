@@ -138,6 +138,9 @@ export function getResultColorCoding(calculatorId: string, value: number, inputs
     case 'ascvd-risk':
       return getASCVDRiskColor(value);
 
+    case 'cha2ds2-vasc':
+      return getCHA2DS2VASCColor(value, inputs);
+
     // ============================================================================
     // ANTHROPOMETRIC
     // ============================================================================
@@ -1190,6 +1193,62 @@ function getASCVDRiskColor(value: number): ColorResult {
     textClass: 'text-red-600 dark:text-red-400',
     borderClass: 'border-red-500',
     label: 'High Risk',
+    severity: 'danger'
+  };
+}
+
+function getCHA2DS2VASCColor(value: number, inputs?: Record<string, unknown>): ColorResult {
+  const sex = inputs?.sex as string;
+  
+  // Score 0: Low risk - no anticoagulation
+  if (value === 0) {
+    return {
+      bgClass: 'bg-emerald-500/10',
+      textClass: 'text-emerald-600 dark:text-emerald-400',
+      borderClass: 'border-emerald-500',
+      label: 'Low Risk - No Anticoagulation',
+      severity: 'success'
+    };
+  }
+  
+  // Score 1: Consider anticoagulation (especially males)
+  if (value === 1) {
+    // Female with score 1 (only from sex) = effectively low risk
+    if (sex === 'F') {
+      return {
+        bgClass: 'bg-emerald-500/10',
+        textClass: 'text-emerald-600 dark:text-emerald-400',
+        borderClass: 'border-emerald-500',
+        label: 'Low Risk (Female Only)',
+        severity: 'success'
+      };
+    }
+    return {
+      bgClass: 'bg-yellow-500/10',
+      textClass: 'text-yellow-600 dark:text-yellow-400',
+      borderClass: 'border-yellow-500',
+      label: 'Consider Anticoagulation',
+      severity: 'warning'
+    };
+  }
+  
+  // Score 2: Anticoagulation recommended
+  if (value === 2) {
+    return {
+      bgClass: 'bg-orange-500/10',
+      textClass: 'text-orange-600 dark:text-orange-400',
+      borderClass: 'border-orange-500',
+      label: 'Anticoagulation Recommended',
+      severity: 'warning'
+    };
+  }
+  
+  // Score >=3: High risk - anticoagulation strongly recommended
+  return {
+    bgClass: 'bg-red-500/10',
+    textClass: 'text-red-600 dark:text-red-400',
+    borderClass: 'border-red-500',
+    label: 'High Risk - Anticoagulate',
     severity: 'danger'
   };
 }

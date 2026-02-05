@@ -976,6 +976,87 @@ export function ascvdRisk(
   return Math.round(Math.min(100, Math.max(0, tenYearRisk)) * 10) / 10;
 }
 
+/**
+ * CHA₂DS₂-VASc Score for Atrial Fibrillation Stroke Risk
+ * Reference: Lip GY et al. Chest. 2010;137(2):263-272
+ * 
+ * C - Congestive heart failure (1 point)
+ * H - Hypertension (1 point)
+ * A₂ - Age ≥75 years (2 points)
+ * D - Diabetes mellitus (1 point)
+ * S₂ - Stroke/TIA/thromboembolism (2 points)
+ * V - Vascular disease (1 point)
+ * A - Age 65-74 years (1 point)
+ * Sc - Sex category (female = 1 point)
+ */
+export function cha2ds2vasc(
+  chf: boolean,
+  hypertension: boolean,
+  age: number,
+  diabetes: boolean,
+  strokeTia: boolean,
+  vascularDisease: boolean,
+  sex: "M" | "F"
+): { score: number; annualStrokeRisk: string; recommendation: string } {
+  let score = 0;
+  
+  // C - Congestive heart failure/LV dysfunction (1 point)
+  if (chf) score += 1;
+  
+  // H - Hypertension (1 point)
+  if (hypertension) score += 1;
+  
+  // A₂ - Age ≥75 years (2 points)
+  if (age >= 75) score += 2;
+  // A - Age 65-74 years (1 point)
+  else if (age >= 65) score += 1;
+  
+  // D - Diabetes mellitus (1 point)
+  if (diabetes) score += 1;
+  
+  // S₂ - Stroke/TIA/thromboembolism (2 points)
+  if (strokeTia) score += 2;
+  
+  // V - Vascular disease (prior MI, PAD, aortic plaque) (1 point)
+  if (vascularDisease) score += 1;
+  
+  // Sc - Sex category (female = 1 point)
+  if (sex === "F") score += 1;
+  
+  // Annual stroke risk percentages based on score
+  const strokeRiskMap: Record<number, string> = {
+    0: "0%",
+    1: "1.3%",
+    2: "2.2%",
+    3: "3.2%",
+    4: "4.0%",
+    5: "6.7%",
+    6: "9.8%",
+    7: "9.6%",
+    8: "6.7%",
+    9: "15.2%"
+  };
+  
+  const annualStrokeRisk = strokeRiskMap[Math.min(score, 9)] || ">15%";
+  
+  // Anticoagulation recommendations based on 2020 ESC Guidelines
+  let recommendation: string;
+  if (score === 0) {
+    recommendation = "No antithrombotic therapy recommended (Class III)";
+  } else if (score === 1) {
+    if (sex === "M") {
+      recommendation = "Oral anticoagulation should be considered (Class IIa). Assess bleeding risk with HAS-BLED.";
+    } else {
+      // Female with score of 1 (only from sex) = effectively 0 risk factors
+      recommendation = "No antithrombotic therapy recommended if female sex is the only risk factor (Class III)";
+    }
+  } else {
+    recommendation = "Oral anticoagulation is recommended (Class I). DOACs preferred over warfarin. Assess bleeding risk with HAS-BLED.";
+  }
+  
+  return { score, annualStrokeRisk, recommendation };
+}
+
 // ============================================================================
 // 8. ANTHROPOMETRIC & BODY COMPOSITION CALCULATORS
 // ============================================================================

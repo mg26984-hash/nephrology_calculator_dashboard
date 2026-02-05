@@ -70,7 +70,7 @@ import { CSS } from '@dnd-kit/utilities';
 import { EGFRComparison } from "@/components/EGFRComparison";
 import { getResultColorCoding } from "@/lib/resultColorCoding";
 import { UnitConversionTooltip, hasUnitConversion } from "@/components/UnitConversionTooltip";
-import { isBinaryYesNoInput, getYesNoLabel } from "@/lib/inputHelpers";
+import { isBinaryYesNoInput, getYesNoLabel, getYesNoValue, isYesValue } from "@/lib/inputHelpers";
 import ConversionReferenceCard from "@/components/ConversionReferenceCard";
 
 interface CalculatorState {
@@ -1198,6 +1198,24 @@ export default function Dashboard() {
           );
           break;
 
+        case "cha2ds2-vasc": {
+          const cha2Result = calc.cha2ds2vasc(
+            calculatorState.chf === "1",
+            calculatorState.hypertension === "1",
+            calculatorState.age as number,
+            calculatorState.diabetes === "1",
+            calculatorState.strokeTia === "1",
+            calculatorState.vascularDisease === "1",
+            calculatorState.sex as "M" | "F"
+          );
+          calculationResult = cha2Result.score;
+          // Store the full result for detailed display
+          setResultInterpretation(
+            `Score: ${cha2Result.score} | Annual Stroke Risk: ${cha2Result.annualStrokeRisk}\n\n${cha2Result.recommendation}`
+          );
+          break;
+        }
+
         case "bmi":
           calculationResult = calc.bmi(
             calculatorState.weight as number,
@@ -1835,8 +1853,14 @@ export default function Dashboard() {
         } else if (input.type === 'select' && input.options && input.options.length === 2) {
           // Initialize Yes/No toggle inputs to 'no' by default
           const values = input.options.map(o => o.value.toLowerCase());
+          const labels = input.options.map(o => o.label.toLowerCase());
           if (values.includes('yes') && values.includes('no')) {
             initialState[input.id] = 'no';
+          } else if ((values.includes('0') && values.includes('1')) && 
+                     (labels.includes('yes') && labels.includes('no'))) {
+            // For 0/1 values with Yes/No labels, initialize to '0' (No)
+            const noOption = input.options.find(o => o.label.toLowerCase() === 'no');
+            initialState[input.id] = noOption?.value || '0';
           }
         }
       });
@@ -2761,12 +2785,12 @@ export default function Dashboard() {
                           isBinaryYesNoInput(input) ? (
                             <div className="flex items-center justify-between p-3 bg-muted/30 rounded-lg border">
                               <Switch
-                                checked={calculatorState[input.id] === "yes"}
-                                onCheckedChange={(checked) => handleInputChange(input.id, checked ? "yes" : "no")}
+                                checked={isYesValue(input, String(calculatorState[input.id] ?? ''))}
+                                onCheckedChange={(checked) => handleInputChange(input.id, getYesNoValue(input, checked))}
                                 className="data-[state=checked]:bg-primary"
                               />
                               <span className="text-sm font-medium ml-3 flex-1">
-                                {calculatorState[input.id] === "yes" 
+                                {isYesValue(input, String(calculatorState[input.id] ?? ''))
                                   ? getYesNoLabel(input, 'yes')
                                   : getYesNoLabel(input, 'no')
                                 }
@@ -2933,6 +2957,13 @@ export default function Dashboard() {
                           <p className="text-sm text-muted-foreground mt-2">
                             {(result as any).mmolL.toFixed(2)} mmol/L
                           </p>
+                        </>
+                      ) : selectedCalculator.id === "anticoagReversal" ? (
+                        <>
+                          <p className={cn("text-2xl font-bold text-amber-600 dark:text-amber-400")}>
+                            Reversal Protocol Generated
+                          </p>
+                          <p className="text-sm text-muted-foreground mt-1">See detailed recommendations below</p>
                         </>
                       ) : (
                         <>
