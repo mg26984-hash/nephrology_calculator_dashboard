@@ -1878,18 +1878,9 @@ export default function Dashboard() {
           initialState[input.id] = input.default ?? 0;
         } else if (input.default !== undefined) {
           initialState[input.id] = input.default;
-        } else if (input.type === 'select' && input.options && input.options.length === 2) {
-          // Initialize Yes/No toggle inputs to 'no' by default
-          const values = input.options.map(o => o.value.toLowerCase());
-          const labels = input.options.map(o => o.label.toLowerCase());
-          if (values.includes('yes') && values.includes('no')) {
-            initialState[input.id] = 'no';
-          } else if ((values.includes('0') && values.includes('1')) && 
-                     (labels.includes('yes') && labels.includes('no'))) {
-            // For 0/1 values with Yes/No labels, initialize to '0' (No)
-            const noOption = input.options.find(o => o.label.toLowerCase() === 'no');
-            initialState[input.id] = noOption?.value || '0';
-          }
+        } else if (isBinaryYesNoInput(input)) {
+          // Initialize all Yes/No toggle inputs to 'No' by default using helper function
+          initialState[input.id] = getYesNoValue(input, false);
         }
       });
     }
