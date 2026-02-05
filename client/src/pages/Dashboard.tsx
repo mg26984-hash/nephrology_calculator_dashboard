@@ -198,7 +198,7 @@ function SortableFavoriteCard({ calc, categoryIcons, onSelect, onToggleFavorite 
       ref={setNodeRef}
       style={style}
       className={cn(
-        "group relative bg-card hover:bg-accent/50 border border-border hover:border-primary/30 rounded-xl p-4 text-left transition-all duration-200 hover:shadow-lg hover:shadow-primary/5",
+        "group relative bg-card hover:bg-accent/50 border border-border hover:border-primary/30 rounded-xl p-4 text-left transition-all duration-200 hover:shadow-lg hover:shadow-primary/5 aspect-square flex flex-col",
         isDragging && "shadow-xl ring-2 ring-primary/30"
       )}
     >
@@ -222,7 +222,7 @@ function SortableFavoriteCard({ calc, categoryIcons, onSelect, onToggleFavorite 
       {/* Clickable Card Content */}
       <button
         onClick={() => onSelect(calc.id)}
-        className="w-full text-left pl-6"
+        className="w-full text-left pl-6 flex-1 flex flex-col justify-between"
       >
         {/* Category Badge */}
         <div className="flex items-center gap-2 mb-3">
@@ -2515,7 +2515,7 @@ export default function Dashboard() {
                       items={favorites}
                       strategy={rectSortingStrategy}
                     >
-                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                      <div className="grid grid-cols-2 gap-4">
                         {favoriteCalculators.map((calc) => (
                           <SortableFavoriteCard
                             key={calc.id}
