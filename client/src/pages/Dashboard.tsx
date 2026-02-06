@@ -2294,7 +2294,7 @@ export default function Dashboard() {
 
             <div className="flex items-center gap-2">
               <img 
-                src="/images/asnrt-logo.webp" 
+                src={`${import.meta.env.BASE_URL}images/asnrt-logo.webp`} 
                 alt="ASNRT Logo" 
                 className="w-10 h-10 object-contain"
               />
@@ -2433,7 +2433,7 @@ export default function Dashboard() {
               <div className="text-center py-12">
                 <div className="inline-flex items-center justify-center w-20 h-20 rounded-2xl bg-primary/10 mb-6">
                   <img 
-                    src="/images/asnrt-logo.webp" 
+                    src={`${import.meta.env.BASE_URL}images/asnrt-logo.webp`} 
                     alt="ASNRT Logo" 
                     className="w-14 h-14 object-contain"
                   />

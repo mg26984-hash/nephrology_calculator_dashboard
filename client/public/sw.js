@@ -1,12 +1,13 @@
 // ASNRT Nephrology Calculator - Service Worker for Offline Support
 const CACHE_NAME = 'asnrt-calculator-v1';
 const STATIC_CACHE_NAME = 'asnrt-static-v1';
+const BASE_PATH = '/nephrology_calculator_dashboard/';
 
 // Assets to cache immediately on install
 const STATIC_ASSETS = [
-  '/',
-  '/index.html',
-  '/manifest.json'
+  BASE_PATH,
+  BASE_PATH + 'index.html',
+  BASE_PATH + 'manifest.json'
 ];
 
 // Install event - cache static assets
@@ -71,7 +72,7 @@ self.addEventListener('fetch', (event) => {
               return cachedResponse;
             }
             // Return offline page if available
-            return caches.match('/').then((offlineResponse) => {
+            return caches.match(BASE_PATH).then((offlineResponse) => {
               return offlineResponse || new Response('Offline - Please check your connection', {
                 status: 503,
                 statusText: 'Service Unavailable',

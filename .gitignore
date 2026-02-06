@@ -104,3 +104,7 @@ temp/
 *.db
 *.sqlite
 *.sqlite3
+
+# Manus development files
+.manus-logs/
+client/public/__manus__/
