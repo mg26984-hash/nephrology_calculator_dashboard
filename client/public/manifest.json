@@ -2,8 +2,8 @@
   "name": "ASNRT Nephrology Calculator",
   "short_name": "ASNRT Calc",
   "description": "Professional nephrology clinical calculators for healthcare providers. 74 calculators including eGFR, dialysis adequacy, electrolytes, and more.",
-  "start_url": "/nephrology_calculator_dashboard/",
-  "scope": "/nephrology_calculator_dashboard/",
+  "start_url": "/",
+  "scope": "/",
   "display": "standalone",
   "background_color": "#0f172a",
   "theme_color": "#3b82f6",
@@ -11,13 +11,13 @@
   "categories": ["medical", "health", "utilities"],
   "icons": [
     {
-      "src": "/nephrology_calculator_dashboard/icon-192.png",
+      "src": "/icon-192.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any maskable"
     },
     {
-      "src": "/nephrology_calculator_dashboard/icon-512.png",
+      "src": "/icon-512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"
@@ -25,13 +25,13 @@
   ],
   "screenshots": [
     {
-      "src": "/nephrology_calculator_dashboard/screenshot-wide.png",
+      "src": "/screenshot-wide.png",
       "sizes": "1280x720",
       "type": "image/png",
       "form_factor": "wide"
     },
     {
-      "src": "/nephrology_calculator_dashboard/screenshot-narrow.png",
+      "src": "/screenshot-narrow.png",
       "sizes": "720x1280",
       "type": "image/png",
       "form_factor": "narrow"
@@ -42,15 +42,15 @@
       "name": "CKD-EPI Calculator",
       "short_name": "CKD-EPI",
       "description": "Calculate eGFR using CKD-EPI 2021 equation",
-      "url": "/nephrology_calculator_dashboard/?calc=ckd-epi-creatinine",
-      "icons": [{ "src": "/nephrology_calculator_dashboard/icon-192.png", "sizes": "192x192" }]
+      "url": "/?calc=ckd-epi-creatinine",
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
     },
     {
       "name": "Compare eGFR",
       "short_name": "Compare",
       "description": "Compare results from multiple eGFR equations",
-      "url": "/nephrology_calculator_dashboard/?compare=egfr",
-      "icons": [{ "src": "/nephrology_calculator_dashboard/icon-192.png", "sizes": "192x192" }]
+      "url": "/?compare=egfr",
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
     }
   ],
   "related_applications": [],
